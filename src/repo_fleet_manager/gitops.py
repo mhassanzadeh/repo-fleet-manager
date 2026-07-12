@@ -10,7 +10,7 @@ from .config import ProjectConfig, Repository
 from .shell import command_exists, run, run_interactive, shlex_join
 from .operations import backup_file, note_manual_rollback, track_created_path, track_git_remote
 from .graph import execute_levels
-from .localops import local_bare_path, path_from_file_url, remotes_dir
+from .localops import git_is_worktree, local_bare_path, path_from_file_url, remotes_dir
 
 
 @dataclass(slots=True)
