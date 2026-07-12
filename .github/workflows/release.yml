@@ -1,0 +1,84 @@
+name: RFM Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag to release, for example v0.6.3
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rfm-release-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve release tag
+        shell: bash
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            echo "RELEASE_TAG=${{ inputs.tag }}" >> "$GITHUB_ENV"
+          else
+            echo "RELEASE_TAG=${GITHUB_REF_NAME}" >> "$GITHUB_ENV"
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install release dependencies
+        run: python -m pip install --upgrade pip build
+
+      - name: Install RFM
+        run: python -m pip install -e .
+
+      - name: Verify tag and package versions
+        shell: bash
+        run: python scripts/check_release_version.py "${RELEASE_TAG#v}"
+
+      - name: Run release validation
+        run: make validate
+
+      - name: Build wheel and source distribution
+        run: make build
+
+      - name: Verify wheel installation
+        shell: bash
+        run: |
+          python -m venv .release-venv
+          .release-venv/bin/python -m pip install --upgrade pip
+          .release-venv/bin/python -m pip install dist/*.whl
+          .release-venv/bin/rfm --version
+
+      - name: Generate checksums
+        shell: bash
+        run: |
+          cd dist
+          sha256sum * > SHA256SUMS
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh release create "$RELEASE_TAG" \
+            dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Repo Fleet Manager $RELEASE_TAG" \
+            --generate-notes \
+            --verify-tag

@@ -3,7 +3,7 @@ include MIGRATION.md
 include Makefile
 include PATCH_NOTES_*.md
 include .gitlab-ci.yml
-recursive-include .github *.yml *.yaml
+recursive-include .github *.yml *.md
 recursive-include src/repo_fleet_manager/data *.json *.bash *.fish
 recursive-include catalog *.json
 recursive-include schemas *.json
@@ -14,3 +14,9 @@ recursive-include configs *.json
 recursive-include tests *.py
 
 include GIT_COMMIT_GUIDE_*.md
+
+include LICENSE
+include CHANGELOG.md
+include CONTRIBUTING.md
+include SECURITY.md
+recursive-include scripts *.py

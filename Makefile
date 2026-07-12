@@ -5,7 +5,7 @@ FISH_COMPLETION_DIR ?= $(HOME)/.config/fish/completions
 CONFIG ?= configs/repo-fleet.example.json
 ROOT ?= .
 
-.PHONY: install install-cli install-editable install-completions install-all uninstall uninstall-completions doctor auth-status config-validate config-migrate graph safety-status ops-list test validate validate-docs completion-bash completion-fish local-plan local-localize local-localize-apply local-bootstrap local-bootstrap-apply local-remotes local-remotes-apply local-remotes-update publish-github publish-gitlab catalog-summary catalog-tree catalog-gaps catalog-docs catalog-check build clean
+.PHONY: install install-cli install-editable install-completions install-all uninstall uninstall-completions doctor auth-status config-validate config-migrate graph safety-status ops-list test validate validate-docs completion-bash completion-fish local-plan local-localize local-localize-apply local-bootstrap local-bootstrap-apply local-remotes local-remotes-apply local-remotes-update publish-github publish-gitlab catalog-summary catalog-tree catalog-gaps catalog-docs catalog-check release-check release-artifacts build clean
 
 install: install-cli install-completions
 
@@ -109,11 +109,17 @@ test:
 validate-docs:
 	./scripts/rfm.sh docs --config "$(CONFIG)" --root "$(ROOT)" validate-links
 
-validate: config-validate test validate-docs catalog-check
+validate: config-validate release-check test validate-docs catalog-check
+
+release-check:
+	$(PYTHON) scripts/check_release_version.py
+
+release-artifacts: validate clean build
+	cd dist && sha256sum * > SHA256SUMS
 
 build:
 	@mkdir -p dist
-	@if $(PYTHON) -c "import build" >/dev/null 2>&1; then \
+	@if $(PYTHON) -m build --version >/dev/null 2>&1; then \
 		$(PYTHON) -m build; \
 	else \
 		echo "python-build is unavailable; creating wheel with pip"; \

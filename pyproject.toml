@@ -1,16 +1,47 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "repo-fleet-manager"
-version = "0.6.2"
+version = "0.6.3"
 description = "Config-driven manager for large Git submodule based repositories and local development workflows."
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "MIT"}
-authors = [{name = "Architecture Automation Team"}]
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{name = "mhassanzadeh"}]
+maintainers = [{name = "mhassanzadeh"}]
+keywords = [
+  "git",
+  "repository-management",
+  "submodules",
+  "github",
+  "gitlab",
+  "docker",
+  "podman",
+  "developer-tools",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Intended Audience :: System Administrators",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Version Control :: Git",
+  "Topic :: System :: Systems Administration",
+]
 dependencies = ["jsonschema>=4.23,<5"]
+
+[project.urls]
+Homepage = "https://github.com/mhassanzadeh/repo-fleet-manager"
+Repository = "https://github.com/mhassanzadeh/repo-fleet-manager.git"
+Issues = "https://github.com/mhassanzadeh/repo-fleet-manager/issues"
+Changelog = "https://github.com/mhassanzadeh/repo-fleet-manager/blob/master/CHANGELOG.md"
 
 [project.scripts]
 rfm = "repo_fleet_manager.cli:main"
