@@ -138,6 +138,98 @@ def _dependency_issues(repositories: list[dict[str, Any]]) -> list[ValidationIss
     return issues
 
 
+
+
+def _profile_and_group_issues(data: dict[str, Any]) -> list[ValidationIssue]:
+    issues: list[ValidationIssue] = []
+    profiles = data.get("profiles") or {}
+    graph: dict[str, list[str]] = {}
+    for name, raw in profiles.items():
+        extends = raw.get("extends") if isinstance(raw, dict) else None
+        if extends is None:
+            parents: list[str] = []
+        elif isinstance(extends, str):
+            parents = [part.strip() for part in extends.split(",") if part.strip()]
+        else:
+            parents = [str(item) for item in extends]
+        graph[str(name)] = parents
+        for parent in parents:
+            if parent not in profiles:
+                issues.append(ValidationIssue(
+                    f"$.profiles.{name}.extends",
+                    f"unknown parent profile: {parent}",
+                    "unknown-profile",
+                ))
+
+    state: dict[str, int] = {}
+    stack: list[str] = []
+    def visit(name: str) -> None:
+        marker = state.get(name, 0)
+        if marker == 2:
+            return
+        if marker == 1:
+            try:
+                start = stack.index(name)
+                cycle = stack[start:] + [name]
+            except ValueError:
+                cycle = stack + [name]
+            issues.append(ValidationIssue(
+                "$.profiles",
+                "profile inheritance cycle: " + " -> ".join(cycle),
+                "profile-cycle",
+            ))
+            return
+        state[name] = 1
+        stack.append(name)
+        for parent in graph.get(name, []):
+            if parent in graph:
+                visit(parent)
+        stack.pop()
+        state[name] = 2
+    for name in graph:
+        visit(name)
+
+    repositories = data.get("repositories") or []
+    selectors = {str(item.get("repo")) for item in repositories if item.get("repo")}
+    selectors.update(str(item.get("path")) for item in repositories if item.get("path") is not None)
+    known_tags = {str(tag) for item in repositories for tag in (item.get("tags") or [])}
+    for profile in profiles.values():
+        if not isinstance(profile, dict):
+            continue
+        for selector, overlay in (profile.get("repositories") or {}).items():
+            selectors.add(str(selector))
+            if not isinstance(overlay, dict):
+                continue
+            if overlay.get("repo"):
+                selectors.add(str(overlay["repo"]))
+            if overlay.get("path") is not None:
+                selectors.add(str(overlay["path"]))
+            known_tags.update(str(tag) for tag in (overlay.get("tags") or []))
+    for name, raw in (data.get("groups") or {}).items():
+        if isinstance(raw, list):
+            group_repositories = raw
+            group_tags: list[str] = []
+        elif isinstance(raw, dict):
+            group_repositories = raw.get("repositories") or []
+            group_tags = raw.get("tags") or []
+        else:
+            continue
+        for selector in group_repositories:
+            if str(selector) not in selectors:
+                issues.append(ValidationIssue(
+                    f"$.groups.{name}.repositories",
+                    f"unknown repository selector: {selector}",
+                    "unknown-group-repository",
+                ))
+        for tag in group_tags:
+            if str(tag) not in known_tags:
+                issues.append(ValidationIssue(
+                    f"$.groups.{name}.tags",
+                    f"tag does not match any repository: {tag}",
+                    "unknown-group-tag",
+                ))
+    return issues
+
 def semantic_issues(data: dict[str, Any]) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
     providers = data.get("providers") or {}
@@ -188,6 +280,7 @@ def semantic_issues(data: dict[str, Any]) -> list[ValidationIssue]:
                 ))
 
     issues.extend(_dependency_issues(repositories))
+    issues.extend(_profile_and_group_issues(data))
     issues.extend(_walk_sensitive(data))
     return issues
 

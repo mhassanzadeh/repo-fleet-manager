@@ -22,10 +22,10 @@ class ReleaseMetadataTests(unittest.TestCase):
     def test_versions_are_consistent(self) -> None:
         result = self.run_checker()
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("release version 0.7.0", result.stdout)
+        self.assertIn("release version 0.8.0", result.stdout)
 
     def test_expected_version_is_checked(self) -> None:
-        result = self.run_checker("v0.7.0")
+        result = self.run_checker("v0.8.0")
         self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_mismatched_release_version_fails(self) -> None:

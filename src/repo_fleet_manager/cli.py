@@ -19,7 +19,8 @@ from .localops import bootstrap_local, clone_local_repositories, create_local_re
 from .images import verify_images
 from .shell import command_exists
 from .service_catalog import load_service_catalog, render_catalog, summary as catalog_summary
-from .schema import CURRENT_SCHEMA_VERSION, migrate_config_data, validate_config_data, validate_or_raise, write_migrated_config
+from .schema import CURRENT_SCHEMA_VERSION, ConfigValidationError, ValidationIssue, migrate_config_data, validate_config_data, validate_or_raise, write_migrated_config
+from .profiles import ConfigResolutionError
 from .operations import SafetyError, backup_file, list_operation_files, load_operation, lock_path, mutation_context, operations_dir
 from .provider import auth_report, fork_repositories, mirror_repositories, reconcile_repositories, require_provider_auth
 from .graph import render_graph
@@ -308,6 +309,8 @@ complete -c rfm -n '__fish_seen_subcommand_from docs; and not __fish_seen_subcom
 def add_common(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--config", help="Path to repo-fleet.json. Defaults to nearest repo-fleet.json above cwd.")
     parser.add_argument("--root", default=".", help="Repository root. Default: current directory.")
+    parser.add_argument("--profile", action="append", help="Apply a named config profile. Repeat or use comma-separated names.")
+    parser.add_argument("--group", action="append", help="Operate on a named repository group. Repeat or use comma-separated names.")
 
 
 def add_safety_flags(parser: argparse.ArgumentParser) -> None:
@@ -319,11 +322,25 @@ def _root(args: argparse.Namespace) -> Path:
     return Path(args.root).expanduser().resolve()
 
 
-def _optional_config(path: str | None = None, start: Path | None = None):
+def _config(args: argparse.Namespace):
+    return load_config(
+        args.config,
+        profiles=getattr(args, "profile", None),
+        groups=getattr(args, "group", None),
+    )
+
+
+def _optional_config(
+    path: str | None = None,
+    start: Path | None = None,
+    *,
+    profiles=None,
+    groups=None,
+):
     if path:
-        return load_config(path)
+        return load_config(path, profiles=profiles, groups=groups)
     try:
-        return load_config(find_config(start=start))
+        return load_config(find_config(start=start), profiles=profiles, groups=groups)
     except FileNotFoundError:
         return None
 
@@ -393,12 +410,28 @@ def cmd_config_validate(args: argparse.Namespace) -> int:
     else:
         migrated, changes = migrate_config_data(raw)
         issues = validate_config_data(migrated)
+    resolved_profiles: list[str] = []
+    resolved_groups: list[str] = []
+    resolution_changes: list[str] = []
+    if not issues and (getattr(args, "profile", None) or getattr(args, "group", None)):
+        try:
+            resolved = _config(args)
+            resolved_profiles = list(resolved.active_profiles)
+            resolved_groups = list(resolved.active_groups)
+            resolution_changes = list(resolved.resolution_changes)
+        except ConfigValidationError as exc:
+            issues.extend(exc.issues)
+        except ConfigResolutionError as exc:
+            issues.append(ValidationIssue("$", str(exc), "config-resolution"))
     if args.json:
         print(json.dumps({
             "path": str(path),
             "valid": not issues,
             "schema_version": migrated.get("schema_version"),
             "migration_changes": changes,
+            "profiles": resolved_profiles,
+            "groups": resolved_groups,
+            "resolution_changes": resolution_changes,
             "issues": [asdict(issue) for issue in issues],
         }, ensure_ascii=False, indent=2))
     else:
@@ -408,6 +441,9 @@ def cmd_config_validate(args: argparse.Namespace) -> int:
             print("migration required:")
             for change in changes:
                 print(f" - {change}")
+        if resolved_profiles or resolved_groups:
+            print(f"resolved profiles: {', '.join(resolved_profiles) or '-'}")
+            print(f"resolved groups:   {', '.join(resolved_groups) or '-'}")
         if issues:
             print("validation errors:")
             for issue in issues:
@@ -416,6 +452,43 @@ def cmd_config_validate(args: argparse.Namespace) -> int:
             print("[OK] configuration is valid")
     return 2 if issues else 0
 
+
+def cmd_config_render(args: argparse.Namespace) -> int:
+    cfg = _config(args)
+    content = json.dumps(cfg.raw, ensure_ascii=False, indent=2) + "\n"
+    if args.output:
+        output = Path(args.output).expanduser()
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(content, encoding="utf-8")
+        print(f"[OK] wrote resolved configuration: {output}")
+    else:
+        print(content, end="")
+    return 0
+
+
+def cmd_config_profiles(args: argparse.Namespace) -> int:
+    _, raw = load_raw_config(args.config)
+    migrated, _ = migrate_config_data(raw)
+    rows = migrated.get("profiles") or {}
+    if args.json:
+        print(json.dumps(rows, ensure_ascii=False, indent=2))
+    else:
+        for name, profile in rows.items():
+            extends = profile.get("extends") if isinstance(profile, dict) else None
+            print(f"{name}\textends={extends or '-'}")
+    return 0
+
+
+def cmd_config_groups(args: argparse.Namespace) -> int:
+    _, raw = load_raw_config(args.config)
+    migrated, _ = migrate_config_data(raw)
+    rows = migrated.get("groups") or {}
+    if args.json:
+        print(json.dumps(rows, ensure_ascii=False, indent=2))
+    else:
+        for name, group in rows.items():
+            print(f"{name}\t{json.dumps(group, ensure_ascii=False)}")
+    return 0
 
 def cmd_config_migrate(args: argparse.Namespace) -> int:
     path, raw = load_raw_config(args.config)
@@ -442,7 +515,7 @@ def cmd_config_migrate(args: argparse.Namespace) -> int:
 
 
 def cmd_doctor(args: argparse.Namespace) -> int:
-    cfg = load_config(args.config)
+    cfg = _config(args)
     root = _root(args)
     required = ["git", "python3"]
     optional = ["docker", "podman", "podman-compose", "gh", "glab"]
@@ -468,6 +541,8 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     print(f" - submodules:    {len(cfg.submodules())}")
     print(f" - services:      {len(cfg.services())}")
     print(f" - default jobs:  {cfg.default_jobs}")
+    print(f" - profiles:      {', '.join(cfg.active_profiles) or '-'}")
+    print(f" - groups:        {', '.join(cfg.active_groups) or '-'}")
     if args.auth:
         print("\nProvider authentication:")
         for row in auth_report(cfg, root, args.provider):
@@ -481,7 +556,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 
 
 def cmd_auth_status(args: argparse.Namespace) -> int:
-    cfg = load_config(args.config)
+    cfg = _config(args)
     rows = auth_report(cfg, _root(args), args.provider)
     if args.json:
         print(json.dumps(rows, ensure_ascii=False, indent=2))
@@ -511,7 +586,7 @@ def cmd_catalog(args: argparse.Namespace) -> int:
     root = _root(args)
     output_format = "json" if args.json else args.format
     if args.view == "repositories":
-        cfg = load_config(args.config)
+        cfg = _config(args)
         rows = [asdict(repo) for repo in cfg.repositories]
         if output_format == "json":
             content = json.dumps(rows, indent=2, ensure_ascii=False) + "\n"
@@ -551,7 +626,7 @@ def cmd_catalog(args: argparse.Namespace) -> int:
 
 
 def cmd_graph_show(args: argparse.Namespace) -> int:
-    cfg = load_config(args.config)
+    cfg = _config(args)
     content = render_graph(cfg, args.format)
     if args.output:
         path = Path(args.output).expanduser()
@@ -566,7 +641,7 @@ def cmd_graph_show(args: argparse.Namespace) -> int:
 
 
 def cmd_safety_status(args: argparse.Namespace) -> int:
-    cfg = load_config(args.config)
+    cfg = _config(args)
     rows = workspace_safety_report(cfg, _root(args))
     payload = [asdict(row) for row in rows]
     if args.json:
@@ -587,7 +662,7 @@ def cmd_safety_status(args: argparse.Namespace) -> int:
 
 
 def cmd_repos_audit(args: argparse.Namespace) -> int:
-    cfg = load_config(args.config)
+    cfg = _config(args)
     report = audit(cfg, _root(args), args.provider, args.namespace, args.check_remote)
     if args.json:
         print(json.dumps(report, indent=2, ensure_ascii=False))
@@ -596,7 +671,7 @@ def cmd_repos_audit(args: argparse.Namespace) -> int:
 
 
 def cmd_repos_create(args: argparse.Namespace) -> int:
-    cfg = load_config(args.config)
+    cfg = _config(args)
     root = _root(args)
     if args.apply:
         _provider_preflight(cfg, root, args.provider, strict_scopes=args.strict_scopes)
@@ -604,7 +679,7 @@ def cmd_repos_create(args: argparse.Namespace) -> int:
 
 
 def cmd_repos_publish(args: argparse.Namespace) -> int:
-    cfg = load_config(args.config)
+    cfg = _config(args)
     root = _root(args)
     if args.apply:
         _provider_preflight(cfg, root, args.provider, strict_scopes=args.strict_scopes)
@@ -613,7 +688,7 @@ def cmd_repos_publish(args: argparse.Namespace) -> int:
 
 
 def cmd_repos_fork(args: argparse.Namespace) -> int:
-    cfg = load_config(args.config)
+    cfg = _config(args)
     root = _root(args)
     if args.apply:
         _provider_preflight(cfg, root, args.provider, strict_scopes=args.strict_scopes)
@@ -622,7 +697,7 @@ def cmd_repos_fork(args: argparse.Namespace) -> int:
 
 
 def cmd_repos_mirror(args: argparse.Namespace) -> int:
-    cfg = load_config(args.config)
+    cfg = _config(args)
     root = _root(args)
     if args.apply:
         _provider_preflight(cfg, root, args.provider, strict_scopes=args.strict_scopes)
@@ -631,7 +706,7 @@ def cmd_repos_mirror(args: argparse.Namespace) -> int:
 
 
 def cmd_repos_reconcile(args: argparse.Namespace) -> int:
-    cfg = load_config(args.config)
+    cfg = _config(args)
     root = _root(args)
     if args.apply:
         _provider_preflight(cfg, root, args.provider, strict_scopes=args.strict_scopes)
@@ -640,53 +715,53 @@ def cmd_repos_reconcile(args: argparse.Namespace) -> int:
 
 
 def cmd_submodules_sync(args: argparse.Namespace) -> int:
-    cfg = load_config(args.config)
+    cfg = _config(args)
     callback = lambda: sync_submodules(cfg, _root(args), args.provider, args.namespace, args.apply)
     return _mutate(args, cfg, "submodules sync", callback, require_clean=True)
 
 
 def cmd_local_plan(args: argparse.Namespace) -> int:
-    cfg = load_config(args.config)
+    cfg = _config(args)
     return print_local_plan(cfg, _root(args), args.remotes_dir, json_output=args.json)
 
 
 def cmd_local_remotes(args: argparse.Namespace) -> int:
-    cfg = load_config(args.config)
+    cfg = _config(args)
     jobs = args.jobs or cfg.default_jobs
     callback = lambda: create_local_remotes(cfg, _root(args), args.remotes_dir, args.apply, args.mirror_sources, seed=args.seed, update_mirrors=args.update_mirrors, jobs=jobs)
     return _mutate(args, cfg, "local remotes", callback)
 
 
 def cmd_local_init(args: argparse.Namespace) -> int:
-    cfg = load_config(args.config)
+    cfg = _config(args)
     jobs = args.jobs or cfg.default_jobs
     callback = lambda: init_local_worktrees(cfg, _root(args), args.remotes_dir, args.apply, args.with_remotes, args.set_origin, jobs=jobs)
     return _mutate(args, cfg, "local init", callback)
 
 
 def cmd_local_clone(args: argparse.Namespace) -> int:
-    cfg = load_config(args.config)
+    cfg = _config(args)
     jobs = args.jobs or cfg.default_jobs
     callback = lambda: clone_local_repositories(cfg, _root(args), args.remotes_dir, args.apply, args.mirror_sources, jobs=jobs)
     return _mutate(args, cfg, "local clone", callback)
 
 
 def cmd_local_bootstrap(args: argparse.Namespace) -> int:
-    cfg = load_config(args.config)
+    cfg = _config(args)
     jobs = args.jobs or cfg.default_jobs
     callback = lambda: bootstrap_local(cfg, _root(args), args.remotes_dir, args.apply, args.mirror_sources, args.set_origin, jobs=jobs)
     return _mutate(args, cfg, "local bootstrap", callback)
 
 
 def cmd_local_localize(args: argparse.Namespace) -> int:
-    cfg = load_config(args.config)
+    cfg = _config(args)
     jobs = args.jobs or cfg.default_jobs
     callback = lambda: localize(cfg, _root(args), args.remotes_dir, args.apply, set_origin=not args.no_set_origin, update_mirrors=args.update_mirrors, jobs=jobs)
     return _mutate(args, cfg, "local localize", callback, require_clean=False)
 
 
 def cmd_local_backup(args: argparse.Namespace) -> int:
-    cfg = load_config(args.config)
+    cfg = _config(args)
     callback = lambda: create_backup(
         cfg,
         _root(args),
@@ -707,13 +782,13 @@ def cmd_local_backup_verify(args: argparse.Namespace) -> int:
 
 def cmd_local_backups(args: argparse.Namespace) -> int:
     root = _root(args)
-    cfg = _optional_config(args.config, start=root)
+    cfg = _optional_config(args.config, start=root, profiles=getattr(args, "profile", None), groups=getattr(args, "group", None))
     return list_backups(cfg, root, directory_override=args.backups_dir, json_output=args.json)
 
 
 def cmd_local_restore(args: argparse.Namespace) -> int:
     root = _root(args)
-    cfg = _optional_config(args.config, start=root)
+    cfg = _optional_config(args.config, start=root, profiles=getattr(args, "profile", None), groups=getattr(args, "group", None))
     callback = lambda: restore_backup(
         args.archive,
         root,
@@ -749,7 +824,7 @@ def cmd_local_restore(args: argparse.Namespace) -> int:
 
 
 def cmd_git(args: argparse.Namespace) -> int:
-    cfg = load_config(args.config)
+    cfg = _config(args)
     jobs = args.jobs or cfg.default_jobs
     callback = lambda: git_foreach(cfg, _root(args), args.git_action, args.apply, include_root=not args.no_root, jobs=jobs)
     if args.git_action == "status":
@@ -758,7 +833,7 @@ def cmd_git(args: argparse.Namespace) -> int:
 
 
 def cmd_source_fingerprint(args: argparse.Namespace) -> int:
-    cfg = load_config(args.config)
+    cfg = _config(args)
     root = _root(args)
     metadata = build_metadata(cfg, root)
     if not args.write:
@@ -776,7 +851,7 @@ def cmd_source_fingerprint(args: argparse.Namespace) -> int:
 
 
 def cmd_compose(args: argparse.Namespace) -> int:
-    cfg = load_config(args.config)
+    cfg = _config(args)
     extra = args.extra or []
     if extra and extra[0] == "--":
         extra = extra[1:]
@@ -787,7 +862,7 @@ def cmd_compose(args: argparse.Namespace) -> int:
 
 
 def cmd_images_verify(args: argparse.Namespace) -> int:
-    cfg = load_config(args.config)
+    cfg = _config(args)
     return verify_images(cfg, _root(args), args.json)
 
 
@@ -796,7 +871,7 @@ def cmd_docs_validate(args: argparse.Namespace) -> int:
 
 
 def _operation_directory(args: argparse.Namespace) -> Path:
-    cfg = load_config(args.config)
+    cfg = _config(args)
     return operations_dir(_root(args), cfg.local.get("operations_dir"))
 
 
@@ -853,7 +928,7 @@ def cmd_ops_resume(args: argparse.Namespace) -> int:
 
 
 def cmd_ops_rollback(args: argparse.Namespace) -> int:
-    cfg = load_config(args.config)
+    cfg = _config(args)
     root = _root(args)
     directory = operations_dir(root, cfg.local.get("operations_dir"))
     journal = load_operation(directory, args.operation_id)
@@ -880,6 +955,12 @@ def build_parser() -> argparse.ArgumentParser:
     p = config_sub.add_parser("migrate", help="Migrate config to the current schema. Dry-run by default.")
     p.add_argument("--to", default=CURRENT_SCHEMA_VERSION, choices=[CURRENT_SCHEMA_VERSION])
     p.add_argument("--no-backup", action="store_true"); p.add_argument("--apply", action="store_true"); add_safety_flags(p); p.set_defaults(func=cmd_config_migrate)
+    p = config_sub.add_parser("render", help="Render the effective config after profiles and group filtering.")
+    p.add_argument("--output"); p.set_defaults(func=cmd_config_render)
+    p = config_sub.add_parser("profiles", help="List available config profiles.")
+    p.add_argument("--json", action="store_true"); p.set_defaults(func=cmd_config_profiles)
+    p = config_sub.add_parser("groups", help="List available repository groups.")
+    p.add_argument("--json", action="store_true"); p.set_defaults(func=cmd_config_groups)
 
     p = sub.add_parser("doctor", help="Check dependencies, configuration and optional provider authentication.")
     add_common(p); p.add_argument("--auth", action="store_true"); p.add_argument("--provider"); p.add_argument("--strict-auth", action="store_true", help="Fail when required scopes cannot be verified."); p.set_defaults(func=cmd_doctor)

@@ -21,7 +21,7 @@ complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a ops -d 'Op
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a docs -d 'Documentation utilities'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a completion -d 'Generate shell completion'
 
-complete -c rfm -n '__fish_seen_subcommand_from config; and not __fish_seen_subcommand_from validate migrate' -a 'validate migrate'
+complete -c rfm -n '__fish_seen_subcommand_from config; and not __fish_seen_subcommand_from validate migrate render profiles groups' -a 'validate migrate render profiles groups'
 complete -c rfm -n '__fish_seen_subcommand_from auth; and not __fish_seen_subcommand_from status' -a status
 complete -c rfm -n '__fish_seen_subcommand_from graph; and not __fish_seen_subcommand_from show' -a show
 complete -c rfm -n '__fish_seen_subcommand_from safety; and not __fish_seen_subcommand_from status' -a status
@@ -38,6 +38,8 @@ complete -c rfm -n '__fish_seen_subcommand_from completion' -a 'bash fish'
 
 complete -c rfm -l config -r -a '(__fish_complete_suffix .json)' -d 'Configuration file'
 complete -c rfm -l root -r -a '(__fish_complete_directories)' -d 'Workspace root'
+complete -c rfm -l profile -r -d 'Named configuration profile; repeatable'
+complete -c rfm -l group -r -d 'Named repository group; repeatable'
 complete -c rfm -l provider -r -a 'github gitlab local' -d 'Provider'
 complete -c rfm -l namespace -r -d 'Provider namespace'
 complete -c rfm -l visibility -r -a 'private public'

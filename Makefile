@@ -6,8 +6,11 @@ CONFIG ?= configs/repo-fleet.example.json
 ROOT ?= .
 ARCHIVE ?=
 BACKUP_OUTPUT ?=
+PROFILE ?=
+GROUP ?=
+SELECTION_ARGS = $(if $(PROFILE),--profile "$(PROFILE)",) $(if $(GROUP),--group "$(GROUP)",)
 
-.PHONY: install install-cli install-editable install-completions install-all uninstall uninstall-completions doctor auth-status config-validate config-migrate graph safety-status ops-list test validate validate-docs completion-bash completion-fish local-plan local-localize local-localize-apply local-bootstrap local-bootstrap-apply local-remotes local-remotes-apply local-remotes-update publish-github publish-gitlab catalog-summary catalog-tree catalog-gaps catalog-docs catalog-check release-check release-artifacts build clean local-backup local-backup-apply local-backups local-backup-verify local-restore local-restore-apply
+.PHONY: install install-cli install-editable install-completions install-all uninstall uninstall-completions doctor auth-status config-validate config-migrate graph safety-status ops-list test validate validate-docs completion-bash completion-fish local-plan local-localize local-localize-apply local-bootstrap local-bootstrap-apply local-remotes local-remotes-apply local-remotes-update publish-github publish-gitlab catalog-summary catalog-tree catalog-gaps catalog-docs catalog-check release-check release-artifacts build clean local-backup local-backup-apply local-backups local-backup-verify local-restore local-restore-apply config-render config-profiles config-groups
 
 install: install-cli install-completions
 
@@ -39,37 +42,37 @@ completion-fish:
 	./scripts/rfm.sh completion fish
 
 local-plan:
-	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" plan
+	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) plan
 
 local-remotes:
-	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" remotes
+	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) remotes
 
 local-remotes-apply:
-	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" remotes --apply --seed
+	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) remotes --apply --seed
 
 local-remotes-update:
-	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" remotes --apply --update-mirrors
+	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) remotes --apply --update-mirrors
 
 local-localize:
-	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" localize
+	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) localize
 
 local-localize-apply:
-	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" localize --apply
+	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) localize --apply
 
 local-bootstrap:
-	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" bootstrap
+	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) bootstrap
 
 local-bootstrap-apply:
-	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" bootstrap --apply --set-origin
+	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) bootstrap --apply --set-origin
 
 local-backup:
-	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" backup $(if $(BACKUP_OUTPUT),--output "$(BACKUP_OUTPUT)",)
+	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) backup $(if $(BACKUP_OUTPUT),--output "$(BACKUP_OUTPUT)",)
 
 local-backup-apply:
-	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" backup $(if $(BACKUP_OUTPUT),--output "$(BACKUP_OUTPUT)",) --apply
+	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) backup $(if $(BACKUP_OUTPUT),--output "$(BACKUP_OUTPUT)",) --apply
 
 local-backups:
-	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" backups
+	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) backups
 
 local-backup-verify:
 	@test -n "$(ARCHIVE)" || (echo "ARCHIVE is required" >&2; exit 2)
@@ -77,60 +80,69 @@ local-backup-verify:
 
 local-restore:
 	@test -n "$(ARCHIVE)" || (echo "ARCHIVE is required" >&2; exit 2)
-	./scripts/rfm.sh local --root "$(ROOT)" restore "$(ARCHIVE)"
+	./scripts/rfm.sh local --root "$(ROOT)" $(SELECTION_ARGS) restore "$(ARCHIVE)"
 
 local-restore-apply:
 	@test -n "$(ARCHIVE)" || (echo "ARCHIVE is required" >&2; exit 2)
-	./scripts/rfm.sh local --root "$(ROOT)" restore "$(ARCHIVE)" --apply
+	./scripts/rfm.sh local --root "$(ROOT)" $(SELECTION_ARGS) restore "$(ARCHIVE)" --apply
 
 publish-github:
-	./scripts/rfm.sh repos --config "$(CONFIG)" --root "$(ROOT)" publish --provider github --namespace "$(NAMESPACE)"
+	./scripts/rfm.sh repos --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) publish --provider github --namespace "$(NAMESPACE)"
 
 publish-gitlab:
-	./scripts/rfm.sh repos --config "$(CONFIG)" --root "$(ROOT)" publish --provider gitlab --namespace "$(NAMESPACE)"
+	./scripts/rfm.sh repos --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) publish --provider gitlab --namespace "$(NAMESPACE)"
 
 catalog-summary:
-	./scripts/rfm.sh catalog --root "$(ROOT)" --view summary
+	./scripts/rfm.sh catalog --root "$(ROOT)" $(SELECTION_ARGS) --view summary
 
 catalog-tree:
-	./scripts/rfm.sh catalog --root "$(ROOT)" --view tree
+	./scripts/rfm.sh catalog --root "$(ROOT)" $(SELECTION_ARGS) --view tree
 
 catalog-gaps:
-	./scripts/rfm.sh catalog --root "$(ROOT)" --view gaps
+	./scripts/rfm.sh catalog --root "$(ROOT)" $(SELECTION_ARGS) --view gaps
 
 catalog-docs:
-	./scripts/rfm.sh catalog --root "$(ROOT)" --view all --format markdown --output docs/generated/rfm-service-catalog.md
-	./scripts/rfm.sh catalog --root "$(ROOT)" --view gaps --format markdown --output reports/gap-analysis.md
+	./scripts/rfm.sh catalog --root "$(ROOT)" $(SELECTION_ARGS) --view all --format markdown --output docs/generated/rfm-service-catalog.md
+	./scripts/rfm.sh catalog --root "$(ROOT)" $(SELECTION_ARGS) --view gaps --format markdown --output reports/gap-analysis.md
 
 catalog-check:
-	./scripts/rfm.sh catalog --root "$(ROOT)" --view summary --check-evidence
+	./scripts/rfm.sh catalog --root "$(ROOT)" $(SELECTION_ARGS) --view summary --check-evidence
 
 doctor:
-	./scripts/rfm.sh doctor --config "$(CONFIG)" --root "$(ROOT)"
+	./scripts/rfm.sh doctor --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS)
 
 config-validate:
-	./scripts/rfm.sh config --config "$(CONFIG)" validate --strict
+	./scripts/rfm.sh config --config "$(CONFIG)" $(SELECTION_ARGS) validate --strict
 
 config-migrate:
 	./scripts/rfm.sh config --config "$(CONFIG)" migrate
 
+config-render:
+	./scripts/rfm.sh config --config "$(CONFIG)" $(SELECTION_ARGS) render
+
+config-profiles:
+	./scripts/rfm.sh config --config "$(CONFIG)" profiles
+
+config-groups:
+	./scripts/rfm.sh config --config "$(CONFIG)" groups
+
 auth-status:
-	./scripts/rfm.sh auth --config "$(CONFIG)" --root "$(ROOT)" status
+	./scripts/rfm.sh auth --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) status
 
 graph:
-	./scripts/rfm.sh graph --config "$(CONFIG)" --root "$(ROOT)" show
+	./scripts/rfm.sh graph --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) show
 
 safety-status:
-	./scripts/rfm.sh safety --config "$(CONFIG)" --root "$(ROOT)" status
+	./scripts/rfm.sh safety --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) status
 
 ops-list:
-	./scripts/rfm.sh ops --config "$(CONFIG)" --root "$(ROOT)" list
+	./scripts/rfm.sh ops --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) list
 
 test:
 	PYTHONPATH=src $(PYTHON) -m unittest discover -s tests
 
 validate-docs:
-	./scripts/rfm.sh docs --config "$(CONFIG)" --root "$(ROOT)" validate-links
+	./scripts/rfm.sh docs --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) validate-links
 
 validate: config-validate release-check test validate-docs catalog-check
 

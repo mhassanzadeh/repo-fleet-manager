@@ -12,7 +12,7 @@ _rfm()
     fi
 
     local commands="config doctor auth catalog graph safety repos submodules local git source compose images ops docs completion"
-    local global_opts="--help --version --config --root"
+    local global_opts="--help --version --config --root --profile --group"
 
     case "$prev" in
         --config|--output|--catalog-file|--config-output)
@@ -44,7 +44,7 @@ _rfm()
         token="${words[i]}"
         if (( skip_next )); then skip_next=0; continue; fi
         case "$token" in
-            --config|--root|--provider|--namespace|--visibility|--format|--view|--priority|--status|--output|--catalog-file|--reason|--jobs|--remote-name|--to|--backups-dir|--config-output|--retention)
+            --config|--root|--profile|--group|--provider|--namespace|--visibility|--format|--view|--priority|--status|--output|--catalog-file|--reason|--jobs|--remote-name|--to|--backups-dir|--config-output|--retention)
                 skip_next=1; continue ;;
             --*) continue ;;
         esac
@@ -56,9 +56,9 @@ _rfm()
         COMPREPLY=( $(compgen -W "$commands $global_opts" -- "$cur") ); return
     fi
 
-    local actions="" opts="--help --config --root"
+    local actions="" opts="--help --config --root --profile --group"
     case "$cmd" in
-        config) actions="validate migrate"; opts+=" --strict --json --to --no-backup --apply --force --reason" ;;
+        config) actions="validate migrate render profiles groups"; opts+=" --strict --json --to --no-backup --output --apply --force --reason" ;;
         doctor) opts+=" --auth --provider --strict-auth" ;;
         auth) actions="status"; opts+=" --provider --json --verbose --strict-scopes" ;;
         catalog) opts+=" --view --format --json --output --catalog-file --priority --status --check-evidence" ;;

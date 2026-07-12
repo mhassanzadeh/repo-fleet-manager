@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from .schema import CURRENT_SCHEMA_VERSION, migrate_config_data, validate_or_raise
+from .profiles import resolve_config_data
 
 
 @dataclass(slots=True)
@@ -61,6 +62,7 @@ class Repository:
     topics: list[str] = field(default_factory=list)
     include_roots: list[str] = field(default_factory=list)
     depends_on: list[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
     extra: dict[str, Any] = field(default_factory=dict)
 
     @property
@@ -124,6 +126,9 @@ class ProjectConfig:
     compose: dict[str, Any]
     fingerprint: dict[str, Any]
     local: dict[str, Any]
+    active_profiles: tuple[str, ...] = ()
+    active_groups: tuple[str, ...] = ()
+    resolution_changes: list[str] = field(default_factory=list)
 
     @property
     def default_provider_name(self) -> str:
@@ -184,13 +189,22 @@ def load_raw_config(path: str | Path | None = None) -> tuple[Path, dict[str, Any
     return config_path.resolve(), json.loads(config_path.read_text(encoding="utf-8"))
 
 
-def load_config(path: str | Path | None = None) -> ProjectConfig:
+def load_config(
+    path: str | Path | None = None,
+    *,
+    profiles: str | list[str] | tuple[str, ...] | None = None,
+    groups: str | list[str] | tuple[str, ...] | None = None,
+) -> ProjectConfig:
     config_path, raw = load_raw_config(path)
     migrated, changes = migrate_config_data(raw)
     validate_or_raise(migrated)
-    local_cfg = migrated.get("local", {})
+    resolved, active_profiles, active_groups, resolution_changes = resolve_config_data(
+        migrated, profiles=profiles, groups=groups
+    )
+    validate_or_raise(resolved)
+    local_cfg = resolved.get("local", {})
     providers: dict[str, Provider] = {}
-    for name, data in migrated.get("providers", {}).items():
+    for name, data in resolved.get("providers", {}).items():
         provider_type = str(data.get("type") or data.get("kind") or ("local" if name == "local" else "remote"))
         default_url_template = "file://{root}/{namespace}/{repo}.git" if provider_type == "local" else None
         url_template = data.get("url_template") or default_url_template
@@ -221,21 +235,24 @@ def load_config(path: str | Path | None = None) -> ProjectConfig:
     repositories: list[Repository] = []
     known_keys = {
         "path", "repo", "kind", "provider", "branch", "host_port", "compose_service",
-        "docker_context", "dockerfile", "health_url", "description", "visibility", "topics", "include_roots", "depends_on",
+        "docker_context", "dockerfile", "health_url", "description", "visibility", "topics", "include_roots", "depends_on", "tags",
     }
-    for item in migrated.get("repositories", []):
+    for item in resolved.get("repositories", []):
         known = {k: item.get(k) for k in known_keys if k in item}
         extra = {k: v for k, v in item.items() if k not in known_keys}
         repositories.append(Repository(**known, extra=extra))
     return ProjectConfig(
         path=config_path,
-        schema_version=str(migrated.get("schema_version") or CURRENT_SCHEMA_VERSION),
-        raw=migrated,
+        schema_version=str(resolved.get("schema_version") or CURRENT_SCHEMA_VERSION),
+        raw=resolved,
         migration_changes=changes,
-        project=migrated.get("project", {}),
+        project=resolved.get("project", {}),
         providers=providers,
         repositories=repositories,
-        compose=migrated.get("compose", {}),
-        fingerprint=migrated.get("fingerprint", {}),
+        compose=resolved.get("compose", {}),
+        fingerprint=resolved.get("fingerprint", {}),
         local=local_cfg,
+        active_profiles=active_profiles,
+        active_groups=active_groups,
+        resolution_changes=resolution_changes,
     )

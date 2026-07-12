@@ -53,7 +53,11 @@
       "description": "Root orchestration repository",
       "source_type": "new",
       "depends_on": [],
-      "remote_mode": "create"
+      "remote_mode": "create",
+      "tags": [
+        "root",
+        "orchestration"
+      ]
     },
     {
       "path": "services/api",
@@ -70,7 +74,11 @@
       "depends_on": [
         "my-shared-contracts"
       ],
-      "remote_mode": "create"
+      "remote_mode": "create",
+      "tags": [
+        "backend",
+        "runtime"
+      ]
     },
     {
       "path": "clients/web",
@@ -83,7 +91,11 @@
         "my-shared-contracts",
         "my-api-service"
       ],
-      "remote_mode": "create"
+      "remote_mode": "create",
+      "tags": [
+        "frontend",
+        "runtime"
+      ]
     },
     {
       "path": "packages/contracts",
@@ -93,7 +105,11 @@
       "branch": "main",
       "source_type": "new",
       "depends_on": [],
-      "remote_mode": "create"
+      "remote_mode": "create",
+      "tags": [
+        "shared",
+        "library"
+      ]
     }
   ],
   "local": {
@@ -106,5 +122,79 @@
     "backup_retention": 5,
     "backup_include_operations": false
   },
-  "schema_version": "1.0.0"
+  "schema_version": "1.0.0",
+  "profiles": {
+    "developer": {
+      "project": {
+        "default_provider": "local"
+      },
+      "local": {
+        "default_jobs": 2
+      },
+      "compose": {
+        "project_name": "my-platform-dev"
+      },
+      "providers": {
+        "local": {
+          "namespace": ".repo-fleet/dev-remotes"
+        }
+      }
+    },
+    "ci": {
+      "extends": "developer",
+      "project": {
+        "default_provider": "github"
+      },
+      "local": {
+        "default_jobs": 4
+      },
+      "compose": {
+        "project_name": "my-platform-ci"
+      },
+      "repositories": {
+        "my-web-client": {
+          "enabled": false
+        }
+      }
+    },
+    "production": {
+      "project": {
+        "default_provider": "github"
+      },
+      "local": {
+        "default_jobs": 8
+      },
+      "repositories": {
+        "my-api-service": {
+          "branch": "stable"
+        },
+        "my-web-client": {
+          "branch": "stable"
+        }
+      }
+    }
+  },
+  "groups": {
+    "backend": {
+      "tags": [
+        "backend"
+      ],
+      "include_dependencies": true
+    },
+    "frontend": {
+      "tags": [
+        "frontend"
+      ],
+      "include_dependencies": true
+    },
+    "runtime": {
+      "tags": [
+        "runtime"
+      ],
+      "include_dependencies": true
+    },
+    "shared": [
+      "my-shared-contracts"
+    ]
+  }
 }
