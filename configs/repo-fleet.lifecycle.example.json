@@ -39,7 +39,10 @@
     "workspace_mode": "submodules",
     "operations_dir": ".repo-fleet/operations",
     "lock_file": ".repo-fleet/lock",
-    "default_jobs": 1
+    "default_jobs": 1,
+    "backups_dir": ".repo-fleet/backups",
+    "backup_retention": 5,
+    "backup_include_operations": false
   },
   "repositories": [
     {

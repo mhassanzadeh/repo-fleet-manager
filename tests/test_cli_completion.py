@@ -19,12 +19,14 @@ class CompletionCommandTest(unittest.TestCase):
         self.assertIn("repos", output)
         self.assertIn("submodules", output)
         self.assertIn("github gitlab", output)
+        self.assertIn("verify-backup", output)
 
     def test_fish_completion_contains_nested_commands(self):
         output = self.run_completion("fish")
         self.assertIn("complete -c rfm", output)
         self.assertIn("validate-links", output)
         self.assertIn("github gitlab", output)
+        self.assertIn("restore", output)
 
 
 if __name__ == "__main__":

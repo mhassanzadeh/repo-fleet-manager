@@ -391,6 +391,17 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 64
+        },
+        "backups_dir": {
+          "type": "string"
+        },
+        "backup_retention": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 365
+        },
+        "backup_include_operations": {
+          "type": "boolean"
         }
       }
     },

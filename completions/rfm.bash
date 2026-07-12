@@ -15,9 +15,9 @@ _rfm()
     local global_opts="--help --version --config --root"
 
     case "$prev" in
-        --config|--output|--catalog-file)
+        --config|--output|--catalog-file|--config-output)
             COMPREPLY=( $(compgen -f -- "$cur") ); return ;;
-        --root|--remotes-dir)
+        --root|--remotes-dir|--backups-dir)
             COMPREPLY=( $(compgen -d -- "$cur") ); return ;;
         --provider)
             COMPREPLY=( $(compgen -W "github gitlab local" -- "$cur") ); return ;;
@@ -44,7 +44,7 @@ _rfm()
         token="${words[i]}"
         if (( skip_next )); then skip_next=0; continue; fi
         case "$token" in
-            --config|--root|--provider|--namespace|--visibility|--format|--view|--priority|--status|--output|--catalog-file|--reason|--jobs|--remote-name|--to)
+            --config|--root|--provider|--namespace|--visibility|--format|--view|--priority|--status|--output|--catalog-file|--reason|--jobs|--remote-name|--to|--backups-dir|--config-output|--retention)
                 skip_next=1; continue ;;
             --*) continue ;;
         esac
@@ -66,7 +66,7 @@ _rfm()
         safety) actions="status"; opts+=" --json" ;;
         repos) actions="audit create publish fork mirror reconcile"; opts+=" --provider --namespace --visibility --check-remote --json --only --remote-name --no-create --apply --strict-scopes --force --reason" ;;
         submodules) actions="sync"; opts+=" --provider --namespace --apply --force --reason" ;;
-        local) actions="plan remotes init clone bootstrap localize"; opts+=" --remotes-dir --json --mirror-sources --update-mirrors --seed --with-remotes --set-origin --no-set-origin --jobs --apply --force --reason" ;;
+        local) actions="plan remotes init clone bootstrap localize backup verify-backup backups restore"; opts+=" --remotes-dir --backups-dir --output --config-output --json --mirror-sources --update-mirrors --seed --with-remotes --set-origin --no-set-origin --jobs --include-operations --no-include-operations --restore-operations --retention --overwrite --no-config --apply --force --reason" ;;
         git) actions="status pull push"; opts+=" --jobs --apply --no-root --force --reason" ;;
         source) actions="fingerprint"; opts+=" --write --force --reason" ;;
         compose) actions="ps up down build pull logs"; opts+=" --apply --force --reason" ;;
@@ -75,6 +75,11 @@ _rfm()
         docs) actions="validate-links" ;;
         completion) actions="bash fish"; opts="--help" ;;
     esac
+
+    if [[ "$cmd" == "local" && ( "$action" == "verify-backup" || "$action" == "restore" ) && "$cur" != -* ]]; then
+        COMPREPLY=( $(compgen -f -- "$cur") )
+        return
+    fi
 
     if [[ -n "$actions" && ( -z "$action" || "$cur" != -* ) ]]; then
         COMPREPLY=( $(compgen -W "$actions $opts" -- "$cur") )

@@ -223,6 +223,27 @@ class OperationJournal:
             "status": "pending",
         })
 
+    def backup_path(self, path: Path) -> None:
+        resolved = path.resolve()
+        existed = resolved.exists()
+        backup_path: Path | None = None
+        is_dir = existed and resolved.is_dir() and not resolved.is_symlink()
+        if existed:
+            self.backup_dir.mkdir(parents=True, exist_ok=True)
+            backup_path = self.backup_dir / f"{len(self.data['rollback']) + 1}-{resolved.name}"
+            if is_dir:
+                shutil.copytree(resolved, backup_path, symlinks=False)
+            else:
+                shutil.copy2(resolved, backup_path)
+        self.add_rollback({
+            "type": "restore_path",
+            "path": str(resolved),
+            "existed": existed,
+            "is_dir": is_dir,
+            "backup": str(backup_path) if backup_path else None,
+            "status": "pending",
+        })
+
     def track_git_remote(self, worktree: Path, name: str, previous_url: str | None) -> None:
         self.add_rollback({
             "type": "git_remote",
@@ -301,6 +322,23 @@ class OperationJournal:
                     else:
                         path.unlink(missing_ok=True)
                         messages.append(f"removed generated file {path}")
+                elif kind == "restore_path":
+                    path = Path(action["path"])
+                    if path.exists():
+                        if path.is_dir() and not path.is_symlink():
+                            shutil.rmtree(path)
+                        else:
+                            path.unlink(missing_ok=True)
+                    if action.get("existed"):
+                        backup = Path(action["backup"])
+                        path.parent.mkdir(parents=True, exist_ok=True)
+                        if action.get("is_dir"):
+                            shutil.copytree(backup, path, symlinks=False)
+                        else:
+                            shutil.copy2(backup, path)
+                        messages.append(f"restored path {path}")
+                    else:
+                        messages.append(f"removed generated path {path}")
                 elif kind == "git_remote":
                     worktree = Path(action["worktree"])
                     name = action["name"]
@@ -382,6 +420,12 @@ def backup_file(path: Path) -> None:
     operation = current_operation()
     if operation:
         operation.backup_file(path)
+
+
+def backup_path(path: Path) -> None:
+    operation = current_operation()
+    if operation:
+        operation.backup_path(path)
 
 
 def track_git_remote(worktree: Path, name: str, previous_url: str | None) -> None:

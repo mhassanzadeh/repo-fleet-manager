@@ -13,7 +13,7 @@ from .graph import execute_levels
 
 SEED_USER_NAME = "Repo Fleet Manager"
 SEED_USER_EMAIL = "rfm@example.invalid"
-ROOT_GITIGNORE_PATTERNS = [".repo-fleet/build/", ".repo-fleet/tmp/", ".repo-fleet/remotes/", ".repo-fleet/operations/", ".repo-fleet/lock"]
+ROOT_GITIGNORE_PATTERNS = [".repo-fleet/build/", ".repo-fleet/tmp/", ".repo-fleet/remotes/", ".repo-fleet/operations/", ".repo-fleet/backups/", ".repo-fleet/lock"]
 UPSTREAM_KEYS = ("mirror_source", "upstream_url", "source_url", "fork_from", "clone_url")
 EXISTING_KEYS = ("existing_path", "local_source", "import_from")
 

@@ -10,6 +10,7 @@ from importlib.resources import files
 
 from . import __version__
 from .compose import run_compose
+from .backup import create_backup, list_backups, restore_backup, verify_backup
 from .config import find_config, load_config, load_raw_config
 from .docs import validate_links
 from .fingerprint import build_metadata, write_compose_override, write_metadata
@@ -137,14 +138,14 @@ _rfm()
         local)
             for ((i=1; i<cword; i++)); do
                 case "${words[i]}" in
-                    plan|remotes|init|clone|bootstrap|localize) action="${words[i]}" ;;
+                    plan|remotes|init|clone|bootstrap|localize|backup|verify-backup|backups|restore) action="${words[i]}" ;;
                 esac
             done
             if [[ -z "$action" ]]; then
-                COMPREPLY=( $(compgen -W "plan remotes init clone bootstrap localize --help --config --root" -- "$cur") )
+                COMPREPLY=( $(compgen -W "plan remotes init clone bootstrap localize backup verify-backup backups restore --help --config --root" -- "$cur") )
                 return
             fi
-            opts="--help --config --root --remotes-dir --apply --mirror-sources --update-mirrors --seed --with-remotes --set-origin --no-set-origin --json"
+            opts="--help --config --root --remotes-dir --backups-dir --output --config-output --apply --mirror-sources --update-mirrors --seed --with-remotes --set-origin --no-set-origin --include-operations --restore-operations --retention --overwrite --no-config --json"
             ;;
         git)
             for ((i=1; i<cword; i++)); do
@@ -263,12 +264,12 @@ complete -c rfm -n '__fish_seen_subcommand_from submodules' -l provider -r -a 'g
 complete -c rfm -n '__fish_seen_subcommand_from submodules' -l namespace -r -d 'Provider namespace/group/org'
 complete -c rfm -n '__fish_seen_subcommand_from submodules' -l apply -d 'Apply changes'
 
-complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from plan remotes init clone bootstrap localize' -a plan -d 'Show local materialization plan'
-complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from plan remotes init clone bootstrap localize' -a remotes -d 'Create local bare remotes'
-complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from plan remotes init clone bootstrap localize' -a init -d 'Create local working repositories'
-complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from plan remotes init clone bootstrap localize' -a clone -d 'Clone from local remotes'
-complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from plan remotes init clone bootstrap localize' -a bootstrap -d 'Bootstrap full local submodule workspace'
-complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from plan remotes init clone bootstrap localize' -a localize -d 'Materialize local workspace'
+complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from plan remotes init clone bootstrap localize backup verify-backup backups restore' -a plan -d 'Show local materialization plan'
+complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from plan remotes init clone bootstrap localize backup verify-backup backups restore' -a remotes -d 'Create local bare remotes'
+complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from plan remotes init clone bootstrap localize backup verify-backup backups restore' -a init -d 'Create local working repositories'
+complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from plan remotes init clone bootstrap localize backup verify-backup backups restore' -a clone -d 'Clone from local remotes'
+complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from plan remotes init clone bootstrap localize backup verify-backup backups restore' -a bootstrap -d 'Bootstrap full local submodule workspace'
+complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from plan remotes init clone bootstrap localize backup verify-backup backups restore' -a localize -d 'Materialize local workspace'
 complete -c rfm -n '__fish_seen_subcommand_from local' -l remotes-dir -r -a '(__fish_complete_directories)' -d 'Local bare remotes directory'
 complete -c rfm -n '__fish_seen_subcommand_from local' -l apply -d 'Apply changes'
 complete -c rfm -n '__fish_seen_subcommand_from local' -l update-mirrors -d 'Update existing local mirrors'
@@ -318,6 +319,15 @@ def _root(args: argparse.Namespace) -> Path:
     return Path(args.root).expanduser().resolve()
 
 
+def _optional_config(path: str | None = None, start: Path | None = None):
+    if path:
+        return load_config(path)
+    try:
+        return load_config(find_config(start=start))
+    except FileNotFoundError:
+        return None
+
+
 def _mutate(
     args: argparse.Namespace,
     cfg,
@@ -349,7 +359,8 @@ def _mutate(
     ) as journal:
         code = int(callback())
         journal.complete(code)
-        print(f"[OPERATION] {journal.id} status={journal.data['status']} journal={journal.path}")
+        stream = sys.stderr if getattr(args, "json", False) else sys.stdout
+        print(f"[OPERATION] {journal.id} status={journal.data['status']} journal={journal.path}", file=stream)
         return code
 
 
@@ -674,6 +685,69 @@ def cmd_local_localize(args: argparse.Namespace) -> int:
     return _mutate(args, cfg, "local localize", callback, require_clean=False)
 
 
+def cmd_local_backup(args: argparse.Namespace) -> int:
+    cfg = load_config(args.config)
+    callback = lambda: create_backup(
+        cfg,
+        _root(args),
+        remotes_override=args.remotes_dir,
+        output=args.output,
+        backups_override=args.backups_dir,
+        include_operations=(bool(cfg.local.get("backup_include_operations")) if args.include_operations is None else args.include_operations),
+        retention=args.retention,
+        apply=args.apply,
+        json_output=args.json,
+    )
+    return _mutate(args, cfg, "local backup", callback, require_clean=False)
+
+
+def cmd_local_backup_verify(args: argparse.Namespace) -> int:
+    return verify_backup(args.archive, json_output=args.json)
+
+
+def cmd_local_backups(args: argparse.Namespace) -> int:
+    root = _root(args)
+    cfg = _optional_config(args.config, start=root)
+    return list_backups(cfg, root, directory_override=args.backups_dir, json_output=args.json)
+
+
+def cmd_local_restore(args: argparse.Namespace) -> int:
+    root = _root(args)
+    cfg = _optional_config(args.config, start=root)
+    callback = lambda: restore_backup(
+        args.archive,
+        root,
+        config=cfg,
+        remotes_override=args.remotes_dir,
+        config_output=args.config_output,
+        restore_config=not args.no_config,
+        restore_operations=args.restore_operations,
+        overwrite=args.overwrite,
+        force=args.force,
+        apply=args.apply,
+        json_output=args.json,
+    )
+    if not args.apply:
+        return callback()
+    op_dir = operations_dir(root, cfg.local.get("operations_dir") if cfg else None)
+    lock = lock_path(root, cfg.local.get("lock_file") if cfg else None)
+    with mutation_context(
+        root,
+        "local restore",
+        list(getattr(args, "_argv", [])),
+        op_dir,
+        lock,
+        force=args.force,
+        reason=args.reason,
+        operation_id=os.environ.get("RFM_OPERATION_ID"),
+    ) as journal:
+        code = int(callback())
+        journal.complete(code)
+        stream = sys.stderr if getattr(args, "json", False) else sys.stdout
+        print(f"[OPERATION] {journal.id} status={journal.data['status']} journal={journal.path}", file=stream)
+        return code
+
+
 def cmd_git(args: argparse.Namespace) -> int:
     cfg = load_config(args.config)
     jobs = args.jobs or cfg.default_jobs
@@ -849,6 +923,10 @@ def build_parser() -> argparse.ArgumentParser:
     sp = local_sub.add_parser("clone"); sp.add_argument("--remotes-dir"); sp.add_argument("--mirror-sources", action="store_true"); sp.add_argument("--jobs", type=int); sp.add_argument("--apply", action="store_true"); add_safety_flags(sp); sp.set_defaults(func=cmd_local_clone)
     sp = local_sub.add_parser("bootstrap"); sp.add_argument("--remotes-dir"); sp.add_argument("--mirror-sources", action="store_true"); sp.add_argument("--set-origin", action="store_true"); sp.add_argument("--jobs", type=int); sp.add_argument("--apply", action="store_true"); add_safety_flags(sp); sp.set_defaults(func=cmd_local_bootstrap)
     sp = local_sub.add_parser("localize"); sp.add_argument("--remotes-dir"); sp.add_argument("--update-mirrors", action="store_true"); sp.add_argument("--no-set-origin", action="store_true"); sp.add_argument("--jobs", type=int); sp.add_argument("--apply", action="store_true"); add_safety_flags(sp); sp.set_defaults(func=cmd_local_localize)
+    sp = local_sub.add_parser("backup", help="Create a verified archive of local bare remotes and RFM state."); sp.add_argument("--remotes-dir"); sp.add_argument("--backups-dir"); sp.add_argument("--output"); sp.add_argument("--include-operations", action=argparse.BooleanOptionalAction, default=None); sp.add_argument("--retention", type=int); sp.add_argument("--json", action="store_true"); sp.add_argument("--apply", action="store_true"); add_safety_flags(sp); sp.set_defaults(func=cmd_local_backup)
+    sp = local_sub.add_parser("verify-backup", help="Verify archive checksums, Git objects and refs."); sp.add_argument("archive"); sp.add_argument("--json", action="store_true"); sp.set_defaults(func=cmd_local_backup_verify)
+    sp = local_sub.add_parser("backups", help="List local backup archives."); sp.add_argument("--backups-dir"); sp.add_argument("--json", action="store_true"); sp.set_defaults(func=cmd_local_backups)
+    sp = local_sub.add_parser("restore", help="Restore config and local bare remotes from a verified archive."); sp.add_argument("archive"); sp.add_argument("--remotes-dir"); sp.add_argument("--config-output"); sp.add_argument("--no-config", action="store_true"); sp.add_argument("--restore-operations", action="store_true"); sp.add_argument("--overwrite", action="store_true"); sp.add_argument("--json", action="store_true"); sp.add_argument("--apply", action="store_true"); add_safety_flags(sp); sp.set_defaults(func=cmd_local_restore)
 
     p = sub.add_parser("git", help="Run git operations in dependency order across root and submodules.")
     add_common(p); p.add_argument("git_action", choices=["status", "pull", "push"]); p.add_argument("--jobs", type=int); p.add_argument("--apply", action="store_true"); p.add_argument("--no-root", action="store_true"); add_safety_flags(p); p.set_defaults(func=cmd_git)

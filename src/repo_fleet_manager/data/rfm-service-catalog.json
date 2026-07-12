@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "catalog_version": "0.6.3",
+  "catalog_version": "0.7.0",
   "project": {
     "name": "Repo Fleet Manager",
     "short_name": "RFM",
@@ -339,10 +339,19 @@
         {
           "id": "local.backup-restore",
           "name": "Backup and restore local bare remotes and state",
-          "status": "missing",
-          "maturity": "not-started",
-          "commands": [],
-          "components": [],
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm local backup --apply",
+            "rfm local verify-backup ARCHIVE",
+            "rfm local restore ARCHIVE --apply"
+          ],
+          "components": [
+            "src/repo_fleet_manager/backup.py",
+            "src/repo_fleet_manager/operations.py",
+            "docs/12-backup-and-restore.md",
+            "tests/test_backup_restore.py"
+          ],
           "gap_refs": [
             "GAP-008"
           ]
@@ -863,7 +872,7 @@
             ".github/workflows/release.yml",
             "scripts/check_release_version.py",
             "CHANGELOG.md",
-            "PATCH_NOTES_v0.6.3.md"
+            "PATCH_NOTES_v0.7.0.md"
           ]
         }
       ]
@@ -1020,7 +1029,7 @@
       "title": "Backup and restore for local remotes and state",
       "priority": "P1",
       "category": "recovery",
-      "status": "missing",
+      "status": "implemented",
       "rationale": "Local-only mode makes .repo-fleet/remotes valuable infrastructure. Losing it can remove unpublished branches and tags.",
       "recommended_scope": [
         "Add rfm local backup/restore",
@@ -1031,7 +1040,9 @@
         "A clean machine can restore the fleet",
         "Backup integrity is verified",
         "Unpublished refs are preserved"
-      ]
+      ],
+      "implemented_in": "0.7.0",
+      "resolution": "Verified archives preserve local Git refs, config and optional operation state; clean-machine restore validates checksums and Git object integrity before applying."
     },
     {
       "id": "GAP-009",

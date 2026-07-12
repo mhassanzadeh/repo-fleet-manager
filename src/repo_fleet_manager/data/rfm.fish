@@ -27,7 +27,7 @@ complete -c rfm -n '__fish_seen_subcommand_from graph; and not __fish_seen_subco
 complete -c rfm -n '__fish_seen_subcommand_from safety; and not __fish_seen_subcommand_from status' -a status
 complete -c rfm -n '__fish_seen_subcommand_from repos; and not __fish_seen_subcommand_from audit create publish fork mirror reconcile' -a 'audit create publish fork mirror reconcile'
 complete -c rfm -n '__fish_seen_subcommand_from submodules; and not __fish_seen_subcommand_from sync' -a sync
-complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from plan remotes init clone bootstrap localize' -a 'plan remotes init clone bootstrap localize'
+complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from plan remotes init clone bootstrap localize backup verify-backup backups restore' -a 'plan remotes init clone bootstrap localize backup verify-backup backups restore'
 complete -c rfm -n '__fish_seen_subcommand_from git; and not __fish_seen_subcommand_from status pull push' -a 'status pull push'
 complete -c rfm -n '__fish_seen_subcommand_from source; and not __fish_seen_subcommand_from fingerprint' -a fingerprint
 complete -c rfm -n '__fish_seen_subcommand_from compose; and not __fish_seen_subcommand_from ps up down build pull logs' -a 'ps up down build pull logs'
@@ -64,3 +64,14 @@ complete -c rfm -l remote-name -r -d 'Git remote name'
 
 complete -c rfm -l strict-scopes -d 'Fail when required provider scopes cannot be verified'
 complete -c rfm -l strict-auth -d 'Include strict provider authentication checks in doctor'
+
+complete -c rfm -l backups-dir -r -a '(__fish_complete_directories)' -d 'Backup archive directory'
+complete -c rfm -l output -r -d 'Backup archive output path'
+complete -c rfm -l config-output -r -d 'Restored configuration output path'
+complete -c rfm -l include-operations -d 'Include completed operation journals in backup'
+complete -c rfm -l restore-operations -d 'Restore operation journals from backup'
+complete -c rfm -l retention -r -d 'Number of backup archives to retain'
+complete -c rfm -l overwrite -d 'Replace existing restore targets'
+complete -c rfm -l no-config -d 'Do not restore repo-fleet.json'
+complete -c rfm -l no-include-operations -d 'Exclude operation journals from backup'
+complete -c rfm -n '__fish_seen_subcommand_from verify-backup restore' -F -d 'Backup archive'

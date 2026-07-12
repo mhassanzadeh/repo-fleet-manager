@@ -4,8 +4,10 @@ BASH_COMPLETION_DIR ?= $(HOME)/.local/share/bash-completion/completions
 FISH_COMPLETION_DIR ?= $(HOME)/.config/fish/completions
 CONFIG ?= configs/repo-fleet.example.json
 ROOT ?= .
+ARCHIVE ?=
+BACKUP_OUTPUT ?=
 
-.PHONY: install install-cli install-editable install-completions install-all uninstall uninstall-completions doctor auth-status config-validate config-migrate graph safety-status ops-list test validate validate-docs completion-bash completion-fish local-plan local-localize local-localize-apply local-bootstrap local-bootstrap-apply local-remotes local-remotes-apply local-remotes-update publish-github publish-gitlab catalog-summary catalog-tree catalog-gaps catalog-docs catalog-check release-check release-artifacts build clean
+.PHONY: install install-cli install-editable install-completions install-all uninstall uninstall-completions doctor auth-status config-validate config-migrate graph safety-status ops-list test validate validate-docs completion-bash completion-fish local-plan local-localize local-localize-apply local-bootstrap local-bootstrap-apply local-remotes local-remotes-apply local-remotes-update publish-github publish-gitlab catalog-summary catalog-tree catalog-gaps catalog-docs catalog-check release-check release-artifacts build clean local-backup local-backup-apply local-backups local-backup-verify local-restore local-restore-apply
 
 install: install-cli install-completions
 
@@ -59,6 +61,27 @@ local-bootstrap:
 
 local-bootstrap-apply:
 	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" bootstrap --apply --set-origin
+
+local-backup:
+	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" backup $(if $(BACKUP_OUTPUT),--output "$(BACKUP_OUTPUT)",)
+
+local-backup-apply:
+	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" backup $(if $(BACKUP_OUTPUT),--output "$(BACKUP_OUTPUT)",) --apply
+
+local-backups:
+	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" backups
+
+local-backup-verify:
+	@test -n "$(ARCHIVE)" || (echo "ARCHIVE is required" >&2; exit 2)
+	./scripts/rfm.sh local verify-backup "$(ARCHIVE)"
+
+local-restore:
+	@test -n "$(ARCHIVE)" || (echo "ARCHIVE is required" >&2; exit 2)
+	./scripts/rfm.sh local --root "$(ROOT)" restore "$(ARCHIVE)"
+
+local-restore-apply:
+	@test -n "$(ARCHIVE)" || (echo "ARCHIVE is required" >&2; exit 2)
+	./scripts/rfm.sh local --root "$(ROOT)" restore "$(ARCHIVE)" --apply
 
 publish-github:
 	./scripts/rfm.sh repos --config "$(CONFIG)" --root "$(ROOT)" publish --provider github --namespace "$(NAMESPACE)"
@@ -119,12 +142,12 @@ release-artifacts: validate clean build
 
 build:
 	@mkdir -p dist
-	@if $(PYTHON) -m build --version >/dev/null 2>&1; then \
-		$(PYTHON) -m build; \
-	else \
-		echo "python-build is unavailable; creating wheel with pip"; \
-		$(PIP) wheel --no-deps --wheel-dir dist .; \
+	@if ! $(PYTHON) -m build --version >/dev/null 2>&1; then \
+		echo "python-build is required for wheel and source distribution artifacts." >&2; \
+		echo "Install it with: $(PIP) install build" >&2; \
+		exit 2; \
 	fi
+	$(PYTHON) -m build
 
 clean:
 	rm -rf build dist *.egg-info src/*.egg-info .pytest_cache .coverage

@@ -42,6 +42,22 @@ class OperationTests(unittest.TestCase):
             self.assertEqual(target.read_text(encoding="utf-8"), "before")
             self.assertFalse(created.exists())
 
+    def test_journal_restores_replaced_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            directory = root / ".repo-fleet/operations"
+            target = root / "remotes"
+            target.mkdir()
+            (target / "before.txt").write_text("before", encoding="utf-8")
+            journal = OperationJournal(root, "test", ["test"], directory)
+            journal.backup_path(target)
+            (target / "before.txt").unlink()
+            (target / "after.txt").write_text("after", encoding="utf-8")
+            failures, _ = journal.rollback()
+            self.assertEqual(failures, 0)
+            self.assertEqual((target / "before.txt").read_text(encoding="utf-8"), "before")
+            self.assertFalse((target / "after.txt").exists())
+
     def test_cli_local_operation_can_be_rolled_back(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
