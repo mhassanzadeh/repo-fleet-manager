@@ -1,6 +1,6 @@
 # Repo Fleet Manager service catalog
 
-> Catalog version `0.7.0` · schema `1.0` · lifecycle `beta`
+> Catalog version `0.8.0` · schema `1.0` · lifecycle `beta`
 
 Config-driven orchestration for large Git repository fleets, submodules, local development, providers, Compose runtimes and source/image integrity.
 
@@ -10,11 +10,11 @@ Config-driven orchestration for large Git repository fleets, submodules, local d
 |---|---:|
 | Domains | 11 |
 | Capabilities | 57 |
-| Implemented | 40 |
+| Implemented | 41 |
 | Partial | 7 |
 | Planned | 1 |
-| Missing | 9 |
-| Logical completion | 76.6% |
+| Missing | 8 |
+| Logical completion | 78.3% |
 | Open gaps | 17 |
 
 The completion percentage is a planning indicator: implemented capabilities count as 100%, partial as 50%, and planned as 15%. It is not a production-readiness certification.
@@ -43,7 +43,7 @@ Central definition of projects, providers, repository lifecycle, Compose and fin
 | `config.lifecycle-model` — new/upstream/existing repository lifecycle | ✓ implemented | beta | `rfm local plan`<br>`rfm local localize`<br>`src/repo_fleet_manager/config.py`<br>`configs/repo-fleet.lifecycle.example.json`<br>`docs/09-repository-lifecycle.md` |
 | `config.schema-validation` — Versioned JSON Schema validation | ✓ implemented | beta | `rfm config --config repo-fleet.json validate --strict`<br>`schemas/repo-fleet.schema.json`<br>`src/repo_fleet_manager/schema.py`<br>`tests/test_schema_migration.py` |
 | `config.migrations` — Config schema migrations and backward compatibility | ✓ implemented | beta | `rfm config --config repo-fleet.json migrate`<br>`rfm config --config repo-fleet.json migrate --apply`<br>`src/repo_fleet_manager/schema.py`<br>`docs/02-configuration.md`<br>`MIGRATION.md` |
-| `config.overlays` — Environment/user overlays without duplicating the base config | × missing | not-started | — |
+| `config.overlays` — Profiles, overlays and repository groups | ✓ implemented | beta | `rfm config --config repo-fleet.json --profile ci --group backend render`<br>`rfm git --config repo-fleet.json --group backend status`<br>`src/repo_fleet_manager/profiles.py`<br>`src/repo_fleet_manager/config.py`<br>`schemas/repo-fleet.schema.json`<br>`docs/13-profiles-overlays-and-groups.md`<br>`tests/test_profiles_groups.py` |
 
 ### Repository lifecycle management
 
@@ -314,7 +314,7 @@ Acceptance criteria:
 
 #### GAP-009 — Profiles, overlays and repository groups
 
-**Category:** `configuration` · **Current state:** `missing`
+**Category:** `configuration` · **Current state:** `implemented`
 
 Large projects need developer/CI/production differences and selective operations without duplicating the full catalog.
 

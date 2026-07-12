@@ -1,6 +1,6 @@
 # Repo Fleet Manager logical gap analysis
 
-> Catalog version `0.7.0` · 17 prioritized gaps
+> Catalog version `0.8.0` · 17 prioritized gaps
 
 ## P0
 
@@ -159,7 +159,7 @@ Acceptance criteria:
 
 ### GAP-009 — Profiles, overlays and repository groups
 
-**Category:** `configuration` · **Current state:** `missing`
+**Category:** `configuration` · **Current state:** `implemented`
 
 Large projects need developer/CI/production differences and selective operations without duplicating the full catalog.
 

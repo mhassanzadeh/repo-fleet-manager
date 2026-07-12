@@ -35,6 +35,7 @@ Repo Fleet Manager یک ابزار واحد و config-driven برای مدیری
 - تشخیص identity/scope برای providerها بدون نمایش token
 - fork واقعی GitHub/GitLab، انتشار mirror و reconciliation متادیتای remote
 - backup و restore تأییدشده برای bare remoteهای محلی، config و operation state
+- profileهای قابل ارث‌بری، overlayهای محیطی و repository groupهای مبتنی بر نام یا tag
 
 ## شروع سریع
 
@@ -79,14 +80,14 @@ rfm doctor
 برای نصب ایزوله آخرین نسخه مستقیم از GitHub:
 
 ```bash
-pipx install git+https://github.com/mhassanzadeh/repo-fleet-manager.git@v0.7.0
+pipx install git+https://github.com/mhassanzadeh/repo-fleet-manager.git@v0.8.0
 rfm --version
 ```
 
 یا Wheel را از GitHub Release دانلود و نصب کنید:
 
 ```bash
-python3 -m pip install ./repo_fleet_manager-0.7.0-py3-none-any.whl
+python3 -m pip install ./repo_fleet_manager-0.8.0-py3-none-any.whl
 rfm --version
 ```
 
@@ -137,6 +138,26 @@ rfm ops --config repo-fleet.json show OPERATION_ID
 rfm ops --config repo-fleet.json resume OPERATION_ID
 rfm ops --config repo-fleet.json rollback OPERATION_ID
 ```
+
+## Profileها و گروه‌های repository
+
+یک config پایه را برای محیط‌های مختلف resolve کنید:
+
+```bash
+rfm config --config repo-fleet.json profiles
+rfm config --config repo-fleet.json groups
+rfm config --config repo-fleet.json --profile ci --group backend render
+```
+
+همان انتخاب‌ها روی فرمان‌های عملیاتی نیز کار می‌کنند:
+
+```bash
+rfm git --config repo-fleet.json --profile developer --group backend status
+rfm local --config repo-fleet.json --profile developer --group backend localize
+rfm repos --config repo-fleet.json --profile production --group runtime audit
+```
+
+Profileها قابل ارث‌بری هستند، repository overlayها از `enabled: false` پشتیبانی می‌کنند و groupها می‌توانند dependencyها را به‌صورت بازگشتی وارد کنند.
 
 ## جریان‌های کاری پرکاربرد
 
@@ -229,6 +250,9 @@ make install-completions  # نصب completionهای Bash و Fish
 make uninstall            # حذف پکیج Python
 make uninstall-completions
 make config-validate CONFIG=repo-fleet.json
+make config-render CONFIG=repo-fleet.json PROFILE=ci GROUP=backend
+make config-profiles CONFIG=repo-fleet.json
+make config-groups CONFIG=repo-fleet.json
 make auth-status CONFIG=repo-fleet.json ROOT=/path/to/workspace
 make graph CONFIG=repo-fleet.json ROOT=/path/to/workspace
 make safety-status CONFIG=repo-fleet.json ROOT=/path/to/workspace
@@ -260,7 +284,7 @@ CI روی هر دو شاخه `master` و `main` اجرا می‌شود. tagها�
 
 ```bash
 make validate
-python scripts/check_release_version.py 0.7.0
+python scripts/check_release_version.py 0.8.0
 make release-artifacts
 ```
 
@@ -298,6 +322,7 @@ repo-fleet-manager/
 - [راهنمای service catalog](docs/10-service-catalog.md)
 - [ایمنی عملیاتی، journal، resume و rollback](docs/11-operational-safety-and-recovery.md)
 - [پشتیبان‌گیری و بازیابی local fleet](docs/12-backup-and-restore.md)
+- [Profileها، overlayها و repository groupها](docs/13-profiles-overlays-and-groups.md)
 - [خروجی کامل service catalog](docs/generated/rfm-service-catalog.md)
 - [gap analysis منطقی](reports/gap-analysis.md)
 - [گزارش بررسی اسکریپت‌های ارسالی](reports/script-audit.md)
@@ -324,4 +349,4 @@ rfm config --config repo-fleet.json validate --strict
 
 ## Git commit guide
 
-تغییرات، روش انتشار و دستورهای commit نسخه جاری در [`PATCH_NOTES_v0.7.0.md`](PATCH_NOTES_v0.7.0.md)، [`CHANGELOG.md`](CHANGELOG.md) و [`GIT_COMMIT_GUIDE_v0.7.0.md`](GIT_COMMIT_GUIDE_v0.7.0.md) قرار دارد.
+تغییرات، روش انتشار و دستورهای commit نسخه جاری در [`PATCH_NOTES_v0.8.0.md`](PATCH_NOTES_v0.8.0.md)، [`CHANGELOG.md`](CHANGELOG.md) و [`GIT_COMMIT_GUIDE_v0.7.0.md`](GIT_COMMIT_GUIDE_v0.7.0.md) قرار دارد.

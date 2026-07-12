@@ -6,6 +6,22 @@ The format follows Keep a Changelog and the project uses Semantic Versioning whi
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-07-12
+
+### Added
+
+- Named configuration profiles with deterministic inheritance and deep overlays.
+- Repository-level profile overrides, including `enabled: false`.
+- Repository tags and named groups with optional recursive dependency inclusion.
+- Repeatable `--profile` and `--group` selectors on config-aware commands.
+- `rfm config render`, `profiles`, and `groups` inspection commands.
+- Strict validation for profile cycles, unknown parents, selectors, and tags.
+
+### Changed
+
+- The effective config is validated after profile resolution and group filtering.
+- Make targets accept `PROFILE` and `GROUP` selection variables.
+
 ## [0.7.0] - 2026-07-12
 
 ### Added
@@ -56,7 +72,8 @@ The format follows Keep a Changelog and the project uses Semantic Versioning whi
 - Workspace locking, safety guards, operation journal, resume and rollback.
 - Dependency graph and controlled parallel execution.
 
-[Unreleased]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.6.3...v0.7.0
 [0.6.3]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.6.2...v0.6.3
 [0.6.2]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.6.1...v0.6.2

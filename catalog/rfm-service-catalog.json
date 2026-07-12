@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "catalog_version": "0.7.0",
+  "catalog_version": "0.8.0",
   "project": {
     "name": "Repo Fleet Manager",
     "short_name": "RFM",
@@ -162,11 +162,20 @@
         },
         {
           "id": "config.overlays",
-          "name": "Environment/user overlays without duplicating the base config",
-          "status": "missing",
-          "maturity": "not-started",
-          "commands": [],
-          "components": [],
+          "name": "Profiles, overlays and repository groups",
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm config --config repo-fleet.json --profile ci --group backend render",
+            "rfm git --config repo-fleet.json --group backend status"
+          ],
+          "components": [
+            "src/repo_fleet_manager/profiles.py",
+            "src/repo_fleet_manager/config.py",
+            "schemas/repo-fleet.schema.json",
+            "docs/13-profiles-overlays-and-groups.md",
+            "tests/test_profiles_groups.py"
+          ],
           "gap_refs": [
             "GAP-009"
           ]
@@ -1049,7 +1058,7 @@
       "title": "Profiles, overlays and repository groups",
       "priority": "P1",
       "category": "configuration",
-      "status": "missing",
+      "status": "implemented",
       "rationale": "Large projects need developer/CI/production differences and selective operations without duplicating the full catalog.",
       "recommended_scope": [
         "Add config inheritance/overlays",
@@ -1061,7 +1070,9 @@
         "Base config stays provider-neutral",
         "Users can operate on a subset",
         "Merged configuration is inspectable and validated"
-      ]
+      ],
+      "resolved_in": "0.8.0",
+      "resolution": "Named inheritable profiles, deterministic overlays, repository tags/groups, dependency-aware filtering and effective-config rendering are implemented and validated."
     },
     {
       "id": "GAP-010",

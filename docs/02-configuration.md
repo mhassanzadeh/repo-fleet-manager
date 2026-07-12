@@ -234,3 +234,15 @@ The validation layer checks JSON types and allowed fields as well as provider re
 | `backups_dir` | مسیر پیش‌فرض آرشیوهای local backup |
 | `backup_retention` | تعداد آخرین backupهای نگهداری‌شده؛ بین ۱ تا ۳۶۵ |
 | `backup_include_operations` | افزودن journalهای تکمیل‌شده به backup پیش‌فرض |
+
+## Profiles, overlays and groups
+
+Optional top-level `profiles` and `groups` allow one base catalog to serve developer, CI and production workflows. Repositories may define `tags`, profiles may inherit and overlay project/provider/local/compose/repository values, and groups select a subset with optional dependency expansion.
+
+```bash
+rfm config --config repo-fleet.json profiles
+rfm config --config repo-fleet.json groups
+rfm config --config repo-fleet.json --profile ci --group backend render
+```
+
+See [Profiles, overlays and repository groups](13-profiles-overlays-and-groups.md) for merge semantics and examples.

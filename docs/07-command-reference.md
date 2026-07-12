@@ -320,3 +320,20 @@ Applied mutations are persisted under `local.operations_dir`. Resume replays the
 - `--jobs` enables bounded parallelism within dependency levels where supported.
 - `--force` requires a non-empty `--reason`, stored in the journal.
 - `--strict-scopes` rejects provider mutation when configured permission scopes cannot be established.
+
+## Profile and group selection
+
+All config-aware command groups accept:
+
+```text
+--profile NAME   Apply a named profile; repeatable or comma-separated
+--group NAME     Restrict the effective repository catalog; repeatable or comma-separated
+```
+
+Configuration inspection commands:
+
+```bash
+rfm config --config repo-fleet.json profiles [--json]
+rfm config --config repo-fleet.json groups [--json]
+rfm config --config repo-fleet.json --profile NAME --group NAME render [--output FILE]
+```
