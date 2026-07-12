@@ -1,0 +1,138 @@
+# Repo Fleet Manager
+# Generated for the standalone RFM Python CLI project.
+
+# ---------------------------------------------------------------------------
+# Python bytecode and caches
+# ---------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.pyright/
+.ruff_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# ---------------------------------------------------------------------------
+# Virtual environments
+# ---------------------------------------------------------------------------
+.venv/
+venv/
+env/
+ENV/
+.python-version
+
+# ---------------------------------------------------------------------------
+# Build and packaging artifacts
+# ---------------------------------------------------------------------------
+build/
+dist/
+wheels/
+*.egg-info/
+.eggs/
+*.egg
+pip-wheel-metadata/
+*.whl
+
+# ---------------------------------------------------------------------------
+# Local RFM runtime state
+# ---------------------------------------------------------------------------
+.repo-fleet/
+*.rfm.lock
+*.rfm-journal.json
+*.rfm-plan.json
+*.rfm-state.json
+
+# ---------------------------------------------------------------------------
+# Local configuration overrides and migration backups
+# Keep repo-fleet.json tracked; ignore machine-specific variants.
+# ---------------------------------------------------------------------------
+repo-fleet.local.json
+repo-fleet.override.json
+repo-fleet.*.local.json
+repo-fleet.json.bak
+repo-fleet.json.bak.*
+*.bak
+*.backup
+
+# ---------------------------------------------------------------------------
+# Secrets and environment files
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+secrets.json
+
+# ---------------------------------------------------------------------------
+# Logs, temporary files, and process state
+# ---------------------------------------------------------------------------
+*.log
+logs/
+tmp/
+temp/
+.cache/
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+*.pid
+
+# ---------------------------------------------------------------------------
+# IDE and editor files
+# ---------------------------------------------------------------------------
+.idea/
+.vscode/
+*.code-workspace
+.project
+.settings/
+.classpath
+
+# ---------------------------------------------------------------------------
+# Operating-system metadata
+# ---------------------------------------------------------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+Desktop.ini
+.Trashes
+.Spotlight-V100
+
+# ---------------------------------------------------------------------------
+# Local container and compose overrides
+# ---------------------------------------------------------------------------
+docker-compose.override.yml
+compose.override.yml
+podman-compose.override.yml
+.env.compose
+containers-data/
+volumes/
+
+# ---------------------------------------------------------------------------
+# Generated release bundles
+# ---------------------------------------------------------------------------
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+SHA256SUMS.local
+
+# ---------------------------------------------------------------------------
+# Local test fixtures and scratch repositories
+# ---------------------------------------------------------------------------
+test-output/
+test-results/
+scratch/
+sandbox/
+.local-remotes/
