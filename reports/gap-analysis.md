@@ -1,6 +1,6 @@
 # Repo Fleet Manager logical gap analysis
 
-> Catalog version `0.6.3` · 17 prioritized gaps
+> Catalog version `0.7.0` · 17 prioritized gaps
 
 ## P0
 
@@ -141,7 +141,7 @@ Acceptance criteria:
 
 ### GAP-008 — Backup and restore for local remotes and state
 
-**Category:** `recovery` · **Current state:** `missing`
+**Category:** `recovery` · **Current state:** `implemented`
 
 Local-only mode makes .repo-fleet/remotes valuable infrastructure. Losing it can remove unpublished branches and tags.
 

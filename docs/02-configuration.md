@@ -218,7 +218,10 @@ The validation layer checks JSON types and allowed fields as well as provider re
     "workspace_mode": "submodules",
     "operations_dir": ".repo-fleet/operations",
     "lock_file": ".repo-fleet/lock",
-    "default_jobs": 2
+    "default_jobs": 2,
+    "backups_dir": ".repo-fleet/backups",
+    "backup_retention": 5,
+    "backup_include_operations": false
   }
 }
 ```
@@ -228,3 +231,6 @@ The validation layer checks JSON types and allowed fields as well as provider re
 | `operations_dir` | Persistent JSON operation journals and rollback backups |
 | `lock_file` | Exclusive lock for applied mutations |
 | `default_jobs` | Default controlled parallelism for graph-aware commands |
+| `backups_dir` | مسیر پیش‌فرض آرشیوهای local backup |
+| `backup_retention` | تعداد آخرین backupهای نگهداری‌شده؛ بین ۱ تا ۳۶۵ |
+| `backup_include_operations` | افزودن journalهای تکمیل‌شده به backup پیش‌فرض |

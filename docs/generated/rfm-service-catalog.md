@@ -1,6 +1,6 @@
 # Repo Fleet Manager service catalog
 
-> Catalog version `0.6.3` · schema `1.0` · lifecycle `beta`
+> Catalog version `0.7.0` · schema `1.0` · lifecycle `beta`
 
 Config-driven orchestration for large Git repository fleets, submodules, local development, providers, Compose runtimes and source/image integrity.
 
@@ -10,11 +10,11 @@ Config-driven orchestration for large Git repository fleets, submodules, local d
 |---|---:|
 | Domains | 11 |
 | Capabilities | 57 |
-| Implemented | 39 |
+| Implemented | 40 |
 | Partial | 7 |
 | Planned | 1 |
-| Missing | 10 |
-| Logical completion | 74.8% |
+| Missing | 9 |
+| Logical completion | 76.6% |
 | Open gaps | 17 |
 
 The completion percentage is a planning indicator: implemented capabilities count as 100%, partial as 50%, and planned as 15%. It is not a production-readiness certification.
@@ -69,7 +69,7 @@ Operate a complete multi-repository project without GitHub or GitLab after requi
 | `local.materialize` — Materialize workspace from lifecycle config | ✓ implemented | beta | `rfm local plan`<br>`rfm local localize --apply`<br>`src/repo_fleet_manager/localops.py` |
 | `local.parent-bootstrap` — Bootstrap after cloning the parent repository | ~ partial | alpha | `rfm local localize --apply`<br>`docs/09-repository-lifecycle.md`<br>`src/repo_fleet_manager/localops.py` |
 | `local.offline-cache` — Portable offline source/image cache | × missing | not-started | — |
-| `local.backup-restore` — Backup and restore local bare remotes and state | × missing | not-started | — |
+| `local.backup-restore` — Backup and restore local bare remotes and state | ✓ implemented | beta | `rfm local backup --apply`<br>`rfm local verify-backup ARCHIVE`<br>`rfm local restore ARCHIVE --apply`<br>`src/repo_fleet_manager/backup.py`<br>`src/repo_fleet_manager/operations.py`<br>`docs/12-backup-and-restore.md`<br>`tests/test_backup_restore.py` |
 
 ### Git and submodule fleet operations
 
@@ -153,7 +153,7 @@ Automated verification, compatibility matrix, packaging and release discipline.
 | `quality.integration-tests` — End-to-end local Git graph tests | ✓ implemented | beta | `make test`<br>`tests/test_local_workflow.py`<br>`tests/test_operations.py` |
 | `quality.ci` — CI pipeline and cross-platform matrix | ✓ implemented | beta | `.github/workflows/ci.yml`<br>`.gitlab-ci.yml` |
 | `quality.packaging` — Installable Python package and Makefile | ✓ implemented | beta | `make install`<br>`python -m build`<br>`pyproject.toml`<br>`Makefile` |
-| `quality.release` — Automated package and GitHub release workflow | ✓ implemented | beta | `make release-check`<br>`make release-artifacts`<br>`.github/workflows/release.yml`<br>`scripts/check_release_version.py`<br>`CHANGELOG.md`<br>`PATCH_NOTES_v0.6.3.md` |
+| `quality.release` — Automated package and GitHub release workflow | ✓ implemented | beta | `make release-check`<br>`make release-artifacts`<br>`.github/workflows/release.yml`<br>`scripts/check_release_version.py`<br>`CHANGELOG.md`<br>`PATCH_NOTES_v0.7.0.md` |
 
 ## Prioritized logical gaps
 
@@ -296,7 +296,7 @@ Acceptance criteria:
 
 #### GAP-008 — Backup and restore for local remotes and state
 
-**Category:** `recovery` · **Current state:** `missing`
+**Category:** `recovery` · **Current state:** `implemented`
 
 Local-only mode makes .repo-fleet/remotes valuable infrastructure. Losing it can remove unpublished branches and tags.
 

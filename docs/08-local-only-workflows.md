@@ -122,7 +122,33 @@ rfm images --config repo-fleet.json verify
 
 در این مسیر هیچ نیازی به `gh`، `glab`، GitHub یا GitLab نیست. تنها وابستگی اجباری Git است؛ برای بخش compose و image همچنان Docker یا Podman لازم است.
 
-## 7. publish جداگانه روی GitHub/GitLab شخصی
+## 7. backup و disaster recovery محلی
+
+قبل از تغییرات مهم روی fleet محلی، ابتدا dry-run و سپس backup واقعی بگیرید:
+
+```bash
+rfm local --config repo-fleet.json backup
+rfm local --config repo-fleet.json backup --apply
+rfm local --config repo-fleet.json backups
+```
+
+آرشیو ساخته‌شده config، `.gitmodules`، bare remoteها، branchها، tagها و refهای منتشرنشده را نگه می‌دارد. برای بررسی مستقل:
+
+```bash
+rfm local verify-backup .repo-fleet/backups/<archive>.rfm-backup.tar.gz
+```
+
+بازیابی در سیستم بدون config موجود:
+
+```bash
+mkdir -p /srv/restored-platform
+rfm local --root /srv/restored-platform restore /mnt/backups/platform.rfm-backup.tar.gz
+rfm local --root /srv/restored-platform restore /mnt/backups/platform.rfm-backup.tar.gz --apply
+```
+
+بعد از restore، `rfm local clone --apply` یا `rfm local localize --apply` را برای materialize کردن worktreeها اجرا کنید. راهنمای کامل در [backup و restore](12-backup-and-restore.md) قرار دارد.
+
+## 8. publish جداگانه روی GitHub/GitLab شخصی
 
 localization عمداً از publish جداست. برای اینکه origin محلی خراب نشود، publish به‌صورت پیش‌فرض remote جدا با نام `personal` اضافه می‌کند:
 

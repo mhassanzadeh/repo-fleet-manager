@@ -53,7 +53,7 @@ Each applied mutation creates a JSON journal under `.repo-fleet/operations` cont
 - operation ID, command and original arguments;
 - attempts and resume count;
 - command-level steps, working directories and exit codes;
-- generated-path, file-backup, Git remote and Git HEAD rollback actions;
+- generated-path, file/directory backup, Git remote and Git HEAD rollback actions;
 - final status and error details.
 
 Inspect journals with:
@@ -82,7 +82,7 @@ Rollback executes recorded compensating actions in reverse order and restores Gi
 rfm ops --config repo-fleet.json rollback OPERATION_ID
 ```
 
-Rollback can restore changed files, remote URLs and previous Git HEADs, and remove paths created by the operation. Provider-side repository creation, native forks and remote mirror pushes cannot always be deleted safely or automatically; the journal records an explicit manual rollback note for those actions.
+Rollback can restore changed files or complete directories, remote URLs and previous Git HEADs, and remove paths created by the operation. Directory rollback is used by `rfm local restore --overwrite` to preserve the previous local remotes before replacement. Provider-side repository creation, native forks and remote mirror pushes cannot always be deleted safely or automatically; the journal records an explicit manual rollback note for those actions.
 
 ## Dependency graph and parallelism
 
@@ -155,3 +155,15 @@ rfm repos --config repo-fleet.json reconcile --provider github --apply
 ```
 
 Reconciliation checks repository existence, fork lineage, default branch, visibility and topics. It can repair metadata drift, but it does not silently rewrite an incorrect fork parent.
+
+## Backup before high-risk operations
+
+Operation rollback protects changes on the same workspace, while a portable backup protects against disk or host loss. Before provider-wide rewrites, localization changes or destructive maintenance:
+
+```bash
+rfm local --config repo-fleet.json backup
+rfm local --config repo-fleet.json backup --apply
+rfm local verify-backup .repo-fleet/backups/<archive>.rfm-backup.tar.gz
+```
+
+See [backup and restore](12-backup-and-restore.md) for clean-machine recovery.

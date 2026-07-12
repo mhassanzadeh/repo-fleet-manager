@@ -24,6 +24,7 @@ repo-fleet.json
               ├── git status/pull/push
               ├── source fingerprint
               ├── compose up/down/ps
+              ├── local backup/verify/restore
               └── images verify
 ```
 
@@ -44,6 +45,9 @@ repo-fleet.json
 | `fingerprint.py` | محاسبه digest سورس و تولید compose metadata |
 | `compose.py` | انتخاب docker compose/podman-compose و اجرای stack |
 | `images.py` | مقایسه label image با digest سورس |
+| `localops.py` | ساخت bare remoteها و materialize کردن workspace محلی |
+| `backup.py` | backup، checksum، verification و clean-machine restore |
+| `operations.py` | lock، journal، resume و rollback فایل‌ها و directoryها |
 | `docs.py` | validate لینک‌های markdown |
 | `cli.py` | تعریف فرمان‌های CLI |
 
@@ -60,3 +64,16 @@ repo-fleet.json
 ```
 
 این فایل‌ها نباید دستی ویرایش شوند و بهتر است در `.gitignore` قرار بگیرند.
+
+## state محلی RFM
+
+```text
+.repo-fleet/
+├── remotes/      # bare Git repositories
+├── operations/   # mutation journals and rollback data
+├── backups/      # verified portable backup archives
+├── build/        # generated source/image metadata
+└── lock          # active mutation lock
+```
+
+مسیرهای `remotes`، `operations`، `backups` و `lock` باید محلی بمانند و داخل Git commit نشوند. Backup archive می‌تواند برای نگهداری بلندمدت به storage خارجی منتقل شود.

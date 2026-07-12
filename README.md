@@ -34,6 +34,7 @@ Repo Fleet Manager یک ابزار واحد و config-driven برای مدیری
 - workspace lock، safety guard، operation journal، resume و rollback
 - تشخیص identity/scope برای providerها بدون نمایش token
 - fork واقعی GitHub/GitLab، انتشار mirror و reconciliation متادیتای remote
+- backup و restore تأییدشده برای bare remoteهای محلی، config و operation state
 
 ## شروع سریع
 
@@ -78,14 +79,14 @@ rfm doctor
 برای نصب ایزوله آخرین نسخه مستقیم از GitHub:
 
 ```bash
-pipx install git+https://github.com/mhassanzadeh/repo-fleet-manager.git@v0.6.3
+pipx install git+https://github.com/mhassanzadeh/repo-fleet-manager.git@v0.7.0
 rfm --version
 ```
 
 یا Wheel را از GitHub Release دانلود و نصب کنید:
 
 ```bash
-python3 -m pip install ./repo_fleet_manager-0.6.3-py3-none-any.whl
+python3 -m pip install ./repo_fleet_manager-0.7.0-py3-none-any.whl
 rfm --version
 ```
 
@@ -159,6 +160,23 @@ rfm repos --config repo-fleet.json fork --provider github --namespace my-user --
 rfm repos --config repo-fleet.json reconcile --provider github
 ```
 
+
+### 0.1. پشتیبان‌گیری از زیرساخت local-only
+
+```bash
+rfm local --config repo-fleet.json backup
+rfm local --config repo-fleet.json backup --apply
+rfm local verify-backup .repo-fleet/backups/<archive>.rfm-backup.tar.gz
+```
+
+بازیابی روی یک سیستم تمیز، بدون نیاز به GitHub یا GitLab:
+
+```bash
+mkdir /path/to/restored-platform
+rfm local --root /path/to/restored-platform restore /path/to/archive.rfm-backup.tar.gz
+rfm local --root /path/to/restored-platform restore /path/to/archive.rfm-backup.tar.gz --apply
+```
+
 ### 1. بررسی وضعیت root و submoduleها
 
 ```bash
@@ -221,6 +239,11 @@ make local-plan CONFIG=repo-fleet.json ROOT=/path/to/workspace
 make local-localize CONFIG=repo-fleet.json ROOT=/path/to/workspace
 make local-localize-apply CONFIG=repo-fleet.json ROOT=/path/to/workspace
 make local-remotes-update CONFIG=repo-fleet.json ROOT=/path/to/workspace
+make local-backup CONFIG=repo-fleet.json ROOT=/path/to/workspace
+make local-backup-apply CONFIG=repo-fleet.json ROOT=/path/to/workspace
+make local-backup-verify ARCHIVE=/path/to/archive.rfm-backup.tar.gz
+make local-restore ROOT=/path/to/restore ARCHIVE=/path/to/archive.rfm-backup.tar.gz
+make local-restore-apply ROOT=/path/to/restore ARCHIVE=/path/to/archive.rfm-backup.tar.gz
 make publish-github CONFIG=repo-fleet.json ROOT=/path/to/workspace NAMESPACE=my-user
 make publish-gitlab CONFIG=repo-fleet.json ROOT=/path/to/workspace NAMESPACE=my-group
 make catalog-summary
@@ -237,7 +260,7 @@ CI روی هر دو شاخه `master` و `main` اجرا می‌شود. tagها�
 
 ```bash
 make validate
-python scripts/check_release_version.py 0.6.3
+python scripts/check_release_version.py 0.7.0
 make release-artifacts
 ```
 
@@ -274,6 +297,7 @@ repo-fleet-manager/
 - [مرجع فرمان‌ها](docs/07-command-reference.md)
 - [راهنمای service catalog](docs/10-service-catalog.md)
 - [ایمنی عملیاتی، journal، resume و rollback](docs/11-operational-safety-and-recovery.md)
+- [پشتیبان‌گیری و بازیابی local fleet](docs/12-backup-and-restore.md)
 - [خروجی کامل service catalog](docs/generated/rfm-service-catalog.md)
 - [gap analysis منطقی](reports/gap-analysis.md)
 - [گزارش بررسی اسکریپت‌های ارسالی](reports/script-audit.md)
@@ -300,4 +324,4 @@ rfm config --config repo-fleet.json validate --strict
 
 ## Git commit guide
 
-تغییرات، روش انتشار و دستورهای commit نسخه جاری در [`PATCH_NOTES_v0.6.3.md`](PATCH_NOTES_v0.6.3.md)، [`CHANGELOG.md`](CHANGELOG.md) و [`GIT_COMMIT_GUIDE_v0.6.3.md`](GIT_COMMIT_GUIDE_v0.6.3.md) قرار دارد.
+تغییرات، روش انتشار و دستورهای commit نسخه جاری در [`PATCH_NOTES_v0.7.0.md`](PATCH_NOTES_v0.7.0.md)، [`CHANGELOG.md`](CHANGELOG.md) و [`GIT_COMMIT_GUIDE_v0.7.0.md`](GIT_COMMIT_GUIDE_v0.7.0.md) قرار دارد.

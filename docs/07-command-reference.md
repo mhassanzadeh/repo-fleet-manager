@@ -141,6 +141,34 @@ rfm local [--config repo-fleet.json] [--root .] bootstrap [--remotes-dir .repo-f
 
 برای سازگاری با نسخه‌های قبلی باقی مانده و عملاً مسیر `localize` را اجرا می‌کند. برای پروژه‌های جدید بهتر است `local localize` استفاده شود.
 
+## `local backup|backups|verify-backup|restore`
+
+ساخت آرشیو backup در حالت dry-run و apply:
+
+```bash
+rfm local --config repo-fleet.json backup
+rfm local --config repo-fleet.json backup --apply
+rfm local --config repo-fleet.json backup --output /mnt/backups/platform.rfm-backup.tar.gz --retention 10 --include-operations --apply
+```
+
+فهرست و اعتبارسنجی مستقل آرشیوها:
+
+```bash
+rfm local --config repo-fleet.json backups
+rfm local --config repo-fleet.json backups --json
+rfm local verify-backup /mnt/backups/platform.rfm-backup.tar.gz
+rfm local verify-backup /mnt/backups/platform.rfm-backup.tar.gz --json
+```
+
+Restore روی سیستم تمیز به config موجود نیاز ندارد:
+
+```bash
+rfm local --root /srv/platform restore /mnt/backups/platform.rfm-backup.tar.gz
+rfm local --root /srv/platform restore /mnt/backups/platform.rfm-backup.tar.gz --apply
+```
+
+گزینه‌های مهم restore شامل `--overwrite`، `--no-config`، `--config-output`، `--restore-operations` و `--remotes-dir` هستند. جزئیات کامل در [پشتیبان‌گیری و بازیابی](12-backup-and-restore.md) آمده است.
+
 ## `git status|pull|push`
 
 ```bash
