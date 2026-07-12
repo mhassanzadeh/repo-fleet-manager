@@ -11,8 +11,8 @@ from .compose import run_compose
 from .config import load_config
 from .docs import validate_links
 from .fingerprint import build_metadata, write_compose_override, write_metadata
-from .gitops import audit, create_repositories, git_foreach, print_audit_report, sync_submodules
-from .localops import bootstrap_local, clone_local_repositories, create_local_remotes, init_local_worktrees
+from .gitops import audit, create_repositories, git_foreach, print_audit_report, publish_repositories, sync_submodules
+from .localops import bootstrap_local, clone_local_repositories, create_local_remotes, init_local_worktrees, localize, print_local_plan
 from .images import verify_images
 from .shell import command_exists
 
@@ -104,15 +104,16 @@ _rfm()
             ;;
         repos)
             for ((i=1; i<cword; i++)); do
-                [[ "${words[i]}" == "audit" || "${words[i]}" == "create" ]] && action="${words[i]}"
+                [[ "${words[i]}" == "audit" || "${words[i]}" == "create" || "${words[i]}" == "publish" ]] && action="${words[i]}"
             done
             if [[ -z "$action" ]]; then
-                COMPREPLY=( $(compgen -W "audit create --help --config --root" -- "$cur") )
+                COMPREPLY=( $(compgen -W "audit create publish --help --config --root" -- "$cur") )
                 return
             fi
             case "$action" in
                 audit) opts="--help --provider --namespace --check-remote --json" ;;
                 create) opts="--help --provider --namespace --visibility --apply" ;;
+                publish) opts="--help --provider --namespace --visibility --only --remote-name --no-create --apply" ;;
             esac
             ;;
         submodules)
@@ -128,14 +129,14 @@ _rfm()
         local)
             for ((i=1; i<cword; i++)); do
                 case "${words[i]}" in
-                    remotes|init|clone|bootstrap) action="${words[i]}" ;;
+                    plan|remotes|init|clone|bootstrap|localize) action="${words[i]}" ;;
                 esac
             done
             if [[ -z "$action" ]]; then
-                COMPREPLY=( $(compgen -W "remotes init clone bootstrap --help --config --root" -- "$cur") )
+                COMPREPLY=( $(compgen -W "plan remotes init clone bootstrap localize --help --config --root" -- "$cur") )
                 return
             fi
-            opts="--help --config --root --remotes-dir --apply --mirror-sources --seed --with-remotes --set-origin"
+            opts="--help --config --root --remotes-dir --apply --mirror-sources --update-mirrors --seed --with-remotes --set-origin --no-set-origin --json"
             ;;
         git)
             for ((i=1; i<cword; i++)); do
@@ -228,26 +229,36 @@ complete -c rfm -n '__fish_seen_subcommand_from completion' -a fish -d 'Print Fi
 
 complete -c rfm -n '__fish_seen_subcommand_from catalog' -l json -d 'Print JSON output'
 
-complete -c rfm -n '__fish_seen_subcommand_from repos; and not __fish_seen_subcommand_from audit create' -a audit -d 'Audit .gitmodules and remotes'
-complete -c rfm -n '__fish_seen_subcommand_from repos; and not __fish_seen_subcommand_from audit create' -a create -d 'Create repositories'
+complete -c rfm -n '__fish_seen_subcommand_from repos; and not __fish_seen_subcommand_from audit create publish' -a audit -d 'Audit .gitmodules and remotes'
+complete -c rfm -n '__fish_seen_subcommand_from repos; and not __fish_seen_subcommand_from audit create publish' -a create -d 'Create repositories'
+complete -c rfm -n '__fish_seen_subcommand_from repos; and not __fish_seen_subcommand_from audit create publish' -a publish -d 'Publish local repositories'
 complete -c rfm -n '__fish_seen_subcommand_from repos' -l provider -r -a 'github gitlab local' -d 'Repository provider'
 complete -c rfm -n '__fish_seen_subcommand_from repos' -l namespace -r -d 'Provider namespace/group/org'
 complete -c rfm -n '__fish_seen_subcommand_from audit' -l check-remote -d 'Check remote existence'
 complete -c rfm -n '__fish_seen_subcommand_from audit' -l json -d 'Print JSON output'
 complete -c rfm -n '__fish_seen_subcommand_from create' -l visibility -r -a 'private public' -d 'Repository visibility'
 complete -c rfm -n '__fish_seen_subcommand_from create' -l apply -d 'Apply changes'
+complete -c rfm -n '__fish_seen_subcommand_from publish' -l only -r -a 'all new upstream existing' -d 'Source type filter'
+complete -c rfm -n '__fish_seen_subcommand_from publish' -l remote-name -r -d 'Remote name for publishing'
+complete -c rfm -n '__fish_seen_subcommand_from publish' -l no-create -d 'Do not create provider repo'
+complete -c rfm -n '__fish_seen_subcommand_from publish' -l apply -d 'Apply changes'
 
 complete -c rfm -n '__fish_seen_subcommand_from submodules; and not __fish_seen_subcommand_from sync' -a sync -d 'Sync .gitmodules and origins'
 complete -c rfm -n '__fish_seen_subcommand_from submodules' -l provider -r -a 'github gitlab local' -d 'Repository provider'
 complete -c rfm -n '__fish_seen_subcommand_from submodules' -l namespace -r -d 'Provider namespace/group/org'
 complete -c rfm -n '__fish_seen_subcommand_from submodules' -l apply -d 'Apply changes'
 
-complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from remotes init clone bootstrap' -a remotes -d 'Create local bare remotes'
-complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from remotes init clone bootstrap' -a init -d 'Create local working repositories'
-complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from remotes init clone bootstrap' -a clone -d 'Clone from local remotes'
-complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from remotes init clone bootstrap' -a bootstrap -d 'Bootstrap full local submodule workspace'
+complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from plan remotes init clone bootstrap localize' -a plan -d 'Show local materialization plan'
+complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from plan remotes init clone bootstrap localize' -a remotes -d 'Create local bare remotes'
+complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from plan remotes init clone bootstrap localize' -a init -d 'Create local working repositories'
+complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from plan remotes init clone bootstrap localize' -a clone -d 'Clone from local remotes'
+complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from plan remotes init clone bootstrap localize' -a bootstrap -d 'Bootstrap full local submodule workspace'
+complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from plan remotes init clone bootstrap localize' -a localize -d 'Materialize local workspace'
 complete -c rfm -n '__fish_seen_subcommand_from local' -l remotes-dir -r -a '(__fish_complete_directories)' -d 'Local bare remotes directory'
 complete -c rfm -n '__fish_seen_subcommand_from local' -l apply -d 'Apply changes'
+complete -c rfm -n '__fish_seen_subcommand_from local' -l update-mirrors -d 'Update existing local mirrors'
+complete -c rfm -n '__fish_seen_subcommand_from local' -l json -d 'Print JSON output'
+complete -c rfm -n '__fish_seen_subcommand_from localize' -l no-set-origin -d 'Keep current root origin'
 complete -c rfm -n '__fish_seen_subcommand_from local' -l mirror-sources -d 'Mirror configured source/upstream URLs'
 complete -c rfm -n '__fish_seen_subcommand_from remotes' -l seed -d 'Seed empty bare repositories with an initial commit'
 complete -c rfm -n '__fish_seen_subcommand_from init' -l with-remotes -d 'Create local bare remotes too'
@@ -346,14 +357,42 @@ def cmd_repos_create(args: argparse.Namespace) -> int:
     return create_repositories(cfg, Path(args.root).resolve(), args.provider, args.namespace, args.visibility, args.apply)
 
 
+def cmd_repos_publish(args: argparse.Namespace) -> int:
+    cfg = load_config(args.config)
+    return publish_repositories(
+        cfg,
+        Path(args.root).resolve(),
+        args.provider,
+        args.namespace,
+        args.visibility,
+        args.apply,
+        only=args.only,
+        remote_name=args.remote_name,
+        create_remote=not args.no_create,
+    )
+
+
 def cmd_submodules_sync(args: argparse.Namespace) -> int:
     cfg = load_config(args.config)
     return sync_submodules(cfg, Path(args.root).resolve(), args.provider, args.namespace, args.apply)
 
 
+def cmd_local_plan(args: argparse.Namespace) -> int:
+    cfg = load_config(args.config)
+    return print_local_plan(cfg, Path(args.root).resolve(), args.remotes_dir, json_output=args.json)
+
+
 def cmd_local_remotes(args: argparse.Namespace) -> int:
     cfg = load_config(args.config)
-    return create_local_remotes(cfg, Path(args.root).resolve(), args.remotes_dir, args.apply, args.mirror_sources, seed=args.seed)
+    return create_local_remotes(
+        cfg,
+        Path(args.root).resolve(),
+        args.remotes_dir,
+        args.apply,
+        args.mirror_sources,
+        seed=args.seed,
+        update_mirrors=args.update_mirrors,
+    )
 
 
 def cmd_local_init(args: argparse.Namespace) -> int:
@@ -369,6 +408,11 @@ def cmd_local_clone(args: argparse.Namespace) -> int:
 def cmd_local_bootstrap(args: argparse.Namespace) -> int:
     cfg = load_config(args.config)
     return bootstrap_local(cfg, Path(args.root).resolve(), args.remotes_dir, args.apply, args.mirror_sources, args.set_origin)
+
+
+def cmd_local_localize(args: argparse.Namespace) -> int:
+    cfg = load_config(args.config)
+    return localize(cfg, Path(args.root).resolve(), args.remotes_dir, args.apply, set_origin=not args.no_set_origin, update_mirrors=args.update_mirrors)
 
 
 def cmd_git(args: argparse.Namespace) -> int:
@@ -425,6 +469,15 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--provider", help="Provider name from config, for example github, gitlab or local."); p.add_argument("--namespace"); p.add_argument("--check-remote", action="store_true"); p.add_argument("--json", action="store_true"); p.set_defaults(func=cmd_repos_audit)
     p = repos_sub.add_parser("create", help="Create missing repositories through gh/glab. Dry-run by default.")
     p.add_argument("--provider", help="Provider name from config, for example github, gitlab or local."); p.add_argument("--namespace"); p.add_argument("--visibility", choices=["private", "public"], default="private"); p.add_argument("--apply", action="store_true"); p.set_defaults(func=cmd_repos_create)
+    p = repos_sub.add_parser("publish", help="Create provider remotes when needed and push local worktrees/mirrors. Dry-run by default.")
+    p.add_argument("--provider", required=True, help="Target provider name from config, usually github or gitlab.")
+    p.add_argument("--namespace", help="Target org/group/user namespace.")
+    p.add_argument("--visibility", choices=["private", "public"], default="private")
+    p.add_argument("--only", choices=["all", "new", "upstream", "existing"], default="all", help="Publish only one source_type category.")
+    p.add_argument("--remote-name", default="personal", help="Git remote name to add/update in worktrees. Default: personal.")
+    p.add_argument("--no-create", action="store_true", help="Do not create provider repos; only add remote/push.")
+    p.add_argument("--apply", action="store_true")
+    p.set_defaults(func=cmd_repos_publish)
 
     p = sub.add_parser("submodules", help="Submodule operations.")
     add_common(p); subm = p.add_subparsers(dest="submodules_action", required=True)
@@ -433,10 +486,15 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("local", help="Local-only repository operations; no GitHub/GitLab required.")
     add_common(p); local_sub = p.add_subparsers(dest="local_action", required=True)
+    sp = local_sub.add_parser("plan", help="Show how each repo will be localized from config.")
+    sp.add_argument("--remotes-dir", help="Directory for local bare remotes. Defaults to local.remotes_dir or .repo-fleet/remotes.")
+    sp.add_argument("--json", action="store_true")
+    sp.set_defaults(func=cmd_local_plan)
     sp = local_sub.add_parser("remotes", help="Create local bare remotes from config. Dry-run by default.")
     sp.add_argument("--remotes-dir", help="Directory for local bare remotes. Defaults to local.remotes_dir or .repo-fleet/remotes.")
     sp.add_argument("--mirror-sources", action="store_true", help="Use configured source/upstream URLs with git clone --mirror instead of empty bare init.")
-    sp.add_argument("--seed", action="store_true", help="Seed empty local bare repositories with an initial README commit.")
+    sp.add_argument("--update-mirrors", action="store_true", help="Fetch/prune existing local mirrors.")
+    sp.add_argument("--seed", action="store_true", help="Seed empty source_type=new local bare repositories with an initial README commit.")
     sp.add_argument("--apply", action="store_true"); sp.set_defaults(func=cmd_local_remotes)
     sp = local_sub.add_parser("init", help="Create local working repositories/directories from config. Dry-run by default.")
     sp.add_argument("--remotes-dir", help="Directory for local bare remotes.")
@@ -447,11 +505,16 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--remotes-dir", help="Directory for local bare remotes.")
     sp.add_argument("--mirror-sources", action="store_true", help="Create missing local mirrors from configured source/upstream URLs first.")
     sp.add_argument("--apply", action="store_true"); sp.set_defaults(func=cmd_local_clone)
-    sp = local_sub.add_parser("bootstrap", help="Create a complete local submodule workspace with local bare remotes. Dry-run by default.")
+    sp = local_sub.add_parser("bootstrap", help="Backward-compatible alias for localize. Dry-run by default.")
     sp.add_argument("--remotes-dir", help="Directory for local bare remotes.")
-    sp.add_argument("--mirror-sources", action="store_true", help="Mirror configured source/upstream URLs before bootstrapping.")
+    sp.add_argument("--mirror-sources", action="store_true", help="Update configured source/upstream mirrors before bootstrapping.")
     sp.add_argument("--set-origin", action="store_true", help="Set root origin to its local bare remote and push root commits.")
     sp.add_argument("--apply", action="store_true"); sp.set_defaults(func=cmd_local_bootstrap)
+    sp = local_sub.add_parser("localize", help="Materialize a cloned root into a full local/offline submodule workspace. Dry-run by default.")
+    sp.add_argument("--remotes-dir", help="Directory for local bare remotes.")
+    sp.add_argument("--update-mirrors", action="store_true", help="Fetch/prune existing local upstream mirrors.")
+    sp.add_argument("--no-set-origin", action="store_true", help="Do not set root origin to the local bare remote.")
+    sp.add_argument("--apply", action="store_true"); sp.set_defaults(func=cmd_local_localize)
 
     p = sub.add_parser("git", help="Run git operations across root + submodules.")
     add_common(p); p.add_argument("git_action", choices=["status", "pull", "push"]); p.add_argument("--apply", action="store_true"); p.add_argument("--no-root", action="store_true"); p.set_defaults(func=cmd_git)

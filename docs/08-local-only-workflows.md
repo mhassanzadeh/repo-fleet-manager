@@ -6,8 +6,9 @@
 
 - `local remotes`: مجموعه‌ای از bare repositoryها در مسیر پیش‌فرض `.repo-fleet/remotes`.
 - `local provider`: providerای که URL آن از نوع `file://` است و از `{root}`، `{namespace}` و `{repo}` ساخته می‌شود.
-- `bootstrap`: ساخت کامل workspace محلی شامل root repo، bare remoteهای محلی، submoduleها و `.gitmodules`.
-- `mirror source`: آدرسی اختیاری برای repoهایی که باید از یک منبع موجود mirror یا fork شوند.
+- `source_type`: نوع lifecycle هر repository. مقادیر اصلی: `new`، `upstream`، `existing`.
+- `localize`: فرمان high-level برای تبدیل root clone‌شده به workspace کامل local/offline.
+- `publish`: انتشار workspace محلی روی GitHub/GitLab شخصی بدون الزاماً تغییر دادن origin محلی.
 
 ## تنظیم provider محلی
 
@@ -35,37 +36,55 @@
 }
 ```
 
-می‌توانید `default_provider` را همچنان `github` یا `gitlab` نگه دارید و فقط هنگام اجرای محلی از `--provider local` استفاده کنید.
+می‌توانید `default_provider` را همچنان `github` یا `gitlab` نگه دارید و فقط هنگام اجرای audit/sync از `--provider local` استفاده کنید.
 
-## 1. ساخت کامل پروژه محلی از روی config
-
-برای ساخت workspace کامل با submoduleهای واقعی:
+## 1. بررسی plan قبل از اجرا
 
 ```bash
-rfm local --config repo-fleet.json --root /path/to/workspace bootstrap
-rfm local --config repo-fleet.json --root /path/to/workspace bootstrap --apply --set-origin
+rfm local --config repo-fleet.json plan
+rfm local --config repo-fleet.json plan --json
+```
+
+خروجی plan نشان می‌دهد هر repo چطور local می‌شود:
+
+- `new`: local bare remote ساخته می‌شود و اگر submodule باشد commit اولیه README می‌گیرد.
+- `upstream`: از `upstream_url`، `source_url`، `mirror_source`، `fork_from` یا `clone_url` یک mirror محلی ساخته می‌شود.
+- `existing`: از `existing_path`، `local_source` یا `import_from` به local bare remote import/push انجام می‌شود.
+
+## 2. ساخت کامل workspace بعد از clone پروژه مادر
+
+وقتی root repository را clone کرده‌اید و داخل آن `repo-fleet.json` وجود دارد:
+
+```bash
+cd /path/to/main-platform
+rfm local plan
+rfm local localize
+rfm local localize --apply
 ```
 
 این فرمان در حالت `--apply` کارهای زیر را انجام می‌دهد:
 
 1. bare remote محلی برای root و همه submoduleها می‌سازد.
-2. برای submoduleهای خالی یک commit اولیه README ایجاد و push می‌کند.
-3. root repo را initialize می‌کند.
-4. submoduleها را با URLهای `file://...` اضافه می‌کند.
-5. `.gitmodules` را با URLهای محلی sync می‌کند.
-6. در صورت `--set-origin`، origin ریشه را هم به bare remote محلی وصل و push می‌کند.
+2. برای submoduleهای `source_type=new` یک commit اولیه README ایجاد و push می‌کند.
+3. برای repoهای `source_type=upstream` یک local mirror از upstream می‌سازد.
+4. برای repoهای `source_type=existing` از مسیر موجود import می‌کند.
+5. root repo را initialize/commit می‌کند، اگر هنوز Git repo نباشد.
+6. submoduleهای missing را با URLهای `file://...` اضافه می‌کند.
+7. `.gitmodules` را با URLهای محلی sync می‌کند.
+8. origin ریشه را به local bare remote وصل و push می‌کند، مگر اینکه `--no-set-origin` بدهید.
 
-## 2. فقط ساخت bare remoteهای محلی
+## 3. فقط ساخت bare remoteهای محلی
 
 ```bash
 rfm local --config repo-fleet.json remotes
 rfm local --config repo-fleet.json remotes --apply
 rfm local --config repo-fleet.json remotes --apply --seed
+rfm local --config repo-fleet.json remotes --apply --update-mirrors
 ```
 
-`--seed` برای repoهای خالی یک commit اولیه می‌سازد تا clone/submodule add بدون مشکل انجام شود.
+`--seed` فقط برای repoهای `source_type=new` commit اولیه می‌سازد. `--update-mirrors` روی mirrorهای موجود `git remote update --prune` اجرا می‌کند.
 
-## 3. ساخت worktreeهای محلی بدون submodule واقعی
+## 4. ساخت worktreeهای محلی بدون submodule واقعی
 
 برای زمانی که فقط پوشه‌ها و git repoهای مستقل محلی می‌خواهید:
 
@@ -74,36 +93,22 @@ rfm local --config repo-fleet.json init
 rfm local --config repo-fleet.json init --apply --with-remotes --set-origin
 ```
 
-این حالت برای development ساده مناسب است، اما submoduleها را به صورت gitfile-submodule داخل root ثبت نمی‌کند. برای ساختار submodule واقعی از `local bootstrap` استفاده کنید.
+این حالت repoهای مستقل ایجاد می‌کند؛ برای ساختار submodule واقعی از `local localize` استفاده کنید.
 
-## 4. clone محلی برای fork/mirror
+## 5. clone محلی از local bare remotes
 
-برای repoهایی که در config فیلدهایی مثل `upstream_url`، `source_url`، `mirror_source`، `fork_from` یا `local_source` دارند، می‌توانید ابتدا mirror محلی بسازید و بعد از آن clone بگیرید:
+برای clone ساده بدون ثبت submodule:
 
 ```bash
-rfm local --config repo-fleet.json remotes --mirror-sources --apply
+rfm local --config repo-fleet.json clone
 rfm local --config repo-fleet.json clone --apply
 ```
 
-نمونه repository با source:
+برای پروژه‌های parent/submodule معمولاً `localize` انتخاب بهتری است، چون `.gitmodules` و submodule gitfile را هم درست می‌کند.
 
-```json
-{
-  "path": "services/api",
-  "repo": "my-api-service",
-  "kind": "service",
-  "provider": "local",
-  "branch": "main",
-  "upstream_url": "file:///opt/upstreams/my-api-service.git",
-  "mirror": true
-}
-```
+## 6. اجرای کامل بدون GitHub/GitLab
 
-اگر `--mirror-sources` ندهید، remoteهای محلی از صفر ساخته می‌شوند و هیچ ارتباطی با upstream برقرار نمی‌شود.
-
-## 5. اجرای کامل بدون GitHub/GitLab
-
-بعد از bootstrap محلی می‌توانید همان workflowهای عادی را اجرا کنید:
+بعد از localization محلی می‌توانید همان workflowهای عادی را اجرا کنید:
 
 ```bash
 rfm repos --config repo-fleet.json audit --provider local
@@ -116,3 +121,26 @@ rfm images --config repo-fleet.json verify
 ```
 
 در این مسیر هیچ نیازی به `gh`، `glab`، GitHub یا GitLab نیست. تنها وابستگی اجباری Git است؛ برای بخش compose و image همچنان Docker یا Podman لازم است.
+
+## 7. publish جداگانه روی GitHub/GitLab شخصی
+
+localization عمداً از publish جداست. برای اینکه origin محلی خراب نشود، publish به‌صورت پیش‌فرض remote جدا با نام `personal` اضافه می‌کند:
+
+```bash
+rfm repos publish --provider github --namespace my-user --remote-name personal
+rfm repos publish --provider github --namespace my-user --remote-name personal --apply
+```
+
+برای GitLab:
+
+```bash
+rfm repos publish --provider gitlab --namespace my-group --remote-name personal --apply
+```
+
+برای انتشار فقط یک دسته:
+
+```bash
+rfm repos publish --provider github --namespace my-user --only new --apply
+rfm repos publish --provider github --namespace my-user --only existing --apply
+rfm repos publish --provider github --namespace my-user --only upstream --apply
+```

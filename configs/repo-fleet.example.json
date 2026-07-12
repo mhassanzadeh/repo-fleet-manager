@@ -42,7 +42,8 @@
       "kind": "root",
       "provider": "github",
       "branch": "main",
-      "description": "Root orchestration repository"
+      "description": "Root orchestration repository",
+      "source_type": "new"
     },
     {
       "path": "services/api",
@@ -54,21 +55,24 @@
       "compose_service": "api",
       "docker_context": "services/api",
       "dockerfile": "services/api/Dockerfile",
-      "health_url": "http://localhost:8080/healthz"
+      "health_url": "http://localhost:8080/healthz",
+      "source_type": "new"
     },
     {
       "path": "clients/web",
       "repo": "my-web-client",
       "kind": "client",
       "provider": "github",
-      "branch": "main"
+      "branch": "main",
+      "source_type": "new"
     },
     {
       "path": "packages/contracts",
       "repo": "my-shared-contracts",
       "kind": "package",
       "provider": "github",
-      "branch": "main"
+      "branch": "main",
+      "source_type": "new"
     }
   ],
   "local": {

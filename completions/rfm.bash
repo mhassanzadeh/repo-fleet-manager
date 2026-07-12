@@ -84,15 +84,16 @@ _rfm()
             ;;
         repos)
             for ((i=1; i<cword; i++)); do
-                [[ "${words[i]}" == "audit" || "${words[i]}" == "create" ]] && action="${words[i]}"
+                [[ "${words[i]}" == "audit" || "${words[i]}" == "create" || "${words[i]}" == "publish" ]] && action="${words[i]}"
             done
             if [[ -z "$action" ]]; then
-                COMPREPLY=( $(compgen -W "audit create --help --config --root" -- "$cur") )
+                COMPREPLY=( $(compgen -W "audit create publish --help --config --root" -- "$cur") )
                 return
             fi
             case "$action" in
                 audit) opts="--help --provider --namespace --check-remote --json" ;;
                 create) opts="--help --provider --namespace --visibility --apply" ;;
+                publish) opts="--help --provider --namespace --visibility --only --remote-name --no-create --apply" ;;
             esac
             ;;
         submodules)
@@ -108,14 +109,14 @@ _rfm()
         local)
             for ((i=1; i<cword; i++)); do
                 case "${words[i]}" in
-                    remotes|init|clone|bootstrap) action="${words[i]}" ;;
+                    plan|remotes|init|clone|bootstrap|localize) action="${words[i]}" ;;
                 esac
             done
             if [[ -z "$action" ]]; then
-                COMPREPLY=( $(compgen -W "remotes init clone bootstrap --help --config --root" -- "$cur") )
+                COMPREPLY=( $(compgen -W "plan remotes init clone bootstrap localize --help --config --root" -- "$cur") )
                 return
             fi
-            opts="--help --config --root --remotes-dir --apply --mirror-sources --seed --with-remotes --set-origin"
+            opts="--help --config --root --remotes-dir --apply --mirror-sources --update-mirrors --seed --with-remotes --set-origin --no-set-origin --json"
             ;;
         git)
             for ((i=1; i<cword; i++)); do

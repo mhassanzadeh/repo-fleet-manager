@@ -12,7 +12,10 @@ Repo Fleet Manager یک ابزار واحد و config-driven برای مدیری
 - audit کردن `.gitmodules`، ریموت‌های محلی، branchها و وضعیت submoduleها
 - ساخت ریپوها روی GitHub و GitLab با CLIهای رسمی `gh` و `glab`
 - اجرای کامل workflowها به‌صورت local-only با bare remoteهای محلی و URLهای `file://`
+- lifecycle رسمی برای repoهای `new`، `upstream` و `existing`
 - ساخت workspace محلی از روی config، شامل root repo، submoduleها و `.gitmodules`
+- import/mirror/clone محلی برای پروژه‌های GitHub/GitLab یا پروژه‌های موجود روی دیسک
+- publish پروژه‌های local روی GitHub/GitLab شخصی بدون خراب کردن origin محلی
 - sync کردن ریموت submoduleها از روی config
 - اجرای `git status`، `git pull` و `git push` روی root و submoduleها
 - fingerprint گرفتن از سورس سرویس‌ها و تزریق label/metadata به Docker Compose
@@ -89,16 +92,17 @@ sudo make install-completions \
 برای ساخت پروژه محلی از روی config و ایجاد submoduleهای واقعی با bare remoteهای local:
 
 ```bash
-rfm local --config repo-fleet.json bootstrap
-rfm local --config repo-fleet.json bootstrap --apply --set-origin
+rfm local --config repo-fleet.json plan
+rfm local --config repo-fleet.json localize
+rfm local --config repo-fleet.json localize --apply
 rfm repos --config repo-fleet.json audit --provider local
 ```
 
-برای repoهایی که باید mirror/fork محلی داشته باشند:
+برای repoهایی که باید mirror/fork محلی داشته باشند، در config از `source_type: upstream` و `upstream_url` یا `fork_from` استفاده کنید؛ `localize` حداقل mirror/clone محلی را انجام می‌دهد. برای انتشار روی GitHub/GitLab شخصی:
 
 ```bash
-rfm local --config repo-fleet.json remotes --mirror-sources --apply
-rfm local --config repo-fleet.json clone --apply
+rfm repos --config repo-fleet.json publish --provider github --namespace my-user --remote-name personal
+rfm repos --config repo-fleet.json publish --provider github --namespace my-user --remote-name personal --apply
 ```
 
 ### 1. بررسی وضعیت root و submoduleها
@@ -154,8 +158,12 @@ make uninstall            # حذف پکیج Python
 make uninstall-completions
 make test
 make validate-docs
-make local-bootstrap CONFIG=repo-fleet.json ROOT=/path/to/workspace
-make local-bootstrap-apply CONFIG=repo-fleet.json ROOT=/path/to/workspace
+make local-plan CONFIG=repo-fleet.json ROOT=/path/to/workspace
+make local-localize CONFIG=repo-fleet.json ROOT=/path/to/workspace
+make local-localize-apply CONFIG=repo-fleet.json ROOT=/path/to/workspace
+make local-remotes-update CONFIG=repo-fleet.json ROOT=/path/to/workspace
+make publish-github CONFIG=repo-fleet.json ROOT=/path/to/workspace NAMESPACE=my-user
+make publish-gitlab CONFIG=repo-fleet.json ROOT=/path/to/workspace NAMESPACE=my-group
 ```
 
 ## ساختار پروژه
@@ -181,6 +189,7 @@ repo-fleet-manager/
 - [fingerprint سورس و Docker image](docs/04-source-fingerprint-and-images.md)
 - [GitHub/GitLab providers](docs/05-repository-providers.md)
 - [workflowهای local-only](docs/08-local-only-workflows.md)
+- [مدل lifecycle ریپوها و localization](docs/09-repository-lifecycle.md)
 - [برنامه مهاجرت از اسکریپت‌های فعلی](docs/06-migration-plan.md)
 - [مرجع فرمان‌ها](docs/07-command-reference.md)
 - [گزارش بررسی اسکریپت‌های ارسالی](reports/script-audit.md)

@@ -57,6 +57,14 @@ rfm repos [--config repo-fleet.json] [--root .] create [--provider github|gitlab
 
 ریپوهای موجود در config را روی provider می‌سازد. برای `github` و `gitlab` از CLIهای رسمی استفاده می‌شود؛ برای `local` یک bare repository محلی ساخته می‌شود. بدون `--apply` فقط dry-run است.
 
+## `repos publish`
+
+```bash
+rfm repos [--config repo-fleet.json] [--root .] publish --provider github|gitlab [--namespace NAME] [--visibility private|public] [--only all|new|upstream|existing] [--remote-name personal] [--no-create] [--apply]
+```
+
+remote provider را در صورت نیاز می‌سازد و worktree یا local mirror را push می‌کند. این فرمان از local workflow جداست؛ به‌صورت پیش‌فرض remoteای با نام `personal` اضافه می‌کند تا `origin` بتواند local/file باقی بماند. برای `remote_mode=mirror`، اگر local bare mirror وجود داشته باشد، `git push --mirror` اجرا می‌شود.
+
 ## `submodules sync`
 
 ```bash
@@ -66,13 +74,21 @@ rfm submodules [--config repo-fleet.json] [--root .] sync [--provider github|git
 فایل `.gitmodules` را از config بازسازی می‌کند و origin submoduleهای موجود را تنظیم می‌کند.
 
 
+## `local plan`
+
+```bash
+rfm local [--config repo-fleet.json] [--root .] plan [--remotes-dir .repo-fleet/remotes] [--json]
+```
+
+نشان می‌دهد هر repository با چه `source_type` تشخیص داده شده و برای localizing چه کاری روی آن انجام می‌شود.
+
 ## `local remotes`
 
 ```bash
-rfm local [--config repo-fleet.json] [--root .] remotes [--remotes-dir .repo-fleet/remotes] [--mirror-sources] [--seed] [--apply]
+rfm local [--config repo-fleet.json] [--root .] remotes [--remotes-dir .repo-fleet/remotes] [--mirror-sources] [--update-mirrors] [--seed] [--apply]
 ```
 
-bare repositoryهای محلی را از روی config می‌سازد. با `--mirror-sources` از فیلدهایی مثل `upstream_url` یا `mirror_source` برای `git clone --mirror` استفاده می‌شود. با `--seed` برای repositoryهای خالی یک commit اولیه ساخته می‌شود.
+bare repositoryهای محلی را از روی config می‌سازد. برای `source_type=upstream` از فیلدهایی مثل `upstream_url` یا `mirror_source` برای `git clone --mirror` استفاده می‌شود. با `--seed` برای repositoryهای `source_type=new` یک commit اولیه ساخته می‌شود.
 
 ## `local init`
 
@@ -90,13 +106,21 @@ rfm local [--config repo-fleet.json] [--root .] clone [--remotes-dir .repo-fleet
 
 repoهای موجود در local bare remotes را در مسیرهای تعریف‌شده clone می‌کند. این فرمان برای سناریوهای fork/mirror محلی مناسب است.
 
+## `local localize`
+
+```bash
+rfm local [--config repo-fleet.json] [--root .] localize [--remotes-dir .repo-fleet/remotes] [--update-mirrors] [--no-set-origin] [--apply]
+```
+
+فرمان high-level پیشنهادی بعد از clone پروژه مادر است. بر اساس `source_type`، repoهای جدید را می‌سازد، upstreamها را local mirror می‌کند، repoهای موجود را import می‌کند، submoduleهای missing را اضافه می‌کند و `.gitmodules` را به URLهای local تغییر می‌دهد.
+
 ## `local bootstrap`
 
 ```bash
 rfm local [--config repo-fleet.json] [--root .] bootstrap [--remotes-dir .repo-fleet/remotes] [--mirror-sources] [--set-origin] [--apply]
 ```
 
-یک workspace کامل local-only می‌سازد: bare remoteهای محلی، root repo، `.gitmodules` و submoduleهای واقعی. این مسیر برای اجرای کامل فرایندها بدون GitHub/GitLab پیشنهاد می‌شود.
+برای سازگاری با نسخه‌های قبلی باقی مانده و عملاً مسیر `localize` را اجرا می‌کند. برای پروژه‌های جدید بهتر است `local localize` استفاده شود.
 
 ## `git status|pull|push`
 

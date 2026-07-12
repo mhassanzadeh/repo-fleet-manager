@@ -50,6 +50,55 @@ class Repository:
     def service_name(self) -> str:
         return self.compose_service or Path(self.path).name
 
+    @property
+    def source_type(self) -> str:
+        """Lifecycle/source category for local materialization.
+
+        Supported values:
+        - new: create a new repository/worktree when missing.
+        - upstream: mirror/clone from an external Git URL first.
+        - existing: import or publish a repository that already exists locally.
+
+        The value is intentionally inferred from legacy fields so older configs keep working.
+        """
+        raw = self.extra.get("source_type") or self.extra.get("lifecycle") or self.extra.get("repo_state")
+        if raw:
+            value = str(raw).strip().lower().replace("-", "_")
+            aliases = {
+                "create": "new",
+                "created": "existing",
+                "fresh": "new",
+                "fork": "upstream",
+                "mirror": "upstream",
+                "external": "upstream",
+                "import": "existing",
+                "preexisting": "existing",
+                "pre_existing": "existing",
+                "local": "existing",
+            }
+            value = aliases.get(value, value)
+            if value in {"new", "upstream", "existing"}:
+                return value
+        upstream_keys = {"mirror_source", "upstream_url", "source_url", "fork_from", "clone_url"}
+        existing_keys = {"existing_path", "local_source", "import_from"}
+        if any(self.extra.get(key) for key in upstream_keys):
+            return "upstream"
+        if any(self.extra.get(key) for key in existing_keys):
+            return "existing"
+        return "new"
+
+    @property
+    def remote_mode(self) -> str:
+        raw = self.extra.get("remote_mode") or self.extra.get("provider_action") or self.extra.get("publish_mode")
+        if raw:
+            return str(raw).strip().lower().replace("-", "_")
+        if self.source_type == "upstream":
+            if self.extra.get("fork_from"):
+                return "fork"
+            if self.extra.get("mirror") is True or self.extra.get("mirror_source"):
+                return "mirror"
+        return "create"
+
 
 @dataclass(slots=True)
 class ProjectConfig:

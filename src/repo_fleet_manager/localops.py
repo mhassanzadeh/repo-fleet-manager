@@ -1,17 +1,33 @@
 from __future__ import annotations
 
-import os
 import shutil
 import tempfile
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
 from .config import ProjectConfig, Repository
-from .shell import run, run_interactive
+from .shell import run, run_interactive, shlex_join
 
 SEED_USER_NAME = "Repo Fleet Manager"
 SEED_USER_EMAIL = "rfm@example.invalid"
 ROOT_GITIGNORE_PATTERNS = [".repo-fleet/build/", ".repo-fleet/tmp/", ".repo-fleet/remotes/"]
+UPSTREAM_KEYS = ("mirror_source", "upstream_url", "source_url", "fork_from", "clone_url")
+EXISTING_KEYS = ("existing_path", "local_source", "import_from")
+
+
+@dataclass(slots=True)
+class LocalPlanRow:
+    path: str
+    repo: str
+    source_type: str
+    remote_mode: str
+    branch: str
+    source: str | None
+    local_remote: str
+    worktree_exists: bool
+    local_remote_exists: bool
+    action: str
 
 
 def resolve_under_root(root: Path, value: str | Path) -> Path:
@@ -44,14 +60,34 @@ def path_from_file_url(url: str) -> Path | None:
     return Path(unquote(parsed.path))
 
 
-def repo_source_url(repo: Repository, root: Path) -> str | None:
-    for key in ("mirror_source", "upstream_url", "source_url", "fork_from", "clone_url", "local_source"):
+def _first_extra(repo: Repository, keys: tuple[str, ...]) -> str | None:
+    for key in keys:
         value = repo.extra.get(key)
         if value:
-            text = str(value)
-            if key == "local_source":
-                return str(resolve_under_root(root, text))
-            return text
+            return str(value)
+    return None
+
+
+def upstream_source_url(repo: Repository) -> str | None:
+    return _first_extra(repo, UPSTREAM_KEYS)
+
+
+def existing_source_path(repo: Repository, root: Path) -> Path | None:
+    value = _first_extra(repo, EXISTING_KEYS)
+    if not value:
+        default_path = root if repo.is_root else root / repo.path
+        if repo.source_type == "existing" and default_path.exists():
+            return default_path.resolve()
+        return None
+    return resolve_under_root(root, value)
+
+
+def repo_source_label(repo: Repository, root: Path) -> str | None:
+    if repo.source_type == "upstream":
+        return upstream_source_url(repo)
+    if repo.source_type == "existing":
+        path = existing_source_path(repo, root)
+        return str(path) if path else None
     return None
 
 
@@ -158,17 +194,55 @@ def ensure_worktree_repo(repo: Repository, root: Path, apply: bool, set_origin: 
     return 0
 
 
-def ensure_bare_remote(repo: Repository, root: Path, remotes: Path, apply: bool, mirror_sources: bool = False) -> int:
+def update_existing_mirror(target: Path, apply: bool) -> int:
+    print(f"[UPDATE] local mirror: {target}")
+    return run_interactive(["git", f"--git-dir={target}", "remote", "update", "--prune"], dry_run=not apply)
+
+
+def push_existing_to_bare(repo: Repository, source: Path, target: Path, apply: bool) -> int:
+    if not git_is_worktree(source):
+        print(f"[WARN] {repo.path}: existing source is not a git worktree: {source}")
+        return 1
+    print(f"[IMPORT] {repo.repo}: {source} -> {target}")
+    if not target.exists():
+        ensure_parent(target, apply)
+        code = run_interactive(["git", "init", "--bare", "-b", repo.branch, str(target)], cwd=source, dry_run=not apply)
+        if code != 0:
+            return code
+    code = run_interactive(["git", "push", str(target), f"HEAD:{repo.branch}"], cwd=source, dry_run=not apply)
+    if code != 0:
+        return code
+    # Push tags when present, but do not fail the whole import if there are none.
+    run_interactive(["git", "push", str(target), "--tags"], cwd=source, dry_run=not apply)
+    return 0
+
+
+def ensure_bare_remote(repo: Repository, root: Path, remotes: Path, apply: bool, mirror_sources: bool = False, update_mirrors: bool = False) -> int:
     ensure_git_available()
     target = local_bare_path(repo, remotes)
+    source_type = repo.source_type
     if target.exists():
+        if source_type == "upstream" and (mirror_sources or update_mirrors):
+            return update_existing_mirror(target, apply)
         print(f"[SKIP] local remote exists: {target}")
         return 0
-    source = repo_source_url(repo, root)
+
     ensure_parent(target, apply)
-    if source and mirror_sources:
+
+    if source_type == "upstream":
+        source = upstream_source_url(repo)
+        if not source:
+            print(f"[WARN] {repo.path}: source_type=upstream but no upstream_url/source_url/fork_from/clone_url configured")
+            return 1
         print(f"[MIRROR] {repo.repo}: {source} -> {target}")
         return run_interactive(["git", "clone", "--mirror", source, str(target)], cwd=root, dry_run=not apply)
+
+    if source_type == "existing":
+        source_path = existing_source_path(repo, root)
+        if source_path and source_path.exists():
+            return push_existing_to_bare(repo, source_path, target, apply)
+        print(f"[WARN] {repo.path}: source_type=existing but source path is missing; creating empty local bare remote")
+
     print(f"[INIT] local bare remote: {target}")
     code = run_interactive(["git", "init", "--bare", "-b", repo.branch, str(target)], cwd=root, dry_run=not apply)
     if code == 0 and apply:
@@ -177,6 +251,9 @@ def ensure_bare_remote(repo: Repository, root: Path, remotes: Path, apply: bool,
 
 
 def seed_bare_remote(repo: Repository, remotes: Path, apply: bool) -> int:
+    if repo.source_type != "new":
+        print(f"[SKIP] {repo.repo}: seed is only for source_type=new")
+        return 0
     target = local_bare_path(repo, remotes)
     if bare_has_head(target):
         print(f"[SKIP] local remote already has commits: {repo.repo}")
@@ -208,12 +285,61 @@ def seed_bare_remote(repo: Repository, remotes: Path, apply: bool) -> int:
         return run_interactive(["git", "push", "-u", "origin", repo.branch], cwd=work, dry_run=False)
 
 
-def create_local_remotes(config: ProjectConfig, root: Path, remotes_override: str | None, apply: bool, mirror_sources: bool, seed: bool = False, seed_root: bool = True) -> int:
+def local_plan_rows(config: ProjectConfig, root: Path, remotes_override: str | None = None) -> list[LocalPlanRow]:
+    remotes = remotes_dir(config, root, remotes_override)
+    rows: list[LocalPlanRow] = []
+    for repo in config.repositories:
+        local_remote = local_bare_path(repo, remotes)
+        worktree = root if repo.is_root else root / repo.path
+        source = repo_source_label(repo, root)
+        if repo.source_type == "new":
+            action = "init-empty-local-remote + create worktree if missing"
+        elif repo.source_type == "upstream":
+            action = "mirror upstream into local bare remote + clone/submodule from local mirror"
+        elif repo.source_type == "existing":
+            action = "import existing local worktree into local bare remote + reuse/clone locally"
+        else:
+            action = "unknown"
+        rows.append(LocalPlanRow(repo.path, repo.repo, repo.source_type, repo.remote_mode, repo.branch, source, str(local_remote), worktree.exists(), local_remote.exists(), action))
+    return rows
+
+
+def print_local_plan(config: ProjectConfig, root: Path, remotes_override: str | None = None, json_output: bool = False) -> int:
+    rows = local_plan_rows(config, root, remotes_override)
+    if json_output:
+        import json
+        print(json.dumps([asdict(row) for row in rows], indent=2, ensure_ascii=False))
+        return 0
+    print("Local materialization plan")
+    print("=" * 42)
+    print(f"root:          {root}")
+    print(f"local remotes: {remotes_dir(config, root, remotes_override)}")
+    print()
+    for row in rows:
+        print(f"- {row.path} -> {row.repo}")
+        print(f"  source_type: {row.source_type} | remote_mode: {row.remote_mode} | branch: {row.branch}")
+        print(f"  source:      {row.source or '-'}")
+        print(f"  local bare:  {row.local_remote}")
+        print(f"  exists:      worktree={row.worktree_exists} local_remote={row.local_remote_exists}")
+        print(f"  action:      {row.action}")
+    return 0
+
+
+def create_local_remotes(
+    config: ProjectConfig,
+    root: Path,
+    remotes_override: str | None,
+    apply: bool,
+    mirror_sources: bool,
+    seed: bool = False,
+    seed_root: bool = False,
+    update_mirrors: bool = False,
+) -> int:
     remotes = remotes_dir(config, root, remotes_override)
     print(f"local remotes: {remotes}")
     failed = False
     for repo in config.repositories:
-        code = ensure_bare_remote(repo, root, remotes, apply, mirror_sources=mirror_sources)
+        code = ensure_bare_remote(repo, root, remotes, apply, mirror_sources=mirror_sources, update_mirrors=update_mirrors)
         failed = failed or code != 0
         if code == 0 and seed and (seed_root or not repo.is_root):
             failed = failed or seed_bare_remote(repo, remotes, apply) != 0
@@ -224,8 +350,12 @@ def init_local_worktrees(config: ProjectConfig, root: Path, remotes_override: st
     remotes = remotes_dir(config, root, remotes_override)
     failed = False
     if with_remotes or set_origin:
-        failed = create_local_remotes(config, root, remotes_override, apply, mirror_sources=False, seed=False) != 0
+        failed = create_local_remotes(config, root, remotes_override, apply, mirror_sources=True, seed=False) != 0
     for repo in config.repositories:
+        # Upstream repositories should be cloned from local mirrors; `init` is for new/existing local worktrees.
+        if repo.source_type == "upstream":
+            print(f"[SKIP] {repo.path}: upstream repo; use `rfm local clone` or `rfm local localize`")
+            continue
         code = ensure_worktree_repo(repo, root, apply, set_origin=set_origin, remotes=remotes)
         failed = failed or code != 0
         if code == 0 and set_origin and apply:
@@ -234,29 +364,35 @@ def init_local_worktrees(config: ProjectConfig, root: Path, remotes_override: st
     return 1 if failed else 0
 
 
+def clone_one_from_local_bare(repo: Repository, root: Path, remotes: Path, apply: bool, as_submodule: bool = False) -> int:
+    url = local_bare_url(repo, remotes)
+    if repo.is_root:
+        if git_is_worktree(root):
+            print("[SKIP] root: already a git worktree")
+            return 0
+        if root.exists() and any(root.iterdir()):
+            print("[SKIP] root: destination is not empty; use `rfm local localize` inside the cloned root")
+            return 0
+        print(f"[CLONE] root: {url} -> {root}")
+        return run_interactive(["git", "-c", "protocol.file.allow=always", "clone", url, str(root)], cwd=root.parent, dry_run=not apply)
+    path = root / repo.path
+    if path.exists():
+        print(f"[SKIP] {repo.path}: path exists")
+        return 0
+    ensure_parent(path, apply)
+    if as_submodule:
+        print(f"[SUBMODULE] {repo.path}: {url}")
+        return run_interactive(["git", "-c", "protocol.file.allow=always", "submodule", "add", "-b", repo.branch, url, repo.path], cwd=root, dry_run=not apply)
+    print(f"[CLONE] {repo.path}: {url}")
+    return run_interactive(["git", "-c", "protocol.file.allow=always", "clone", "-b", repo.branch, url, str(path)], cwd=root, dry_run=not apply)
+
+
 def clone_local_repositories(config: ProjectConfig, root: Path, remotes_override: str | None, apply: bool, mirror_sources: bool) -> int:
     remotes = remotes_dir(config, root, remotes_override)
     create_local_remotes(config, root, remotes_override, apply, mirror_sources=mirror_sources, seed=False)
     failed = False
     for repo in config.repositories:
-        url = local_bare_url(repo, remotes)
-        if repo.is_root:
-            if git_is_worktree(root):
-                print("[SKIP] root: already a git worktree")
-                continue
-            if any(root.iterdir()):
-                print("[SKIP] root: destination is not empty; use `rfm local bootstrap` or pass an empty --root")
-                continue
-            print(f"[CLONE] root: {url} -> {root}")
-            failed = failed or run_interactive(["git", "-c", "protocol.file.allow=always", "clone", url, str(root)], cwd=root.parent, dry_run=not apply) != 0
-            continue
-        path = root / repo.path
-        if path.exists():
-            print(f"[SKIP] {repo.path}: path exists")
-            continue
-        print(f"[CLONE] {repo.path}: {url}")
-        ensure_parent(path, apply)
-        failed = failed or run_interactive(["git", "-c", "protocol.file.allow=always", "clone", "-b", repo.branch, url, str(path)], cwd=root, dry_run=not apply) != 0
+        failed = failed or clone_one_from_local_bare(repo, root, remotes, apply, as_submodule=False) != 0
     return 1 if failed else 0
 
 
@@ -271,10 +407,12 @@ def sync_gitmodules_for_local(config: ProjectConfig, root: Path, remotes: Path, 
         print(content)
         return 0
     (root / ".gitmodules").write_text(content, encoding="utf-8")
+    run(["git", "submodule", "sync", "--recursive"], cwd=root)
     return 0
 
 
-def bootstrap_local(config: ProjectConfig, root: Path, remotes_override: str | None, apply: bool, mirror_sources: bool, set_origin: bool) -> int:
+def localize(config: ProjectConfig, root: Path, remotes_override: str | None, apply: bool, set_origin: bool = True, update_mirrors: bool = False) -> int:
+    """Materialize a cloned root into a fully local submodule workspace.\n\n    This is the high-level local workflow:\n    1. Create local bare remotes for every repository.\n       - new: empty/seeded bare remote.\n       - upstream: mirror external Git URL into local bare remote.\n       - existing: import local worktree into local bare remote.\n    2. Make sure the cloned root is a Git worktree.\n    3. Add missing submodules from local file:// remotes.\n    4. Point submodule origins to local remotes so the whole flow works offline.\n    """
     remotes = remotes_dir(config, root, remotes_override)
     root_repo = config.root_repository
     if root_repo is None:
@@ -282,22 +420,26 @@ def bootstrap_local(config: ProjectConfig, root: Path, remotes_override: str | N
     print(f"root:          {root}")
     print(f"local remotes: {remotes}")
     failed = False
-    failed = create_local_remotes(config, root, remotes_override, apply, mirror_sources=mirror_sources, seed=False) != 0
+    failed = create_local_remotes(config, root, remotes_override, apply, mirror_sources=True, seed=False, update_mirrors=update_mirrors) != 0
+
     for repo in config.submodules():
-        failed = failed or seed_bare_remote(repo, remotes, apply) != 0
+        if repo.source_type == "new":
+            failed = failed or seed_bare_remote(repo, remotes, apply) != 0
+
     failed = failed or ensure_worktree_repo(root_repo, root, apply, set_origin=set_origin, remotes=remotes) != 0
     if set_origin and apply:
         run_interactive(["git", "push", "-u", "origin", root_repo.branch], cwd=root, dry_run=False)
+
     for repo in config.submodules():
-        path = root / repo.path
-        if path.exists():
-            print(f"[SKIP] submodule path exists: {repo.path}")
-            continue
-        ensure_parent(path, apply)
-        cmd = ["git", "-c", "protocol.file.allow=always", "submodule", "add", "-b", repo.branch, local_bare_url(repo, remotes), repo.path]
-        failed = failed or run_interactive(cmd, cwd=root, dry_run=not apply) != 0
+        failed = failed or clone_one_from_local_bare(repo, root, remotes, apply, as_submodule=True) != 0
+
     failed = failed or sync_gitmodules_for_local(config, root, remotes, apply) != 0
-    failed = failed or commit_if_dirty(root, "chore: bootstrap local repository fleet", apply) != 0
+    failed = failed or commit_if_dirty(root, "chore: localize repository fleet", apply) != 0
     if set_origin and apply:
         run_interactive(["git", "push", "-u", "origin", root_repo.branch], cwd=root, dry_run=False)
     return 1 if failed else 0
+
+
+def bootstrap_local(config: ProjectConfig, root: Path, remotes_override: str | None, apply: bool, mirror_sources: bool, set_origin: bool) -> int:
+    # Backward-compatible alias. `mirror_sources` is kept for old CLI use; localize always honors repo source_type.
+    return localize(config, root, remotes_override, apply, set_origin=set_origin, update_mirrors=mirror_sources)

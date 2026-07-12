@@ -1,0 +1,93 @@
+{
+  "project": {
+    "name": "mixed-platform",
+    "default_provider": "github",
+    "default_branch": "main",
+    "env_prefix": "MIXED",
+    "build_dir": ".repo-fleet/build"
+  },
+  "providers": {
+    "github": {
+      "namespace": "my-github-user",
+      "host": "github.com",
+      "cli": "gh",
+      "url_template": "git@github.com:{namespace}/{repo}.git"
+    },
+    "gitlab": {
+      "namespace": "my-gitlab-group",
+      "host": "gitlab.com",
+      "cli": "glab",
+      "url_template": "git@gitlab.com:{namespace}/{repo}.git"
+    },
+    "local": {
+      "type": "local",
+      "namespace": ".repo-fleet/remotes",
+      "cli": "git",
+      "url_template": "file://{root}/{namespace}/{repo}.git"
+    }
+  },
+  "local": {
+    "remotes_dir": ".repo-fleet/remotes",
+    "workspace_mode": "submodules"
+  },
+  "repositories": [
+    {
+      "path": ".",
+      "repo": "mixed-platform",
+      "kind": "root",
+      "provider": "github",
+      "branch": "main",
+      "source_type": "new",
+      "description": "Root orchestration repository"
+    },
+    {
+      "path": "apps/custom-app",
+      "repo": "mixed-custom-app",
+      "kind": "service",
+      "provider": "github",
+      "branch": "main",
+      "source_type": "new",
+      "description": "New app that does not exist anywhere yet"
+    },
+    {
+      "path": "vendor/frappe",
+      "repo": "frappe",
+      "kind": "module",
+      "provider": "github",
+      "branch": "version-15",
+      "source_type": "upstream",
+      "remote_mode": "mirror",
+      "upstream_url": "https://github.com/frappe/frappe.git",
+      "description": "External upstream that is localized as a mirror"
+    },
+    {
+      "path": "vendor/erpnext",
+      "repo": "erpnext",
+      "kind": "module",
+      "provider": "github",
+      "branch": "version-15",
+      "source_type": "upstream",
+      "remote_mode": "fork",
+      "fork_from": "https://github.com/frappe/erpnext.git",
+      "description": "External upstream intended for fork/mirror workflows"
+    },
+    {
+      "path": "legacy/tenant-admin",
+      "repo": "mixed-tenant-admin",
+      "kind": "service",
+      "provider": "github",
+      "branch": "main",
+      "source_type": "existing",
+      "existing_path": "../old-projects/tenant-admin",
+      "description": "Already-built local project to import and publish"
+    }
+  ],
+  "compose": {
+    "file": "infra-compose/docker-compose.yml",
+    "project_name": "mixed-platform"
+  },
+  "fingerprint": {
+    "algorithm": "sha256",
+    "short_length": 16
+  }
+}

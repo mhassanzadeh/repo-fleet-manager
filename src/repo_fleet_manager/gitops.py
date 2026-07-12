@@ -269,6 +269,86 @@ def create_repositories(config: ProjectConfig, root: Path, provider_override: st
             failed = True
     return 1 if failed else 0
 
+def _selected_for_publish(repo: Repository, only: str) -> bool:
+    return only == "all" or repo.source_type == only
+
+
+def publish_repositories(
+    config: ProjectConfig,
+    root: Path,
+    provider_override: str | None,
+    namespace: str | None,
+    visibility: str,
+    apply: bool,
+    only: str = "all",
+    remote_name: str = "personal",
+    create_remote: bool = True,
+) -> int:
+    """Create provider repositories when missing and push local repos to them.\n\n    This command is intentionally separate from localize. A localized workspace can keep\n    origin=file://... while this command adds/updates a provider remote such as `personal`.\n    """
+    failed = False
+    for repo in [r for r in config.repositories if _selected_for_publish(r, only)]:
+        provider = config.provider_for(repo, provider_override, namespace)
+        expected = provider.expected_url(repo.repo, root=root)
+        desc = repo.description or f"{config.project.get('name', 'platform')} repository: {repo.repo}"
+        print(f"\n[PUBLISH] {repo.path} -> {provider.name}:{provider.namespace}/{repo.repo}")
+        print(f"          source_type={repo.source_type} remote_mode={repo.remote_mode} url={expected}")
+
+        if provider.is_local:
+            print("[WARN] publish is meant for GitHub/GitLab-style providers; use `rfm local localize` for local remotes")
+            continue
+
+        if create_remote:
+            view_cmd = provider_view_command(provider.name, provider.cli, provider.namespace, repo.repo)
+            create_cmd = provider_create_command(provider.name, provider.cli, provider.namespace, repo.repo, visibility, desc)
+            if not command_exists(provider.cli):
+                print(f"[WARN] CLI missing for {provider.name}: {provider.cli}")
+                print(f"[DRY-RUN] {shlex_join(create_cmd)}")
+                failed = failed or apply
+                continue
+            state = run(view_cmd, cwd=root)
+            if state.code == 0:
+                print(f"[SKIP] {provider.name}:{provider.namespace}/{repo.repo} exists")
+            else:
+                code = run_interactive(create_cmd, cwd=root, dry_run=not apply)
+                failed = failed or code != 0
+                if code != 0:
+                    continue
+
+        # Mirror mode can publish directly from the local bare mirror when it exists.
+        local_remote = local_bare_path(repo, remotes_dir(config, root))
+        if repo.remote_mode == "mirror" and local_remote.exists():
+            code = run_interactive(["git", f"--git-dir={local_remote}", "push", "--mirror", expected], cwd=root, dry_run=not apply)
+            failed = failed or code != 0
+            continue
+
+        if repo.source_type == "existing":
+            source_path = None
+            for key in ("existing_path", "local_source", "import_from"):
+                value = repo.extra.get(key)
+                if value:
+                    p = Path(str(value)).expanduser()
+                    source_path = p if p.is_absolute() else root / p
+                    break
+            worktree = source_path.resolve() if source_path else (root if repo.is_root else root / repo.path)
+        else:
+            worktree = root if repo.is_root else root / repo.path
+
+        if not git_is_worktree(worktree):
+            print(f"[SKIP] {repo.path}: no local git worktree to publish at {worktree}")
+            continue
+
+        if run(["git", "remote", "get-url", remote_name], cwd=worktree).code == 0:
+            code = run_interactive(["git", "remote", "set-url", remote_name, expected], cwd=worktree, dry_run=not apply)
+        else:
+            code = run_interactive(["git", "remote", "add", remote_name, expected], cwd=worktree, dry_run=not apply)
+        failed = failed or code != 0
+        if code != 0:
+            continue
+        branch = run(["git", "branch", "--show-current"], cwd=worktree).stdout or repo.branch
+        code = run_interactive(["git", "push", "-u", remote_name, f"HEAD:{repo.branch or branch}"], cwd=worktree, dry_run=not apply)
+        failed = failed or code != 0
+    return 1 if failed else 0
+
 
 def git_foreach(config: ProjectConfig, root: Path, action: str, apply: bool, include_root: bool = True) -> int:
     targets = list(config.repositories)
