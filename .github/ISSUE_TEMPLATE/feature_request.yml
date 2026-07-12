@@ -1,0 +1,49 @@
+name: Feature request
+description: Propose a new RFM capability or workflow improvement
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Describe the operational problem or missing workflow.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Include suggested CLI commands or config fields where useful.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Capability area
+      options:
+        - Configuration and schema
+        - Repository lifecycle
+        - GitHub/GitLab providers
+        - Local-only workspace
+        - Git and submodules
+        - Compose and images
+        - Safety, journal and recovery
+        - CLI and shell completion
+        - Packaging and release
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: checkboxes
+    id: compatibility
+    attributes:
+      label: Compatibility
+      options:
+        - label: The proposal preserves dry-run by default for state-changing operations.
+          required: true
+        - label: The proposal can work without requiring GitHub or GitLab when local-only mode is applicable.

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: RFM documentation
+    url: https://github.com/mhassanzadeh/repo-fleet-manager#readme
+    about: Review installation, configuration, lifecycle and recovery documentation before opening an issue.
+  - name: Security vulnerability
+    url: https://github.com/mhassanzadeh/repo-fleet-manager/security/advisories/new
+    about: Report security vulnerabilities privately. Do not open a public issue.

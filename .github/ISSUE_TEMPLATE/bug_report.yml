@@ -1,0 +1,70 @@
+name: Bug report
+description: Report a reproducible problem in RFM
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for helping improve Repo Fleet Manager. Remove secrets and private repository URLs from all output.
+  - type: input
+    id: version
+    attributes:
+      label: RFM version
+      description: Output of `rfm --version`
+      placeholder: rfm 0.6.3
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Fedora/RHEL
+        - Debian/Ubuntu
+        - Arch Linux
+        - macOS
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command and sanitized configuration
+      description: Include the command and the smallest relevant config fragment. Remove tokens and private URLs.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and logs
+      description: Include full error output after removing secrets.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      placeholder: |
+        1. Create ...
+        2. Run ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Safety checks
+      options:
+        - label: I removed credentials, access tokens and private repository URLs.
+          required: true
+        - label: I reproduced the issue with the latest release.
+          required: true
