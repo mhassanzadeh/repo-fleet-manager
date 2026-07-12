@@ -8,9 +8,16 @@ ARCHIVE ?=
 BACKUP_OUTPUT ?=
 PROFILE ?=
 GROUP ?=
+PROJECT_NAME ?= demo-platform
+PROJECT_DIR ?= $(PROJECT_NAME)
+REPO_NAME ?=
+REPO_PATH ?=
+REPO_KIND ?= module
+TEMPLATE ?= generic
+LOCK_FILE ?= repo-fleet.lock.json
 SELECTION_ARGS = $(if $(PROFILE),--profile "$(PROFILE)",) $(if $(GROUP),--group "$(GROUP)",)
 
-.PHONY: install install-cli install-editable install-completions install-all uninstall uninstall-completions doctor auth-status config-validate config-migrate graph safety-status ops-list test validate validate-docs completion-bash completion-fish local-plan local-localize local-localize-apply local-bootstrap local-bootstrap-apply local-remotes local-remotes-apply local-remotes-update publish-github publish-gitlab catalog-summary catalog-tree catalog-gaps catalog-docs catalog-check release-check release-artifacts build clean local-backup local-backup-apply local-backups local-backup-verify local-restore local-restore-apply config-render config-profiles config-groups
+.PHONY: install install-cli install-editable install-completions install-all uninstall uninstall-completions doctor auth-status config-validate config-migrate graph safety-status ops-list test validate validate-docs completion-bash completion-fish local-plan local-localize local-localize-apply local-bootstrap local-bootstrap-apply local-remotes local-remotes-apply local-remotes-update publish-github publish-gitlab catalog-summary catalog-tree catalog-gaps catalog-docs catalog-check release-check release-artifacts build clean local-backup local-backup-apply local-backups local-backup-verify local-restore local-restore-apply config-render config-profiles config-groups init-project init-project-apply scaffold-templates scaffold-repository scaffold-repository-apply bootstrap-lock bootstrap-lock-apply bootstrap-verify
 
 install: install-cli install-completions
 
@@ -40,6 +47,34 @@ completion-bash:
 
 completion-fish:
 	./scripts/rfm.sh completion fish
+
+init-project:
+	./scripts/rfm.sh init-project "$(PROJECT_NAME)" --directory "$(PROJECT_DIR)"
+
+init-project-apply:
+	./scripts/rfm.sh init-project "$(PROJECT_NAME)" --directory "$(PROJECT_DIR)" --apply
+
+scaffold-templates:
+	./scripts/rfm.sh scaffold templates
+
+scaffold-repository:
+	@test -n "$(REPO_NAME)" || (echo "REPO_NAME is required" >&2; exit 2)
+	@test -n "$(REPO_PATH)" || (echo "REPO_PATH is required" >&2; exit 2)
+	./scripts/rfm.sh scaffold repository "$(REPO_NAME)" --config "$(CONFIG)" --root "$(ROOT)" --path "$(REPO_PATH)" --kind "$(REPO_KIND)" --template "$(TEMPLATE)"
+
+scaffold-repository-apply:
+	@test -n "$(REPO_NAME)" || (echo "REPO_NAME is required" >&2; exit 2)
+	@test -n "$(REPO_PATH)" || (echo "REPO_PATH is required" >&2; exit 2)
+	./scripts/rfm.sh scaffold repository "$(REPO_NAME)" --config "$(CONFIG)" --root "$(ROOT)" --path "$(REPO_PATH)" --kind "$(REPO_KIND)" --template "$(TEMPLATE)" --apply
+
+bootstrap-lock:
+	./scripts/rfm.sh bootstrap --config "$(CONFIG)" --root "$(ROOT)" lock --output "$(LOCK_FILE)"
+
+bootstrap-lock-apply:
+	./scripts/rfm.sh bootstrap --config "$(CONFIG)" --root "$(ROOT)" lock --output "$(LOCK_FILE)" --apply
+
+bootstrap-verify:
+	./scripts/rfm.sh bootstrap --config "$(CONFIG)" --root "$(ROOT)" verify --lock-file "$(LOCK_FILE)"
 
 local-plan:
 	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) plan

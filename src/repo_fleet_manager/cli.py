@@ -21,6 +21,14 @@ from .shell import command_exists
 from .service_catalog import load_service_catalog, render_catalog, summary as catalog_summary
 from .schema import CURRENT_SCHEMA_VERSION, ConfigValidationError, ValidationIssue, migrate_config_data, validate_config_data, validate_or_raise, write_migrated_config
 from .profiles import ConfigResolutionError
+from .scaffold import (
+    DEFAULT_LOCK_FILE,
+    SUPPORTED_REPOSITORY_TEMPLATES,
+    init_project,
+    scaffold_repository,
+    verify_bootstrap_lock,
+    write_bootstrap_lock,
+)
 from .operations import SafetyError, backup_file, list_operation_files, load_operation, lock_path, mutation_context, operations_dir
 from .provider import auth_report, fork_repositories, mirror_repositories, reconcile_repositories, require_provider_auth
 from .graph import render_graph
@@ -514,6 +522,108 @@ def cmd_config_migrate(args: argparse.Namespace) -> int:
     return _mutate(args, cfg, "config migrate", apply_migration)
 
 
+
+def cmd_init_project(args: argparse.Namespace) -> int:
+    directory = Path(args.directory or args.name)
+    result = init_project(
+        args.name,
+        directory=directory,
+        branch=args.branch,
+        provider=args.provider,
+        namespace=args.namespace or "",
+        visibility=args.visibility,
+        description=args.description,
+        owner=args.owner,
+        apply=args.apply,
+        force=args.force,
+        git_init=args.git_init,
+    )
+    print(f"[{'OK' if args.apply else 'DRY-RUN'}] project scaffold: {result.target}")
+    print(f"     files={len(result.written)} skipped={len(result.skipped)}")
+    if not args.apply:
+        print("[DRY-RUN] no files changed; re-run with --apply")
+    return 0
+
+
+def cmd_scaffold_templates(args: argparse.Namespace) -> int:
+    rows = [
+        {"name": "generic", "kind": "module", "description": "README, license, gitignore and RFM template metadata."},
+        {"name": "python-cli", "kind": "tooling", "description": "Installable Python CLI with unittest and CI."},
+        {"name": "python-service", "kind": "service", "description": "Python service baseline with health function, tests, Dockerfile and CI."},
+        {"name": "node-service", "kind": "service", "description": "Node.js service baseline with node:test, Dockerfile and CI."},
+    ]
+    if args.json:
+        print(json.dumps(rows, ensure_ascii=False, indent=2))
+    else:
+        for row in rows:
+            print(f"{row['name']:<16} kind={row['kind']:<8} {row['description']}")
+    return 0
+
+
+def cmd_scaffold_repository(args: argparse.Namespace) -> int:
+    root = _root(args)
+    config_path = find_config(start=root, explicit=args.config)
+    result = scaffold_repository(
+        config_path.resolve(),
+        root=root,
+        name=args.name,
+        path=args.path,
+        template=args.template,
+        kind=args.kind,
+        description=args.description,
+        branch=args.branch,
+        provider=args.provider,
+        visibility=args.visibility,
+        tags=args.tag,
+        depends_on=args.depends_on,
+        owner=args.owner,
+        apply=args.apply,
+        force=args.force,
+        update_lock=not args.no_update_lock,
+    )
+    print(f"[{'OK' if args.apply else 'DRY-RUN'}] repository scaffold: {result.target}")
+    print(f"     files={len(result.written)} skipped={len(result.skipped)}")
+    if not args.apply:
+        print("[DRY-RUN] no files changed; re-run with --apply")
+    return 0
+
+
+def cmd_bootstrap_lock(args: argparse.Namespace) -> int:
+    config_path = find_config(start=_root(args), explicit=args.config)
+    _, raw = load_raw_config(config_path)
+    config, _ = migrate_config_data(raw)
+    validate_or_raise(config)
+    path = write_bootstrap_lock(
+        config,
+        root=_root(args),
+        output=args.output,
+        apply=args.apply,
+        force=args.force,
+    )
+    if args.apply:
+        print(f"[OK] bootstrap lock written: {path}")
+    else:
+        print("[DRY-RUN] no file changed; re-run with --apply")
+    return 0
+
+
+def cmd_bootstrap_verify(args: argparse.Namespace) -> int:
+    config_path = find_config(start=_root(args), explicit=args.config)
+    _, raw = load_raw_config(config_path)
+    config, _ = migrate_config_data(raw)
+    validate_or_raise(config)
+    report = verify_bootstrap_lock(config, root=_root(args), lock_file=args.lock_file)
+    if args.json:
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+    elif report["valid"]:
+        print(f"[OK] bootstrap contract verified: {report['lock']}")
+        print(f"     project={report.get('project') or '-'} repositories={report['repositories']} files={report['files']}")
+    else:
+        print(f"[FAIL] bootstrap contract is invalid: {report['lock']}")
+        for issue in report["issues"]:
+            print(f" - {issue}")
+    return 0 if report["valid"] else 2
+
 def cmd_doctor(args: argparse.Namespace) -> int:
     cfg = _config(args)
     root = _root(args)
@@ -961,6 +1071,57 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--json", action="store_true"); p.set_defaults(func=cmd_config_profiles)
     p = config_sub.add_parser("groups", help="List available repository groups.")
     p.add_argument("--json", action="store_true"); p.set_defaults(func=cmd_config_groups)
+
+    p = sub.add_parser("init-project", help="Create a portable RFM parent project with config, CI and bootstrap lock.")
+    p.add_argument("name")
+    p.add_argument("--directory", help="Target directory. Default: ./NAME")
+    p.add_argument("--branch", default="main")
+    p.add_argument("--provider", choices=["local", "github", "gitlab"], default="local")
+    p.add_argument("--namespace")
+    p.add_argument("--visibility", choices=["private", "internal", "public"], default="private")
+    p.add_argument("--description")
+    p.add_argument("--owner", default="Project Contributors")
+    p.add_argument("--git-init", action=argparse.BooleanOptionalAction, default=True)
+    p.add_argument("--apply", action="store_true")
+    p.add_argument("--force", action="store_true")
+    p.set_defaults(func=cmd_init_project)
+
+    scaffold = sub.add_parser("scaffold", help="Generate repositories and services from built-in templates.")
+    scaffold_sub = scaffold.add_subparsers(dest="scaffold_action", required=True)
+    p = scaffold_sub.add_parser("templates", help="List built-in repository templates.")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_scaffold_templates)
+    p = scaffold_sub.add_parser("repository", help="Add a generated repository to an existing fleet config.")
+    p.add_argument("name")
+    p.add_argument("--config", help="Path to repo-fleet.json.")
+    p.add_argument("--root", default=".")
+    p.add_argument("--path", required=True)
+    p.add_argument("--template", choices=list(SUPPORTED_REPOSITORY_TEMPLATES), default="generic")
+    p.add_argument("--kind", choices=["module", "service", "tooling", "library"], default="module")
+    p.add_argument("--description")
+    p.add_argument("--branch")
+    p.add_argument("--provider")
+    p.add_argument("--visibility", choices=["private", "internal", "public"])
+    p.add_argument("--tag", action="append")
+    p.add_argument("--depends-on", action="append")
+    p.add_argument("--owner", default="Project Contributors")
+    p.add_argument("--no-update-lock", action="store_true")
+    p.add_argument("--apply", action="store_true")
+    p.add_argument("--force", action="store_true")
+    p.set_defaults(func=cmd_scaffold_repository)
+
+    bootstrap = sub.add_parser("bootstrap", help="Generate or verify the portable bootstrap contract.")
+    add_common(bootstrap)
+    bootstrap_sub = bootstrap.add_subparsers(dest="bootstrap_action", required=True)
+    p = bootstrap_sub.add_parser("lock", help="Generate a deterministic bootstrap lock file.")
+    p.add_argument("--output", default=DEFAULT_LOCK_FILE)
+    p.add_argument("--apply", action="store_true")
+    p.add_argument("--force", action="store_true")
+    p.set_defaults(func=cmd_bootstrap_lock)
+    p = bootstrap_sub.add_parser("verify", help="Verify config, repository contract and baseline file digests.")
+    p.add_argument("--lock-file", default=DEFAULT_LOCK_FILE)
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_bootstrap_verify)
 
     p = sub.add_parser("doctor", help="Check dependencies, configuration and optional provider authentication.")
     add_common(p); p.add_argument("--auth", action="store_true"); p.add_argument("--provider"); p.add_argument("--strict-auth", action="store_true", help="Fail when required scopes cannot be verified."); p.set_defaults(func=cmd_doctor)

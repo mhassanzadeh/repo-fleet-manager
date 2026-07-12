@@ -3,8 +3,11 @@ complete -c rfm -f
 complete -c rfm -s h -l help -d 'Show help'
 complete -c rfm -l version -d 'Show version'
 
-set -l rfm_commands config doctor auth catalog graph safety repos submodules local git source compose images ops docs completion
+set -l rfm_commands config init-project scaffold bootstrap doctor auth catalog graph safety repos submodules local git source compose images ops docs completion
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a config -d 'Validate and migrate configuration'
+complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a init-project -d 'Create a portable parent project'
+complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a scaffold -d 'Generate repositories from templates'
+complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a bootstrap -d 'Generate or verify bootstrap contract'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a doctor -d 'Dependency and provider diagnostics'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a auth -d 'Authentication diagnostics'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a catalog -d 'Repository and capability catalog'
@@ -22,6 +25,8 @@ complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a docs -d 'D
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a completion -d 'Generate shell completion'
 
 complete -c rfm -n '__fish_seen_subcommand_from config; and not __fish_seen_subcommand_from validate migrate render profiles groups' -a 'validate migrate render profiles groups'
+complete -c rfm -n '__fish_seen_subcommand_from scaffold; and not __fish_seen_subcommand_from templates repository' -a 'templates repository'
+complete -c rfm -n '__fish_seen_subcommand_from bootstrap; and not __fish_seen_subcommand_from lock verify' -a 'lock verify'
 complete -c rfm -n '__fish_seen_subcommand_from auth; and not __fish_seen_subcommand_from status' -a status
 complete -c rfm -n '__fish_seen_subcommand_from graph; and not __fish_seen_subcommand_from show' -a show
 complete -c rfm -n '__fish_seen_subcommand_from safety; and not __fish_seen_subcommand_from status' -a status
@@ -77,3 +82,18 @@ complete -c rfm -l overwrite -d 'Replace existing restore targets'
 complete -c rfm -l no-config -d 'Do not restore repo-fleet.json'
 complete -c rfm -l no-include-operations -d 'Exclude operation journals from backup'
 complete -c rfm -n '__fish_seen_subcommand_from verify-backup restore' -F -d 'Backup archive'
+
+complete -c rfm -n '__fish_seen_subcommand_from init-project' -l directory -r -a '(__fish_complete_directories)' -d 'Target project directory'
+complete -c rfm -n '__fish_seen_subcommand_from init-project' -l branch -r -d 'Default Git branch'
+complete -c rfm -n '__fish_seen_subcommand_from init-project' -l description -r -d 'Project description'
+complete -c rfm -n '__fish_seen_subcommand_from init-project' -l owner -r -d 'License owner'
+complete -c rfm -n '__fish_seen_subcommand_from init-project' -l git-init -d 'Initialize Git repository'
+complete -c rfm -n '__fish_seen_subcommand_from init-project' -l no-git-init -d 'Do not initialize Git repository'
+complete -c rfm -n '__fish_seen_subcommand_from repository' -l path -r -d 'Repository path inside parent project'
+complete -c rfm -n '__fish_seen_subcommand_from repository' -l template -r -a 'generic python-cli python-service node-service' -d 'Scaffold template'
+complete -c rfm -n '__fish_seen_subcommand_from repository' -l kind -r -a 'module service tooling library' -d 'Repository kind'
+complete -c rfm -n '__fish_seen_subcommand_from repository' -l tag -r -d 'Repository tag; repeatable'
+complete -c rfm -n '__fish_seen_subcommand_from repository' -l depends-on -r -d 'Repository dependency; repeatable'
+complete -c rfm -n '__fish_seen_subcommand_from repository' -l no-update-lock -d 'Do not update bootstrap lock'
+complete -c rfm -n '__fish_seen_subcommand_from lock' -l output -r -d 'Bootstrap lock output path'
+complete -c rfm -n '__fish_seen_subcommand_from verify' -l lock-file -r -d 'Bootstrap lock path'

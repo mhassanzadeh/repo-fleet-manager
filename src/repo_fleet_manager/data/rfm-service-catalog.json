@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "catalog_version": "0.8.0",
+  "catalog_version": "0.9.0",
   "project": {
     "name": "Repo Fleet Manager",
     "short_name": "RFM",
@@ -321,14 +321,17 @@
         {
           "id": "local.parent-bootstrap",
           "name": "Bootstrap after cloning the parent repository",
-          "status": "partial",
-          "maturity": "alpha",
+          "status": "implemented",
+          "maturity": "beta",
           "commands": [
-            "rfm local localize --apply"
+            "rfm init-project NAME --apply",
+            "rfm bootstrap --config repo-fleet.json verify",
+            "rfm local --config repo-fleet.json bootstrap --apply"
           ],
           "components": [
-            "docs/09-repository-lifecycle.md",
-            "src/repo_fleet_manager/localops.py"
+            "src/repo_fleet_manager/scaffold.py",
+            "src/repo_fleet_manager/localops.py",
+            "docs/14-project-scaffolding-and-bootstrap-lock.md"
           ],
           "gap_refs": [
             "GAP-010"
@@ -801,10 +804,17 @@
         {
           "id": "extension.templates",
           "name": "Repository and service scaffolding templates",
-          "status": "missing",
-          "maturity": "not-started",
-          "commands": [],
-          "components": [],
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm scaffold templates",
+            "rfm scaffold repository NAME --path PATH --template TEMPLATE --apply"
+          ],
+          "components": [
+            "src/repo_fleet_manager/scaffold.py",
+            "tests/test_scaffold_bootstrap.py",
+            "docs/14-project-scaffolding-and-bootstrap-lock.md"
+          ],
           "gap_refs": [
             "GAP-010"
           ]
@@ -1079,7 +1089,7 @@
       "title": "Portable parent bootstrap and repository scaffolding",
       "priority": "P1",
       "category": "developer-experience",
-      "status": "partial",
+      "status": "implemented",
       "rationale": "After cloning the parent repo, new modules should be created from consistent templates and the root repository should declare the exact bootstrap contract.",
       "recommended_scope": [
         "Add rfm init-project",
