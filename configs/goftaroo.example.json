@@ -1,0 +1,283 @@
+{
+  "project": {
+    "name": "goftaroo-platform",
+    "default_provider": "github",
+    "default_branch": "main",
+    "env_prefix": "GOFTAROO",
+    "build_dir": ".repo-fleet/build"
+  },
+  "providers": {
+    "github": {
+      "namespace": "mhassanzadeh",
+      "host": "github.com",
+      "cli": "gh",
+      "url_template": "git@github.com:{namespace}/{repo}.git"
+    },
+    "gitlab": {
+      "namespace": "goftaroo",
+      "host": "gitlab.com",
+      "cli": "glab",
+      "url_template": "git@gitlab.com:{namespace}/{repo}.git"
+    }
+  },
+  "compose": {
+    "file": "infra-compose/docker-compose.yml",
+    "env_file": "infra-compose/.env.example",
+    "project_name": "infra-compose"
+  },
+  "fingerprint": {
+    "algorithm": "sha256",
+    "short_length": 16
+  },
+  "repositories": [
+    {
+      "path": ".",
+      "repo": "goftaroo-platform",
+      "kind": "root",
+      "description": "Goftaroo root platform repository",
+      "branch": "main",
+      "provider": "github"
+    },
+    {
+      "path": "services/api-gateway",
+      "repo": "goftaroo-api-gateway",
+      "kind": "service",
+      "host_port": 8080,
+      "compose_service": "api-gateway",
+      "health_url": "http://localhost:8080/healthz",
+      "branch": "main",
+      "provider": "github",
+      "docker_context": "services/api-gateway",
+      "dockerfile": "services/api-gateway/Dockerfile",
+      "description": "Goftaroo platform repository: goftaroo-api-gateway"
+    },
+    {
+      "path": "services/identity-service",
+      "repo": "goftaroo-identity-service",
+      "kind": "service",
+      "host_port": 8081,
+      "compose_service": "identity-service",
+      "health_url": "http://localhost:8081/healthz",
+      "branch": "main",
+      "provider": "github",
+      "docker_context": "services/identity-service",
+      "dockerfile": "services/identity-service/Dockerfile",
+      "description": "Goftaroo platform repository: goftaroo-identity-service"
+    },
+    {
+      "path": "services/tenant-service",
+      "repo": "goftaroo-tenant-service",
+      "kind": "service",
+      "host_port": 8082,
+      "compose_service": "tenant-service",
+      "health_url": "http://localhost:8082/healthz",
+      "branch": "main",
+      "provider": "github",
+      "docker_context": "services/tenant-service",
+      "dockerfile": "services/tenant-service/Dockerfile",
+      "description": "Goftaroo platform repository: goftaroo-tenant-service"
+    },
+    {
+      "path": "services/device-registry-service",
+      "repo": "goftaroo-device-registry-service",
+      "kind": "service",
+      "host_port": 8083,
+      "compose_service": "device-registry-service",
+      "health_url": "http://localhost:8083/healthz",
+      "branch": "main",
+      "provider": "github",
+      "docker_context": "services/device-registry-service",
+      "dockerfile": "services/device-registry-service/Dockerfile",
+      "description": "Goftaroo platform repository: goftaroo-device-registry-service"
+    },
+    {
+      "path": "services/subscription-service",
+      "repo": "goftaroo-subscription-service",
+      "kind": "service",
+      "host_port": 8091,
+      "compose_service": "subscription-service",
+      "health_url": "http://localhost:8091/healthz",
+      "branch": "main",
+      "provider": "github",
+      "docker_context": "services/subscription-service",
+      "dockerfile": "services/subscription-service/Dockerfile",
+      "description": "Goftaroo platform repository: goftaroo-subscription-service"
+    },
+    {
+      "path": "services/billing-service",
+      "repo": "goftaroo-billing-service",
+      "kind": "service",
+      "host_port": 8090,
+      "compose_service": "billing-service",
+      "health_url": "http://localhost:8090/healthz",
+      "branch": "main",
+      "provider": "github",
+      "docker_context": "services/billing-service",
+      "dockerfile": "services/billing-service/Dockerfile",
+      "description": "Goftaroo platform repository: goftaroo-billing-service"
+    },
+    {
+      "path": "services/usage-metering-service",
+      "repo": "goftaroo-usage-metering-service",
+      "kind": "service",
+      "host_port": 8084,
+      "compose_service": "usage-metering-service",
+      "health_url": "http://localhost:8084/healthz",
+      "branch": "main",
+      "provider": "github",
+      "docker_context": "services/usage-metering-service",
+      "dockerfile": "services/usage-metering-service/Dockerfile",
+      "description": "Goftaroo platform repository: goftaroo-usage-metering-service"
+    },
+    {
+      "path": "services/voice-session-service",
+      "repo": "goftaroo-voice-session-service",
+      "kind": "service",
+      "host_port": 8085,
+      "compose_service": "voice-session-service",
+      "health_url": "http://localhost:8085/healthz",
+      "branch": "main",
+      "provider": "github",
+      "docker_context": "services/voice-session-service",
+      "dockerfile": "services/voice-session-service/Dockerfile",
+      "description": "Goftaroo platform repository: goftaroo-voice-session-service"
+    },
+    {
+      "path": "services/conversation-service",
+      "repo": "goftaroo-conversation-service",
+      "kind": "service",
+      "host_port": 8086,
+      "compose_service": "conversation-service",
+      "health_url": "http://localhost:8086/healthz",
+      "branch": "main",
+      "provider": "github",
+      "docker_context": "services/conversation-service",
+      "dockerfile": "services/conversation-service/Dockerfile",
+      "description": "Goftaroo platform repository: goftaroo-conversation-service"
+    },
+    {
+      "path": "services/speech-provider-service",
+      "repo": "goftaroo-speech-provider-service",
+      "kind": "service",
+      "host_port": 8087,
+      "compose_service": "speech-provider-service",
+      "health_url": "http://localhost:8087/healthz",
+      "branch": "main",
+      "provider": "github",
+      "docker_context": "services/speech-provider-service",
+      "dockerfile": "services/speech-provider-service/Dockerfile",
+      "description": "Goftaroo platform repository: goftaroo-speech-provider-service"
+    },
+    {
+      "path": "services/llm-gateway-service",
+      "repo": "goftaroo-llm-gateway-service",
+      "kind": "service",
+      "host_port": 8088,
+      "compose_service": "llm-gateway-service",
+      "health_url": "http://localhost:8088/healthz",
+      "branch": "main",
+      "provider": "github",
+      "docker_context": "services/llm-gateway-service",
+      "dockerfile": "services/llm-gateway-service/Dockerfile",
+      "description": "Goftaroo platform repository: goftaroo-llm-gateway-service"
+    },
+    {
+      "path": "services/agent-orchestrator-service",
+      "repo": "goftaroo-agent-orchestrator-service",
+      "kind": "service",
+      "host_port": 8089,
+      "compose_service": "agent-orchestrator-service",
+      "health_url": "http://localhost:8089/healthz",
+      "branch": "main",
+      "provider": "github",
+      "docker_context": "services/agent-orchestrator-service",
+      "dockerfile": "services/agent-orchestrator-service/Dockerfile",
+      "description": "Goftaroo platform repository: goftaroo-agent-orchestrator-service"
+    },
+    {
+      "path": "services/skill-registry-service",
+      "repo": "goftaroo-skill-registry-service",
+      "kind": "service",
+      "host_port": 8093,
+      "compose_service": "skill-registry-service",
+      "health_url": "http://localhost:8093/healthz",
+      "branch": "main",
+      "provider": "github",
+      "docker_context": "services/skill-registry-service",
+      "dockerfile": "services/skill-registry-service/Dockerfile",
+      "description": "Goftaroo platform repository: goftaroo-skill-registry-service"
+    },
+    {
+      "path": "services/notification-service",
+      "repo": "goftaroo-notification-service",
+      "kind": "service",
+      "host_port": 8092,
+      "compose_service": "notification-service",
+      "health_url": "http://localhost:8092/healthz",
+      "branch": "main",
+      "provider": "github",
+      "docker_context": "services/notification-service",
+      "dockerfile": "services/notification-service/Dockerfile",
+      "description": "Goftaroo platform repository: goftaroo-notification-service"
+    },
+    {
+      "path": "services/audit-export-worker-service",
+      "repo": "goftaroo-audit-export-worker-service",
+      "kind": "service",
+      "compose_service": "audit-export-worker-service",
+      "branch": "main",
+      "provider": "github",
+      "docker_context": "services/audit-export-worker-service",
+      "dockerfile": "services/audit-export-worker-service/Dockerfile",
+      "description": "Goftaroo platform repository: goftaroo-audit-export-worker-service"
+    },
+    {
+      "path": "clients/kmp-client",
+      "repo": "goftaroo-kmp-client",
+      "kind": "client",
+      "branch": "main",
+      "provider": "github",
+      "description": "Goftaroo platform repository: goftaroo-kmp-client"
+    },
+    {
+      "path": "clients/admin-dashboard",
+      "repo": "goftaroo-admin-dashboard",
+      "kind": "client",
+      "branch": "main",
+      "provider": "github",
+      "description": "Goftaroo platform repository: goftaroo-admin-dashboard"
+    },
+    {
+      "path": "clients/user-dashboard",
+      "repo": "goftaroo-user-dashboard",
+      "kind": "client",
+      "branch": "main",
+      "provider": "github",
+      "description": "Goftaroo platform repository: goftaroo-user-dashboard"
+    },
+    {
+      "path": "clients/embedded-runtime",
+      "repo": "goftaroo-embedded-runtime",
+      "kind": "client",
+      "branch": "main",
+      "provider": "github",
+      "description": "Goftaroo platform repository: goftaroo-embedded-runtime"
+    },
+    {
+      "path": "packages/shared-contracts",
+      "repo": "goftaroo-shared-contracts",
+      "kind": "package",
+      "branch": "main",
+      "provider": "github",
+      "description": "Goftaroo platform repository: goftaroo-shared-contracts"
+    },
+    {
+      "path": "infra/platform-infra",
+      "repo": "goftaroo-platform-infra",
+      "kind": "infra",
+      "branch": "main",
+      "provider": "github",
+      "description": "Goftaroo platform repository: goftaroo-platform-infra"
+    }
+  ]
+}

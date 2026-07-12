@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "repo-fleet-manager"
+version = "0.1.0"
+description = "Config-driven manager for large Git submodule based repositories and local development workflows."
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "Architecture Automation Team"}]
+dependencies = []
+
+[project.scripts]
+rfm = "repo_fleet_manager.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

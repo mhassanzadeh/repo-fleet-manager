@@ -1,0 +1,68 @@
+{
+  "project": {
+    "name": "my-platform",
+    "default_provider": "github",
+    "default_branch": "main",
+    "env_prefix": "MYAPP",
+    "build_dir": ".repo-fleet/build"
+  },
+  "providers": {
+    "github": {
+      "namespace": "my-github-org",
+      "host": "github.com",
+      "cli": "gh",
+      "url_template": "git@github.com:{namespace}/{repo}.git"
+    },
+    "gitlab": {
+      "namespace": "my-gitlab-group",
+      "host": "gitlab.com",
+      "cli": "glab",
+      "url_template": "git@gitlab.com:{namespace}/{repo}.git"
+    }
+  },
+  "compose": {
+    "file": "infra-compose/docker-compose.yml",
+    "env_file": "infra-compose/.env.example",
+    "project_name": "infra-compose"
+  },
+  "fingerprint": {
+    "algorithm": "sha256",
+    "short_length": 16
+  },
+  "repositories": [
+    {
+      "path": ".",
+      "repo": "my-platform",
+      "kind": "root",
+      "provider": "github",
+      "branch": "main",
+      "description": "Root orchestration repository"
+    },
+    {
+      "path": "services/api",
+      "repo": "my-api-service",
+      "kind": "service",
+      "provider": "github",
+      "branch": "main",
+      "host_port": 8080,
+      "compose_service": "api",
+      "docker_context": "services/api",
+      "dockerfile": "services/api/Dockerfile",
+      "health_url": "http://localhost:8080/healthz"
+    },
+    {
+      "path": "clients/web",
+      "repo": "my-web-client",
+      "kind": "client",
+      "provider": "github",
+      "branch": "main"
+    },
+    {
+      "path": "packages/contracts",
+      "repo": "my-shared-contracts",
+      "kind": "package",
+      "provider": "github",
+      "branch": "main"
+    }
+  ]
+}
