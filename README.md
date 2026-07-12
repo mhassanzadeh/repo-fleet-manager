@@ -1,5 +1,11 @@
 # Repo Fleet Manager
 
+[![RFM CI](https://github.com/mhassanzadeh/repo-fleet-manager/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/mhassanzadeh/repo-fleet-manager/actions/workflows/ci.yml)
+[![GitHub release](https://img.shields.io/github/v/release/mhassanzadeh/repo-fleet-manager?include_prereleases)](https://github.com/mhassanzadeh/repo-fleet-manager/releases)
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+
 Repo Fleet Manager یک ابزار واحد و config-driven برای مدیریت پروژه‌های بزرگ چندریپویی است؛ مخصوصاً پروژه‌هایی که یک ریپوی ریشه دارند و چندین Git Submodule برای سرویس‌ها، کلاینت‌ها، پکیج‌های مشترک و زیرساخت در آن‌ها نگهداری می‌شود.
 
 این پکیج از روی اسکریپت‌های ارسالی بازطراحی شده و منطق پراکنده را به یک CLI واحد تبدیل می‌کند. اسکریپت‌های اولیه بدون تغییر در مسیر [`legacy-scripts/goftaroo`](legacy-scripts/goftaroo) نگهداری شده‌اند تا مهاجرت مرحله‌ای ممکن باشد.
@@ -65,6 +71,25 @@ cp configs/goftaroo.example.json /path/to/main-platform/repo-fleet.json
 cd /path/to/main-platform
 rfm doctor
 ```
+
+
+## نصب از GitHub Release یا pipx
+
+برای نصب ایزوله آخرین نسخه مستقیم از GitHub:
+
+```bash
+pipx install git+https://github.com/mhassanzadeh/repo-fleet-manager.git@v0.6.3
+rfm --version
+```
+
+یا Wheel را از GitHub Release دانلود و نصب کنید:
+
+```bash
+python3 -m pip install ./repo_fleet_manager-0.6.3-py3-none-any.whl
+rfm --version
+```
+
+Checksum فایل‌های release در `SHA256SUMS` منتشر می‌شود.
 
 ## completion
 
@@ -205,6 +230,19 @@ make catalog-docs
 make catalog-check
 ```
 
+
+## فرآیند انتشار رسمی
+
+CI روی هر دو شاخه `master` و `main` اجرا می‌شود. tagهای `v*`، workflow انتشار را فعال می‌کنند و Wheel، Source Distribution و `SHA256SUMS` را به GitHub Release متصل می‌کنند. قبل از tag:
+
+```bash
+make validate
+python scripts/check_release_version.py 0.6.3
+make release-artifacts
+```
+
+راهنمای مشارکت، سیاست امنیتی و تاریخچه تغییرات در [`CONTRIBUTING.md`](CONTRIBUTING.md)، [`SECURITY.md`](SECURITY.md) و [`CHANGELOG.md`](CHANGELOG.md) قرار دارند.
+
 ## ساختار پروژه
 
 ```text
@@ -258,8 +296,8 @@ rfm config --config repo-fleet.json validate --strict
 
 `--strict` عمداً فایل را بدون migration بررسی می‌کند؛ بنابراین برای فایل قدیمی باید بعد از `migrate --apply` استفاده شود.
 
-توجه: نسخه ابزار `0.6.1` است، اما مقدار استاندارد `schema_version` در config برابر `1.0.0` باقی می‌ماند؛ این دو شماره مستقل هستند.
+توجه: نسخه schema مستقل از نسخه ابزار است، اما مقدار استاندارد `schema_version` در config برابر `1.0.0` باقی می‌ماند؛ این دو شماره مستقل هستند.
 
 ## Git commit guide
 
-دستورهای پیشنهادی commit، tag و ثبت pointer ساب‌ماژول در [`GIT_COMMIT_GUIDE_v0.6.1.md`](GIT_COMMIT_GUIDE_v0.6.1.md) قرار دارد.
+تغییرات، روش انتشار و دستورهای commit نسخه جاری در [`PATCH_NOTES_v0.6.3.md`](PATCH_NOTES_v0.6.3.md)، [`CHANGELOG.md`](CHANGELOG.md) و [`GIT_COMMIT_GUIDE_v0.6.3.md`](GIT_COMMIT_GUIDE_v0.6.3.md) قرار دارد.

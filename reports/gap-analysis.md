@@ -1,6 +1,6 @@
 # Repo Fleet Manager logical gap analysis
 
-> Catalog version `0.6.1` · 17 prioritized gaps
+> Catalog version `0.6.3` · 17 prioritized gaps
 
 ## P0
 
@@ -309,7 +309,7 @@ Acceptance criteria:
 
 ### GAP-017 — Automated release and compatibility discipline
 
-**Category:** `release` · **Current state:** `partial`
+**Category:** `release` · **Current state:** `resolved`
 
 Manual patch notes are useful but do not guarantee reproducible packages, changelogs or compatibility across Python, Git and container engines.
 

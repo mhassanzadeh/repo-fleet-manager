@@ -1,6 +1,6 @@
 # Repo Fleet Manager service catalog
 
-> Catalog version `0.6.1` · schema `1.0` · lifecycle `beta`
+> Catalog version `0.6.3` · schema `1.0` · lifecycle `beta`
 
 Config-driven orchestration for large Git repository fleets, submodules, local development, providers, Compose runtimes and source/image integrity.
 
@@ -10,11 +10,11 @@ Config-driven orchestration for large Git repository fleets, submodules, local d
 |---|---:|
 | Domains | 11 |
 | Capabilities | 57 |
-| Implemented | 38 |
-| Partial | 8 |
+| Implemented | 39 |
+| Partial | 7 |
 | Planned | 1 |
 | Missing | 10 |
-| Logical completion | 73.9% |
+| Logical completion | 74.8% |
 | Open gaps | 17 |
 
 The completion percentage is a planning indicator: implemented capabilities count as 100%, partial as 50%, and planned as 15%. It is not a production-readiness certification.
@@ -153,7 +153,7 @@ Automated verification, compatibility matrix, packaging and release discipline.
 | `quality.integration-tests` — End-to-end local Git graph tests | ✓ implemented | beta | `make test`<br>`tests/test_local_workflow.py`<br>`tests/test_operations.py` |
 | `quality.ci` — CI pipeline and cross-platform matrix | ✓ implemented | beta | `.github/workflows/ci.yml`<br>`.gitlab-ci.yml` |
 | `quality.packaging` — Installable Python package and Makefile | ✓ implemented | beta | `make install`<br>`python -m build`<br>`pyproject.toml`<br>`Makefile` |
-| `quality.release` — Automated semantic versioning and changelog | ~ partial | alpha | `PATCH_NOTES_v0.4.0.md` |
+| `quality.release` — Automated package and GitHub release workflow | ✓ implemented | beta | `make release-check`<br>`make release-artifacts`<br>`.github/workflows/release.yml`<br>`scripts/check_release_version.py`<br>`CHANGELOG.md`<br>`PATCH_NOTES_v0.6.3.md` |
 
 ## Prioritized logical gaps
 
@@ -464,7 +464,7 @@ Acceptance criteria:
 
 #### GAP-017 — Automated release and compatibility discipline
 
-**Category:** `release` · **Current state:** `partial`
+**Category:** `release` · **Current state:** `resolved`
 
 Manual patch notes are useful but do not guarantee reproducible packages, changelogs or compatibility across Python, Git and container engines.
 
