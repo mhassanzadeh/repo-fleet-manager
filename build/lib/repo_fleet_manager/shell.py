@@ -37,9 +37,15 @@ def run(cmd: list[str], cwd: Path | None = None, check: bool = False) -> RunResu
     return result
 
 
-def run_interactive(cmd: list[str], cwd: Path | None = None, dry_run: bool = True) -> int:
+def run_interactive(cmd: list[str], cwd: Path | None = None, dry_run: bool = True, description: str | None = None) -> int:
     if dry_run:
         print(f"[DRY-RUN] {shlex_join(cmd)}")
         return 0
+    from .operations import record_command_end, record_command_start
+
+    text = description or shlex_join(cmd)
+    step = record_command_start(text, [str(part) for part in cmd], cwd)
     print(f"+ {shlex_join(cmd)}")
-    return subprocess.call([str(part) for part in cmd], cwd=str(cwd) if cwd else None)
+    code = subprocess.call([str(part) for part in cmd], cwd=str(cwd) if cwd else None)
+    record_command_end(step, code)
+    return code

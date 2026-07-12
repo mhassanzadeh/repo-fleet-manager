@@ -8,7 +8,9 @@ from pathlib import Path
 
 from .config import ProjectConfig, Repository
 from .shell import command_exists, run, run_interactive, shlex_join
-from .localops import local_bare_path, path_from_file_url, remotes_dir
+from .operations import backup_file, note_manual_rollback, track_created_path, track_git_remote
+from .graph import execute_levels
+from .localops import git_is_worktree, local_bare_path, path_from_file_url, remotes_dir
 
 
 @dataclass(slots=True)
@@ -81,29 +83,33 @@ def detect_gitdir_type(path: Path) -> str:
     return "missing"
 
 
-def provider_view_command(provider_name: str, cli: str, namespace: str, repo: str) -> list[str]:
+def provider_view_command(provider_name: str, cli: str, namespace: str, repo: str, host: str | None = None) -> list[str]:
     full = f"{namespace}/{repo}"
-    if provider_name == "github":
-        return [cli, "repo", "view", full]
-    if provider_name == "gitlab":
-        return [cli, "repo", "view", full]
-    return [cli, "repo", "view", full]
+    if provider_name == "github" and host and host != "github.com":
+        full = f"{host}/{full}"
+    cmd = [cli, "repo", "view", full]
+    if provider_name == "gitlab" and host:
+        cmd.extend(["--hostname", host])
+    return cmd
 
 
-def provider_create_command(provider_name: str, cli: str, namespace: str, repo: str, visibility: str, description: str) -> list[str]:
+def provider_create_command(provider_name: str, cli: str, namespace: str, repo: str, visibility: str, description: str, host: str | None = None) -> list[str]:
     full = f"{namespace}/{repo}"
+    if provider_name == "github" and host and host != "github.com":
+        full = f"{host}/{full}"
     visibility_flag = "--private" if visibility == "private" else "--public"
     if provider_name == "github":
         return [cli, "repo", "create", full, visibility_flag, "--disable-wiki", "--description", description]
-    if provider_name == "gitlab":
-        return [cli, "repo", "create", full, visibility_flag, "--description", description]
-    return [cli, "repo", "create", full, visibility_flag, "--description", description]
+    cmd = [cli, "repo", "create", full, visibility_flag, "--description", description]
+    if provider_name == "gitlab" and host:
+        cmd.extend(["--hostname", host])
+    return cmd
 
 
-def remote_exists(provider_name: str, cli: str, namespace: str, repo: str, root: Path) -> str:
+def remote_exists(provider_name: str, cli: str, namespace: str, repo: str, root: Path, host: str | None = None) -> str:
     if not command_exists(cli):
         return "cli-missing"
-    result = run(provider_view_command(provider_name, cli, namespace, repo), cwd=root)
+    result = run(provider_view_command(provider_name, cli, namespace, repo, host), cwd=root)
     return "yes" if result.code == 0 else "no-or-auth-failed"
 
 
@@ -128,7 +134,7 @@ def audit(config: ProjectConfig, root: Path, provider_override: str | None = Non
                 branch = git_output(["branch", "--show-current"], full_path)
                 origin = git_output(["remote", "get-url", "origin"], full_path)
         gm_url = gitmodules.get(repo.path)
-        remote_state = remote_exists(provider.name, provider.cli, provider.namespace, repo.repo, root) if check_remote else None
+        remote_state = remote_exists(provider.driver, provider.cli, provider.namespace, repo.repo, root, provider.host) if check_remote else None
         if gm_url != expected:
             issues.append("gitmodules-url-mismatch")
         if repo.path not in root_cfg and gitdir_type != "gitfile-submodule":
@@ -214,10 +220,7 @@ def sync_submodules(config: ProjectConfig, root: Path, provider_override: str | 
                 print(f"[DRY-RUN] git -C {repo.path} remote set-url origin {provider.expected_url(repo.repo, root=root)}")
         print("[DRY-RUN] git submodule sync --recursive")
         return 0
-    if gitmodules.exists():
-        backup = root / f".gitmodules.backup.{time.strftime('%Y%m%d%H%M%S')}"
-        backup.write_text(gitmodules.read_text(encoding="utf-8"), encoding="utf-8")
-        print(f"[INFO] Backup written: {backup.name}")
+    backup_file(gitmodules)
     gitmodules.write_text(content, encoding="utf-8")
     for repo in config.submodules():
         provider = config.provider_for(repo, provider_override, namespace)
@@ -225,10 +228,18 @@ def sync_submodules(config: ProjectConfig, root: Path, provider_override: str | 
         if not path.exists():
             continue
         if run(["git", "rev-parse", "--is-inside-work-tree"], cwd=path).code == 0:
-            result = run(["git", "remote", "set-url", "origin", provider.expected_url(repo.repo, root=root)], cwd=path)
-            if result.code != 0:
-                run(["git", "remote", "add", "origin", provider.expected_url(repo.repo, root=root)], cwd=path, check=True)
-    run(["git", "submodule", "sync", "--recursive"], cwd=root, check=True)
+            old = run(["git", "remote", "get-url", "origin"], cwd=path)
+            previous = old.stdout if old.code == 0 else None
+            track_git_remote(path, "origin", previous)
+            if previous:
+                code = run_interactive(["git", "remote", "set-url", "origin", provider.expected_url(repo.repo, root=root)], cwd=path, dry_run=False, description=f"set origin {repo.repo}")
+            else:
+                code = run_interactive(["git", "remote", "add", "origin", provider.expected_url(repo.repo, root=root)], cwd=path, dry_run=False, description=f"add origin {repo.repo}")
+            if code != 0:
+                raise RuntimeError(f"failed to configure origin for {repo.repo}")
+    code = run_interactive(["git", "submodule", "sync", "--recursive"], cwd=root, dry_run=False, description="sync submodule URLs")
+    if code != 0:
+        raise RuntimeError("git submodule sync failed")
     print("[OK] .gitmodules and local submodule origin URLs synchronized.")
     return 0
 
@@ -248,13 +259,14 @@ def create_repositories(config: ProjectConfig, root: Path, provider_override: st
             print(f"[INIT] local bare repository: {path}")
             if apply:
                 path.parent.mkdir(parents=True, exist_ok=True)
+                track_created_path(path)
             code = run_interactive(["git", "init", "--bare", "-b", repo.branch, str(path)], cwd=root, dry_run=not apply)
             if code == 0 and apply:
-                run(["git", f"--git-dir={path}", "symbolic-ref", "HEAD", f"refs/heads/{repo.branch}"])
+                code = run_interactive(["git", f"--git-dir={path}", "symbolic-ref", "HEAD", f"refs/heads/{repo.branch}"], cwd=root, dry_run=False, description=f"set default branch {repo.repo}")
             failed = failed or code != 0
             continue
-        view_cmd = provider_view_command(provider.name, provider.cli, provider.namespace, repo.repo)
-        create_cmd = provider_create_command(provider.name, provider.cli, provider.namespace, repo.repo, visibility, desc)
+        view_cmd = provider_view_command(provider.driver, provider.cli, provider.namespace, repo.repo, provider.host)
+        create_cmd = provider_create_command(provider.driver, provider.cli, provider.namespace, repo.repo, visibility, desc, provider.host)
         if not command_exists(provider.cli):
             print(f"[WARN] CLI missing for {provider.name}: {provider.cli}")
             print(f"[DRY-RUN] {shlex_join(create_cmd)}")
@@ -265,6 +277,8 @@ def create_repositories(config: ProjectConfig, root: Path, provider_override: st
             print(f"[SKIP] {provider.name}:{provider.namespace}/{repo.repo} exists")
             continue
         code = run_interactive(create_cmd, cwd=root, dry_run=not apply)
+        if code == 0 and apply:
+            note_manual_rollback(f"delete provider repository {provider.namespace}/{repo.repo} manually if rollback is required")
         if code != 0:
             failed = True
     return 1 if failed else 0
@@ -298,8 +312,8 @@ def publish_repositories(
             continue
 
         if create_remote:
-            view_cmd = provider_view_command(provider.name, provider.cli, provider.namespace, repo.repo)
-            create_cmd = provider_create_command(provider.name, provider.cli, provider.namespace, repo.repo, visibility, desc)
+            view_cmd = provider_view_command(provider.driver, provider.cli, provider.namespace, repo.repo, provider.host)
+            create_cmd = provider_create_command(provider.driver, provider.cli, provider.namespace, repo.repo, visibility, desc, provider.host)
             if not command_exists(provider.cli):
                 print(f"[WARN] CLI missing for {provider.name}: {provider.cli}")
                 print(f"[DRY-RUN] {shlex_join(create_cmd)}")
@@ -310,6 +324,8 @@ def publish_repositories(
                 print(f"[SKIP] {provider.name}:{provider.namespace}/{repo.repo} exists")
             else:
                 code = run_interactive(create_cmd, cwd=root, dry_run=not apply)
+                if code == 0 and apply:
+                    note_manual_rollback(f"delete provider repository {provider.namespace}/{repo.repo} manually if rollback is required")
                 failed = failed or code != 0
                 if code != 0:
                     continue
@@ -337,7 +353,11 @@ def publish_repositories(
             print(f"[SKIP] {repo.path}: no local git worktree to publish at {worktree}")
             continue
 
-        if run(["git", "remote", "get-url", remote_name], cwd=worktree).code == 0:
+        old_remote = run(["git", "remote", "get-url", remote_name], cwd=worktree)
+        previous_url = old_remote.stdout if old_remote.code == 0 else None
+        if apply:
+            track_git_remote(worktree, remote_name, previous_url)
+        if previous_url:
             code = run_interactive(["git", "remote", "set-url", remote_name, expected], cwd=worktree, dry_run=not apply)
         else:
             code = run_interactive(["git", "remote", "add", remote_name, expected], cwd=worktree, dry_run=not apply)
@@ -350,32 +370,38 @@ def publish_repositories(
     return 1 if failed else 0
 
 
-def git_foreach(config: ProjectConfig, root: Path, action: str, apply: bool, include_root: bool = True) -> int:
+def git_foreach(config: ProjectConfig, root: Path, action: str, apply: bool, include_root: bool = True, jobs: int = 1) -> int:
     targets = list(config.repositories)
     if not include_root:
         targets = [repo for repo in targets if not repo.is_root]
-    failed = False
-    for repo in targets:
-        path = root / repo.path
+
+    def worker(repo: Repository) -> tuple[int, str]:
+        path = root if repo.is_root else root / repo.path
         if not path.exists():
-            print(f"[SKIP] {repo.path}: path missing")
-            continue
+            return 0, f"[SKIP] {repo.path}: path missing"
         if run(["git", "rev-parse", "--is-inside-work-tree"], cwd=path).code != 0:
-            print(f"[SKIP] {repo.path}: not a git worktree")
-            continue
+            return 0, f"[SKIP] {repo.path}: not a git worktree"
         branch = git_output(["branch", "--show-current"], path) or repo.branch
         if action == "pull":
             cmd = ["git", "pull", "--ff-only"]
         elif action == "push":
             if not branch:
-                print(f"[SKIP] {repo.path}: detached head")
-                continue
+                return 0, f"[SKIP] {repo.path}: detached head"
             cmd = ["git", "push", "-u", "origin", branch]
         elif action == "status":
-            print(f"\n== {repo.path} ==")
             cmd = ["git", "status", "--short", "--branch"]
         else:
             raise ValueError(action)
-        code = run_interactive(cmd, cwd=path, dry_run=False if action == "status" else not apply)
+        if action == "status":
+            result = run(cmd, cwd=path)
+            output = f"\n== {repo.path} ==\n{result.stdout or result.stderr}"
+            return result.code, output
+        code = run_interactive(cmd, cwd=path, dry_run=not apply, description=f"git {action} {repo.repo}")
+        return code, f"[{'OK' if code == 0 else 'FAIL'}] {repo.path}: git {action}"
+
+    results = execute_levels(config, worker, repositories=targets, jobs=max(1, jobs))
+    failed = False
+    for _, (code, output) in results:
+        print(output)
         failed = failed or code != 0
     return 1 if failed else 0

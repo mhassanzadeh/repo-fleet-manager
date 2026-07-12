@@ -41,7 +41,7 @@
       "source_type": "existing",
       "remote_mode": "create",
       "depends_on": [],
-      "visibility": "private",
+      "visibility": "public",
       "topics": [
         "repository-management",
         "git",
