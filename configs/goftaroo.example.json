@@ -11,19 +11,27 @@
       "namespace": "mhassanzadeh",
       "host": "github.com",
       "cli": "gh",
-      "url_template": "git@github.com:{namespace}/{repo}.git"
+      "url_template": "git@github.com:{namespace}/{repo}.git",
+      "type": "remote",
+      "driver": "github",
+      "required_scopes": []
     },
     "gitlab": {
       "namespace": "goftaroo",
       "host": "gitlab.com",
       "cli": "glab",
-      "url_template": "git@gitlab.com:{namespace}/{repo}.git"
+      "url_template": "git@gitlab.com:{namespace}/{repo}.git",
+      "type": "remote",
+      "driver": "gitlab",
+      "required_scopes": []
     },
     "local": {
       "type": "local",
       "namespace": ".repo-fleet/remotes",
       "cli": "git",
-      "url_template": "file://{root}/{namespace}/{repo}.git"
+      "url_template": "file://{root}/{namespace}/{repo}.git",
+      "driver": "local",
+      "required_scopes": []
     }
   },
   "compose": {
@@ -42,7 +50,10 @@
       "kind": "root",
       "description": "Goftaroo root platform repository",
       "branch": "main",
-      "provider": "github"
+      "provider": "github",
+      "depends_on": [],
+      "source_type": "new",
+      "remote_mode": "create"
     },
     {
       "path": "services/api-gateway",
@@ -55,7 +66,10 @@
       "provider": "github",
       "docker_context": "services/api-gateway",
       "dockerfile": "services/api-gateway/Dockerfile",
-      "description": "Goftaroo platform repository: goftaroo-api-gateway"
+      "description": "Goftaroo platform repository: goftaroo-api-gateway",
+      "depends_on": [],
+      "source_type": "new",
+      "remote_mode": "create"
     },
     {
       "path": "services/identity-service",
@@ -68,7 +82,10 @@
       "provider": "github",
       "docker_context": "services/identity-service",
       "dockerfile": "services/identity-service/Dockerfile",
-      "description": "Goftaroo platform repository: goftaroo-identity-service"
+      "description": "Goftaroo platform repository: goftaroo-identity-service",
+      "depends_on": [],
+      "source_type": "new",
+      "remote_mode": "create"
     },
     {
       "path": "services/tenant-service",
@@ -81,7 +98,10 @@
       "provider": "github",
       "docker_context": "services/tenant-service",
       "dockerfile": "services/tenant-service/Dockerfile",
-      "description": "Goftaroo platform repository: goftaroo-tenant-service"
+      "description": "Goftaroo platform repository: goftaroo-tenant-service",
+      "depends_on": [],
+      "source_type": "new",
+      "remote_mode": "create"
     },
     {
       "path": "services/device-registry-service",
@@ -94,7 +114,10 @@
       "provider": "github",
       "docker_context": "services/device-registry-service",
       "dockerfile": "services/device-registry-service/Dockerfile",
-      "description": "Goftaroo platform repository: goftaroo-device-registry-service"
+      "description": "Goftaroo platform repository: goftaroo-device-registry-service",
+      "depends_on": [],
+      "source_type": "new",
+      "remote_mode": "create"
     },
     {
       "path": "services/subscription-service",
@@ -107,7 +130,10 @@
       "provider": "github",
       "docker_context": "services/subscription-service",
       "dockerfile": "services/subscription-service/Dockerfile",
-      "description": "Goftaroo platform repository: goftaroo-subscription-service"
+      "description": "Goftaroo platform repository: goftaroo-subscription-service",
+      "depends_on": [],
+      "source_type": "new",
+      "remote_mode": "create"
     },
     {
       "path": "services/billing-service",
@@ -120,7 +146,10 @@
       "provider": "github",
       "docker_context": "services/billing-service",
       "dockerfile": "services/billing-service/Dockerfile",
-      "description": "Goftaroo platform repository: goftaroo-billing-service"
+      "description": "Goftaroo platform repository: goftaroo-billing-service",
+      "depends_on": [],
+      "source_type": "new",
+      "remote_mode": "create"
     },
     {
       "path": "services/usage-metering-service",
@@ -133,7 +162,10 @@
       "provider": "github",
       "docker_context": "services/usage-metering-service",
       "dockerfile": "services/usage-metering-service/Dockerfile",
-      "description": "Goftaroo platform repository: goftaroo-usage-metering-service"
+      "description": "Goftaroo platform repository: goftaroo-usage-metering-service",
+      "depends_on": [],
+      "source_type": "new",
+      "remote_mode": "create"
     },
     {
       "path": "services/voice-session-service",
@@ -146,7 +178,10 @@
       "provider": "github",
       "docker_context": "services/voice-session-service",
       "dockerfile": "services/voice-session-service/Dockerfile",
-      "description": "Goftaroo platform repository: goftaroo-voice-session-service"
+      "description": "Goftaroo platform repository: goftaroo-voice-session-service",
+      "depends_on": [],
+      "source_type": "new",
+      "remote_mode": "create"
     },
     {
       "path": "services/conversation-service",
@@ -159,7 +194,10 @@
       "provider": "github",
       "docker_context": "services/conversation-service",
       "dockerfile": "services/conversation-service/Dockerfile",
-      "description": "Goftaroo platform repository: goftaroo-conversation-service"
+      "description": "Goftaroo platform repository: goftaroo-conversation-service",
+      "depends_on": [],
+      "source_type": "new",
+      "remote_mode": "create"
     },
     {
       "path": "services/speech-provider-service",
@@ -172,7 +210,10 @@
       "provider": "github",
       "docker_context": "services/speech-provider-service",
       "dockerfile": "services/speech-provider-service/Dockerfile",
-      "description": "Goftaroo platform repository: goftaroo-speech-provider-service"
+      "description": "Goftaroo platform repository: goftaroo-speech-provider-service",
+      "depends_on": [],
+      "source_type": "new",
+      "remote_mode": "create"
     },
     {
       "path": "services/llm-gateway-service",
@@ -185,7 +226,10 @@
       "provider": "github",
       "docker_context": "services/llm-gateway-service",
       "dockerfile": "services/llm-gateway-service/Dockerfile",
-      "description": "Goftaroo platform repository: goftaroo-llm-gateway-service"
+      "description": "Goftaroo platform repository: goftaroo-llm-gateway-service",
+      "depends_on": [],
+      "source_type": "new",
+      "remote_mode": "create"
     },
     {
       "path": "services/agent-orchestrator-service",
@@ -198,7 +242,10 @@
       "provider": "github",
       "docker_context": "services/agent-orchestrator-service",
       "dockerfile": "services/agent-orchestrator-service/Dockerfile",
-      "description": "Goftaroo platform repository: goftaroo-agent-orchestrator-service"
+      "description": "Goftaroo platform repository: goftaroo-agent-orchestrator-service",
+      "depends_on": [],
+      "source_type": "new",
+      "remote_mode": "create"
     },
     {
       "path": "services/skill-registry-service",
@@ -211,7 +258,10 @@
       "provider": "github",
       "docker_context": "services/skill-registry-service",
       "dockerfile": "services/skill-registry-service/Dockerfile",
-      "description": "Goftaroo platform repository: goftaroo-skill-registry-service"
+      "description": "Goftaroo platform repository: goftaroo-skill-registry-service",
+      "depends_on": [],
+      "source_type": "new",
+      "remote_mode": "create"
     },
     {
       "path": "services/notification-service",
@@ -224,7 +274,10 @@
       "provider": "github",
       "docker_context": "services/notification-service",
       "dockerfile": "services/notification-service/Dockerfile",
-      "description": "Goftaroo platform repository: goftaroo-notification-service"
+      "description": "Goftaroo platform repository: goftaroo-notification-service",
+      "depends_on": [],
+      "source_type": "new",
+      "remote_mode": "create"
     },
     {
       "path": "services/audit-export-worker-service",
@@ -235,7 +288,10 @@
       "provider": "github",
       "docker_context": "services/audit-export-worker-service",
       "dockerfile": "services/audit-export-worker-service/Dockerfile",
-      "description": "Goftaroo platform repository: goftaroo-audit-export-worker-service"
+      "description": "Goftaroo platform repository: goftaroo-audit-export-worker-service",
+      "depends_on": [],
+      "source_type": "new",
+      "remote_mode": "create"
     },
     {
       "path": "clients/kmp-client",
@@ -243,7 +299,10 @@
       "kind": "client",
       "branch": "main",
       "provider": "github",
-      "description": "Goftaroo platform repository: goftaroo-kmp-client"
+      "description": "Goftaroo platform repository: goftaroo-kmp-client",
+      "depends_on": [],
+      "source_type": "new",
+      "remote_mode": "create"
     },
     {
       "path": "clients/admin-dashboard",
@@ -251,7 +310,10 @@
       "kind": "client",
       "branch": "main",
       "provider": "github",
-      "description": "Goftaroo platform repository: goftaroo-admin-dashboard"
+      "description": "Goftaroo platform repository: goftaroo-admin-dashboard",
+      "depends_on": [],
+      "source_type": "new",
+      "remote_mode": "create"
     },
     {
       "path": "clients/user-dashboard",
@@ -259,7 +321,10 @@
       "kind": "client",
       "branch": "main",
       "provider": "github",
-      "description": "Goftaroo platform repository: goftaroo-user-dashboard"
+      "description": "Goftaroo platform repository: goftaroo-user-dashboard",
+      "depends_on": [],
+      "source_type": "new",
+      "remote_mode": "create"
     },
     {
       "path": "clients/embedded-runtime",
@@ -267,7 +332,10 @@
       "kind": "client",
       "branch": "main",
       "provider": "github",
-      "description": "Goftaroo platform repository: goftaroo-embedded-runtime"
+      "description": "Goftaroo platform repository: goftaroo-embedded-runtime",
+      "depends_on": [],
+      "source_type": "new",
+      "remote_mode": "create"
     },
     {
       "path": "packages/shared-contracts",
@@ -275,7 +343,10 @@
       "kind": "package",
       "branch": "main",
       "provider": "github",
-      "description": "Goftaroo platform repository: goftaroo-shared-contracts"
+      "description": "Goftaroo platform repository: goftaroo-shared-contracts",
+      "depends_on": [],
+      "source_type": "new",
+      "remote_mode": "create"
     },
     {
       "path": "infra/platform-infra",
@@ -283,11 +354,18 @@
       "kind": "infra",
       "branch": "main",
       "provider": "github",
-      "description": "Goftaroo platform repository: goftaroo-platform-infra"
+      "description": "Goftaroo platform repository: goftaroo-platform-infra",
+      "depends_on": [],
+      "source_type": "new",
+      "remote_mode": "create"
     }
   ],
   "local": {
     "remotes_dir": ".repo-fleet/remotes",
-    "workspace_mode": "submodules"
-  }
+    "workspace_mode": "submodules",
+    "operations_dir": ".repo-fleet/operations",
+    "lock_file": ".repo-fleet/lock",
+    "default_jobs": 1
+  },
+  "schema_version": "1.0.0"
 }

@@ -11,19 +11,27 @@
       "namespace": "my-github-org",
       "host": "github.com",
       "cli": "gh",
-      "url_template": "git@github.com:{namespace}/{repo}.git"
+      "url_template": "git@github.com:{namespace}/{repo}.git",
+      "type": "remote",
+      "driver": "github",
+      "required_scopes": []
     },
     "gitlab": {
       "namespace": "my-gitlab-group",
       "host": "gitlab.com",
       "cli": "glab",
-      "url_template": "git@gitlab.com:{namespace}/{repo}.git"
+      "url_template": "git@gitlab.com:{namespace}/{repo}.git",
+      "type": "remote",
+      "driver": "gitlab",
+      "required_scopes": []
     },
     "local": {
       "type": "local",
       "namespace": ".repo-fleet/remotes",
       "cli": "git",
-      "url_template": "file://{root}/{namespace}/{repo}.git"
+      "url_template": "file://{root}/{namespace}/{repo}.git",
+      "driver": "local",
+      "required_scopes": []
     }
   },
   "compose": {
@@ -43,7 +51,9 @@
       "provider": "github",
       "branch": "main",
       "description": "Root orchestration repository",
-      "source_type": "new"
+      "source_type": "new",
+      "depends_on": [],
+      "remote_mode": "create"
     },
     {
       "path": "services/api",
@@ -56,7 +66,11 @@
       "docker_context": "services/api",
       "dockerfile": "services/api/Dockerfile",
       "health_url": "http://localhost:8080/healthz",
-      "source_type": "new"
+      "source_type": "new",
+      "depends_on": [
+        "my-shared-contracts"
+      ],
+      "remote_mode": "create"
     },
     {
       "path": "clients/web",
@@ -64,7 +78,12 @@
       "kind": "client",
       "provider": "github",
       "branch": "main",
-      "source_type": "new"
+      "source_type": "new",
+      "depends_on": [
+        "my-shared-contracts",
+        "my-api-service"
+      ],
+      "remote_mode": "create"
     },
     {
       "path": "packages/contracts",
@@ -72,11 +91,17 @@
       "kind": "package",
       "provider": "github",
       "branch": "main",
-      "source_type": "new"
+      "source_type": "new",
+      "depends_on": [],
+      "remote_mode": "create"
     }
   ],
   "local": {
     "remotes_dir": ".repo-fleet/remotes",
-    "workspace_mode": "submodules"
-  }
+    "workspace_mode": "submodules",
+    "operations_dir": ".repo-fleet/operations",
+    "lock_file": ".repo-fleet/lock",
+    "default_jobs": 1
+  },
+  "schema_version": "1.0.0"
 }

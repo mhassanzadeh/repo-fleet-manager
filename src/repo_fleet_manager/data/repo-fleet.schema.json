@@ -1,0 +1,456 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repo-fleet-manager.local/schemas/repo-fleet.schema.json",
+  "title": "Repo Fleet Manager configuration",
+  "description": "Versioned desired-state configuration for RFM workspaces.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "project",
+    "providers",
+    "repositories"
+  ],
+  "additionalProperties": false,
+  "patternProperties": {
+    "^x-": {}
+  },
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "project": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {}
+      },
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "default_provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "default_branch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "env_prefix": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "build_dir": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "providers": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "patternProperties": {
+          "^x-": {}
+        },
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "remote",
+              "local"
+            ]
+          },
+          "kind": {
+            "type": "string"
+          },
+          "driver": {
+            "type": "string",
+            "enum": [
+              "github",
+              "gitlab",
+              "local",
+              "generic"
+            ]
+          },
+          "namespace": {
+            "type": "string"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "group": {
+            "type": "string"
+          },
+          "url_template": {
+            "type": "string",
+            "minLength": 1
+          },
+          "cli": {
+            "type": "string",
+            "minLength": 1
+          },
+          "host": {
+            "type": "string"
+          },
+          "profile": {
+            "type": "string"
+          },
+          "user": {
+            "type": "string"
+          },
+          "required_scopes": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "repositories": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "repo"
+        ],
+        "additionalProperties": false,
+        "patternProperties": {
+          "^x-": {}
+        },
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "repo": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._-]+$"
+          },
+          "kind": {
+            "type": "string",
+            "minLength": 1
+          },
+          "provider": {
+            "type": "string"
+          },
+          "branch": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string"
+          },
+          "source_type": {
+            "type": "string",
+            "enum": [
+              "new",
+              "upstream",
+              "existing"
+            ]
+          },
+          "remote_mode": {
+            "type": "string",
+            "enum": [
+              "create",
+              "fork",
+              "mirror"
+            ]
+          },
+          "depends_on": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "upstream_url": {
+            "type": "string"
+          },
+          "source_url": {
+            "type": "string"
+          },
+          "clone_url": {
+            "type": "string"
+          },
+          "fork_from": {
+            "type": "string"
+          },
+          "mirror_source": {
+            "type": "string"
+          },
+          "mirror": {
+            "type": "boolean"
+          },
+          "existing_path": {
+            "type": "string"
+          },
+          "local_source": {
+            "type": "string"
+          },
+          "import_from": {
+            "type": "string"
+          },
+          "host_port": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "compose_service": {
+            "type": "string"
+          },
+          "docker_context": {
+            "type": "string"
+          },
+          "dockerfile": {
+            "type": "string"
+          },
+          "health_url": {
+            "type": "string"
+          },
+          "include_roots": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "private",
+              "internal",
+              "public"
+            ]
+          },
+          "topics": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "source_type": {
+                  "const": "upstream"
+                }
+              },
+              "required": [
+                "source_type"
+              ]
+            },
+            "then": {
+              "anyOf": [
+                {
+                  "required": [
+                    "upstream_url"
+                  ]
+                },
+                {
+                  "required": [
+                    "source_url"
+                  ]
+                },
+                {
+                  "required": [
+                    "clone_url"
+                  ]
+                },
+                {
+                  "required": [
+                    "fork_from"
+                  ]
+                },
+                {
+                  "required": [
+                    "mirror_source"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "remote_mode": {
+                  "const": "fork"
+                }
+              },
+              "required": [
+                "remote_mode"
+              ]
+            },
+            "then": {
+              "anyOf": [
+                {
+                  "required": [
+                    "fork_from"
+                  ]
+                },
+                {
+                  "required": [
+                    "upstream_url"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "source_type": {
+                  "const": "existing"
+                }
+              },
+              "required": [
+                "source_type"
+              ]
+            },
+            "then": {
+              "anyOf": [
+                {
+                  "required": [
+                    "existing_path"
+                  ]
+                },
+                {
+                  "required": [
+                    "local_source"
+                  ]
+                },
+                {
+                  "required": [
+                    "import_from"
+                  ]
+                },
+                {
+                  "properties": {
+                    "path": {
+                      "const": "."
+                    }
+                  },
+                  "required": [
+                    "path"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "local": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {}
+      },
+      "properties": {
+        "remotes_dir": {
+          "type": "string"
+        },
+        "workspace_mode": {
+          "type": "string",
+          "enum": [
+            "submodules",
+            "independent"
+          ]
+        },
+        "operations_dir": {
+          "type": "string"
+        },
+        "lock_file": {
+          "type": "string"
+        },
+        "default_jobs": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        }
+      }
+    },
+    "compose": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {}
+      },
+      "properties": {
+        "file": {
+          "type": "string"
+        },
+        "env_file": {
+          "type": "string"
+        },
+        "project_name": {
+          "type": "string"
+        },
+        "engine": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "docker",
+            "podman"
+          ]
+        },
+        "profiles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "fingerprint": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {}
+      },
+      "properties": {
+        "algorithm": {
+          "type": "string",
+          "enum": [
+            "sha256"
+          ]
+        },
+        "short_length": {
+          "type": "integer",
+          "minimum": 7,
+          "maximum": 64
+        },
+        "exclude": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

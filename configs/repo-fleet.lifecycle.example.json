@@ -11,24 +11,35 @@
       "namespace": "my-github-user",
       "host": "github.com",
       "cli": "gh",
-      "url_template": "git@github.com:{namespace}/{repo}.git"
+      "url_template": "git@github.com:{namespace}/{repo}.git",
+      "type": "remote",
+      "driver": "github",
+      "required_scopes": []
     },
     "gitlab": {
       "namespace": "my-gitlab-group",
       "host": "gitlab.com",
       "cli": "glab",
-      "url_template": "git@gitlab.com:{namespace}/{repo}.git"
+      "url_template": "git@gitlab.com:{namespace}/{repo}.git",
+      "type": "remote",
+      "driver": "gitlab",
+      "required_scopes": []
     },
     "local": {
       "type": "local",
       "namespace": ".repo-fleet/remotes",
       "cli": "git",
-      "url_template": "file://{root}/{namespace}/{repo}.git"
+      "url_template": "file://{root}/{namespace}/{repo}.git",
+      "driver": "local",
+      "required_scopes": []
     }
   },
   "local": {
     "remotes_dir": ".repo-fleet/remotes",
-    "workspace_mode": "submodules"
+    "workspace_mode": "submodules",
+    "operations_dir": ".repo-fleet/operations",
+    "lock_file": ".repo-fleet/lock",
+    "default_jobs": 1
   },
   "repositories": [
     {
@@ -38,7 +49,9 @@
       "provider": "github",
       "branch": "main",
       "source_type": "new",
-      "description": "Root orchestration repository"
+      "description": "Root orchestration repository",
+      "depends_on": [],
+      "remote_mode": "create"
     },
     {
       "path": "apps/custom-app",
@@ -47,7 +60,12 @@
       "provider": "github",
       "branch": "main",
       "source_type": "new",
-      "description": "New app that does not exist anywhere yet"
+      "description": "New app that does not exist anywhere yet",
+      "depends_on": [
+        "frappe",
+        "erpnext"
+      ],
+      "remote_mode": "create"
     },
     {
       "path": "vendor/frappe",
@@ -58,7 +76,8 @@
       "source_type": "upstream",
       "remote_mode": "mirror",
       "upstream_url": "https://github.com/frappe/frappe.git",
-      "description": "External upstream that is localized as a mirror"
+      "description": "External upstream that is localized as a mirror",
+      "depends_on": []
     },
     {
       "path": "vendor/erpnext",
@@ -69,7 +88,8 @@
       "source_type": "upstream",
       "remote_mode": "fork",
       "fork_from": "https://github.com/frappe/erpnext.git",
-      "description": "External upstream intended for fork/mirror workflows"
+      "description": "External upstream intended for fork/mirror workflows",
+      "depends_on": []
     },
     {
       "path": "legacy/tenant-admin",
@@ -79,7 +99,11 @@
       "branch": "main",
       "source_type": "existing",
       "existing_path": "../old-projects/tenant-admin",
-      "description": "Already-built local project to import and publish"
+      "description": "Already-built local project to import and publish",
+      "depends_on": [
+        "mixed-custom-app"
+      ],
+      "remote_mode": "create"
     }
   ],
   "compose": {
@@ -89,5 +113,6 @@
   "fingerprint": {
     "algorithm": "sha256",
     "short_length": 16
-  }
+  },
+  "schema_version": "1.0.0"
 }

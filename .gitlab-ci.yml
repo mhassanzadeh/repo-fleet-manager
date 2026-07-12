@@ -1,0 +1,29 @@
+stages: [test, package]
+
+variables:
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
+unit-and-validation:
+  image: python:3.12-slim
+  stage: test
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends git bash && rm -rf /var/lib/apt/lists/*
+    - python -m pip install -e .
+  script:
+    - rfm config --config configs/repo-fleet.example.json validate --strict
+    - rfm config --config configs/repo-fleet.lifecycle.example.json validate --strict
+    - make test
+    - make validate-docs
+    - make catalog-check
+    - bash -n completions/rfm.bash
+
+package:
+  image: python:3.12-slim
+  stage: package
+  before_script:
+    - python -m pip install build
+  script:
+    - python -m build
+  artifacts:
+    paths:
+      - dist/

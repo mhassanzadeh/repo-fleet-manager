@@ -1,0 +1,63 @@
+name: RFM CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install build and runtime dependencies
+        run: python -m pip install --upgrade pip build
+      - name: Install RFM
+        run: python -m pip install -e .
+      - name: Validate strict sample configurations
+        run: |
+          rfm config --config configs/repo-fleet.example.json validate --strict
+          rfm config --config configs/repo-fleet.lifecycle.example.json validate --strict
+          rfm config --config configs/goftaroo.example.json validate --strict
+      - name: Run tests
+        run: make test
+      - name: Validate documentation and catalog evidence
+        run: |
+          make validate-docs
+          make catalog-check
+      - name: Validate shell completion
+        run: |
+          bash -n completions/rfm.bash
+          rfm completion bash | bash -n
+          test -n "$(rfm completion fish)"
+      - name: Build package
+        run: make build
+
+  container-cli:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        engine: [docker, podman]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Podman
+        if: matrix.engine == 'podman'
+        run: sudo apt-get update && sudo apt-get install -y podman
+      - name: Verify container engine and RFM doctor
+        run: |
+          ${{ matrix.engine }} --version
+          python -m pip install -e .
+          rfm doctor --config configs/repo-fleet.example.json

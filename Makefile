@@ -5,7 +5,7 @@ FISH_COMPLETION_DIR ?= $(HOME)/.config/fish/completions
 CONFIG ?= configs/repo-fleet.example.json
 ROOT ?= .
 
-.PHONY: install install-cli install-editable install-completions install-all uninstall uninstall-completions doctor test validate-docs completion-bash completion-fish local-plan local-localize local-localize-apply local-bootstrap local-bootstrap-apply local-remotes local-remotes-apply local-remotes-update publish-github publish-gitlab catalog-summary catalog-tree catalog-gaps catalog-docs catalog-check build clean
+.PHONY: install install-cli install-editable install-completions install-all uninstall uninstall-completions doctor auth-status config-validate config-migrate graph safety-status ops-list test validate validate-docs completion-bash completion-fish local-plan local-localize local-localize-apply local-bootstrap local-bootstrap-apply local-remotes local-remotes-apply local-remotes-update publish-github publish-gitlab catalog-summary catalog-tree catalog-gaps catalog-docs catalog-check build clean
 
 install: install-cli install-completions
 
@@ -83,16 +83,42 @@ catalog-check:
 	./scripts/rfm.sh catalog --root "$(ROOT)" --view summary --check-evidence
 
 doctor:
-	./scripts/rfm.sh doctor --config configs/goftaroo.example.json
+	./scripts/rfm.sh doctor --config "$(CONFIG)" --root "$(ROOT)"
+
+config-validate:
+	./scripts/rfm.sh config --config "$(CONFIG)" validate --strict
+
+config-migrate:
+	./scripts/rfm.sh config --config "$(CONFIG)" migrate
+
+auth-status:
+	./scripts/rfm.sh auth --config "$(CONFIG)" --root "$(ROOT)" status
+
+graph:
+	./scripts/rfm.sh graph --config "$(CONFIG)" --root "$(ROOT)" show
+
+safety-status:
+	./scripts/rfm.sh safety --config "$(CONFIG)" --root "$(ROOT)" status
+
+ops-list:
+	./scripts/rfm.sh ops --config "$(CONFIG)" --root "$(ROOT)" list
 
 test:
 	PYTHONPATH=src $(PYTHON) -m unittest discover -s tests
 
 validate-docs:
-	./scripts/rfm.sh docs --config configs/goftaroo.example.json validate-links
+	./scripts/rfm.sh docs --config "$(CONFIG)" --root "$(ROOT)" validate-links
+
+validate: config-validate test validate-docs catalog-check
 
 build:
-	$(PYTHON) -m build
+	@mkdir -p dist
+	@if $(PYTHON) -c "import build" >/dev/null 2>&1; then \
+		$(PYTHON) -m build; \
+	else \
+		echo "python-build is unavailable; creating wheel with pip"; \
+		$(PIP) wheel --no-deps --wheel-dir dist .; \
+	fi
 
 clean:
 	rm -rf build dist *.egg-info src/*.egg-info .pytest_cache .coverage
