@@ -1,6 +1,10 @@
 .gitlab-ci.yml
+CHANGELOG.md
+CONTRIBUTING.md
 GIT_COMMIT_GUIDE_v0.6.0.md
 GIT_COMMIT_GUIDE_v0.6.1.md
+GIT_COMMIT_GUIDE_v0.6.3.md
+LICENSE
 MANIFEST.in
 MIGRATION.md
 Makefile
@@ -10,9 +14,16 @@ PATCH_NOTES_v0.5.0.md
 PATCH_NOTES_v0.6.0.md
 PATCH_NOTES_v0.6.1.md
 PATCH_NOTES_v0.6.2.md
+PATCH_NOTES_v0.6.3.md
 README.md
+SECURITY.md
 pyproject.toml
+.github/pull_request_template.md
+.github/ISSUE_TEMPLATE/bug_report.yml
+.github/ISSUE_TEMPLATE/config.yml
+.github/ISSUE_TEMPLATE/feature_request.yml
 .github/workflows/ci.yml
+.github/workflows/release.yml
 catalog/rfm-service-catalog.json
 completions/rfm.bash
 completions/rfm.fish
@@ -35,6 +46,7 @@ docs/generated/rfm-service-catalog.md
 reports/gap-analysis.md
 reports/script-audit.md
 schemas/repo-fleet.schema.json
+scripts/check_release_version.py
 src/repo_fleet_manager/__init__.py
 src/repo_fleet_manager/__main__.py
 src/repo_fleet_manager/cli.py
@@ -69,5 +81,6 @@ tests/test_local_workflow.py
 tests/test_operations.py
 tests/test_provider.py
 tests/test_publish.py
+tests/test_release_metadata.py
 tests/test_schema_migration.py
 tests/test_service_catalog.py

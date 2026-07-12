@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "catalog_version": "0.6.1",
+  "catalog_version": "0.6.3",
   "project": {
     "name": "Repo Fleet Manager",
     "short_name": "RFM",
@@ -15,7 +15,8 @@
     "implemented": "Available and covered by at least basic tests or executable documentation.",
     "partial": "Usable for common paths but missing important safety, provider or edge-case behavior.",
     "planned": "Defined in the catalog and backlog but not implemented.",
-    "missing": "Required for a production-grade implementation and currently absent."
+    "missing": "Required for a production-grade implementation and currently absent.",
+    "resolved": "Previously identified gap whose acceptance criteria are now implemented."
   },
   "domains": [
     {
@@ -851,15 +852,18 @@
         },
         {
           "id": "quality.release",
-          "name": "Automated semantic versioning and changelog",
-          "status": "partial",
-          "maturity": "alpha",
-          "commands": [],
-          "components": [
-            "PATCH_NOTES_v0.4.0.md"
+          "name": "Automated package and GitHub release workflow",
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "make release-check",
+            "make release-artifacts"
           ],
-          "gap_refs": [
-            "GAP-017"
+          "components": [
+            ".github/workflows/release.yml",
+            "scripts/check_release_version.py",
+            "CHANGELOG.md",
+            "PATCH_NOTES_v0.6.3.md"
           ]
         }
       ]
@@ -1182,7 +1186,7 @@
       "title": "Automated release and compatibility discipline",
       "priority": "P2",
       "category": "release",
-      "status": "partial",
+      "status": "resolved",
       "rationale": "Manual patch notes are useful but do not guarantee reproducible packages, changelogs or compatibility across Python, Git and container engines.",
       "recommended_scope": [
         "Automate tests/build/tag/release",
@@ -1194,7 +1198,9 @@
         "A tagged release is reproducible",
         "Artifacts include checksums",
         "Supported versions are tested and documented"
-      ]
+      ],
+      "resolved_in": "0.6.3",
+      "resolution": "Tag-driven release workflow validates versions, builds reproducible Python artifacts, verifies wheel installation and publishes SHA-256 checksums with the GitHub Release."
     }
   ]
 }
