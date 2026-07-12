@@ -1,5 +1,18 @@
 # Migration guide
 
+## 0.6.0 to 0.6.1
+
+نسخه 0.6.1 ساختار schema را تغییر نمی‌دهد؛ فقط migration فایل‌های legacy را کامل می‌کند. پس از نصب نسخه جدید:
+
+```bash
+rfm config --config repo-fleet.json validate
+rfm config --config repo-fleet.json migrate
+rfm config --config repo-fleet.json migrate --apply
+rfm config --config repo-fleet.json validate --strict
+```
+
+فایل backup به‌صورت `repo-fleet.json.bak` ساخته می‌شود. providerهای قدیمی `type: github` و `type: gitlab` به `type: remote` و `driver` متناظر تبدیل می‌شوند.
+
 ## 0.5.0 to 0.6.0
 
 RFM 0.6 introduces a versioned configuration contract and safety journal. Existing 0.5 files continue to load through in-memory migration, but writing the normalized form is recommended.

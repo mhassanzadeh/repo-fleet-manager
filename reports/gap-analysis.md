@@ -1,6 +1,6 @@
 # Repo Fleet Manager logical gap analysis
 
-> Catalog version `0.6.0` · 17 prioritized gaps
+> Catalog version `0.6.1` · 17 prioritized gaps
 
 ## P0
 

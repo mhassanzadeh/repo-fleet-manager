@@ -245,6 +245,21 @@ repo-fleet-manager/
 فرمان‌هایی که state را تغییر می‌دهند، مثل ساخت ریپو، sync ریموت، pull/push و compose up/down، تا وقتی `--apply` ندهید فقط دستورهای پیشنهادی را چاپ می‌کنند. با `--apply` نیز lock، safety guard و operation journal فعال می‌شود. عبور اجباری از guard فقط با `--force --reason "..."` ممکن است تا علت تصمیم در journal بماند.
 
 
+## اصلاح migration کانفیگ‌های قدیمی در 0.6.1
+
+اگر `validate --strict` برای providerهای `type: github` یا فیلدهای قدیمی مانند `project_name` و `repos` خطا داد، ابتدا hotfix `0.6.1` را نصب کرده و سپس اجرا کنید:
+
+```bash
+rfm config --config repo-fleet.json validate
+rfm config --config repo-fleet.json migrate
+rfm config --config repo-fleet.json migrate --apply
+rfm config --config repo-fleet.json validate --strict
+```
+
+`--strict` عمداً فایل را بدون migration بررسی می‌کند؛ بنابراین برای فایل قدیمی باید بعد از `migrate --apply` استفاده شود.
+
+توجه: نسخه ابزار `0.6.1` است، اما مقدار استاندارد `schema_version` در config برابر `1.0.0` باقی می‌ماند؛ این دو شماره مستقل هستند.
+
 ## Git commit guide
 
-دستورهای پیشنهادی commit، tag و ثبت pointer ساب‌ماژول در [`GIT_COMMIT_GUIDE_v0.6.0.md`](GIT_COMMIT_GUIDE_v0.6.0.md) قرار دارد.
+دستورهای پیشنهادی commit، tag و ثبت pointer ساب‌ماژول در [`GIT_COMMIT_GUIDE_v0.6.1.md`](GIT_COMMIT_GUIDE_v0.6.1.md) قرار دارد.

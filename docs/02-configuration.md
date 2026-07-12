@@ -30,12 +30,16 @@
 {
   "providers": {
     "github": {
+      "type": "remote",
+      "driver": "github",
       "namespace": "my-github-org",
       "host": "github.com",
       "cli": "gh",
       "url_template": "git@github.com:{namespace}/{repo}.git"
     },
     "gitlab": {
+      "type": "remote",
+      "driver": "gitlab",
       "namespace": "my-gitlab-group",
       "host": "gitlab.com",
       "cli": "glab",
@@ -143,18 +147,26 @@ Current normalized manifests use:
 }
 ```
 
-Validate the exact file without compatibility migration:
+`schema_version` نسخه قرارداد فایل JSON است و با نسخه خود ابزار یکی نیست. برای نمونه، RFM `0.6.1` همچنان schema `1.0.0` را استفاده می‌کند.
+
+`--strict` فایل را دقیقاً در همان ساختار فعلی بررسی می‌کند و هیچ migration سازگاری در حافظه انجام نمی‌دهد. بنابراین برای config قدیمی ابتدا migration را preview و apply کنید و سپس strict validation بگیرید:
 
 ```bash
+rfm config --config repo-fleet.json validate
+rfm config --config repo-fleet.json migrate
+rfm config --config repo-fleet.json migrate --apply
 rfm config --config repo-fleet.json validate --strict
 ```
 
-Preview or apply migration of older manifests:
+نسخه `0.6.1` این شکل‌های قدیمی را نیز تبدیل می‌کند:
 
-```bash
-rfm config --config repo-fleet.json migrate
-rfm config --config repo-fleet.json migrate --apply
-```
+- `schema_version`های کوتاه مانند `0.6` و `0.5`؛
+- provider قدیمی `type: github` یا `type: gitlab` به `type: remote` همراه با `driver`؛
+- فیلدهای top-level مانند `project_name`، `name` و `default_provider` به بخش `project`؛
+- کاتالوگ‌های `repos`، `modules`، `services` و `projects` به `repositories`؛
+- نام‌های قدیمی repository مانند `name`، `directory`، `lifecycle` و `provider_action`.
+
+قبل از نوشتن فایل، RFM خروجی dry-run نمایش می‌دهد و در حالت `--apply` یک فایل backup با پسوند `.bak` می‌سازد.
 
 The validation layer checks JSON types and allowed fields as well as provider references, duplicate/nested paths, dependency references, cycles and accidental secret fields. Use `x-*` for extension fields or repository `metadata` for free-form metadata.
 
