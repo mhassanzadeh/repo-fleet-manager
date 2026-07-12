@@ -93,3 +93,60 @@ rfm git push --apply
 ```bash
 rfm docs validate-links
 ```
+
+## Safe apply workflow
+
+Before a significant operation:
+
+```bash
+rfm config --config repo-fleet.json validate --strict
+rfm graph --config repo-fleet.json show
+rfm safety --config repo-fleet.json status
+rfm auth --config repo-fleet.json status --verbose
+```
+
+Then run the dry-run and apply form:
+
+```bash
+rfm local --config repo-fleet.json localize
+rfm local --config repo-fleet.json localize --jobs 4 --apply
+```
+
+Inspect the resulting journal:
+
+```bash
+rfm ops --config repo-fleet.json list
+rfm ops --config repo-fleet.json show OPERATION_ID
+```
+
+For interruption recovery or compensating rollback:
+
+```bash
+rfm ops --config repo-fleet.json resume OPERATION_ID
+rfm ops --config repo-fleet.json rollback OPERATION_ID
+```
+
+See [operational safety and recovery](11-operational-safety-and-recovery.md).
+
+## Native fork, mirror and reconciliation
+
+For repositories configured with `source_type: upstream` and `remote_mode: fork`:
+
+```bash
+rfm repos --config repo-fleet.json fork --provider github
+rfm repos --config repo-fleet.json fork --provider github --apply
+```
+
+For `remote_mode: mirror`:
+
+```bash
+rfm local --config repo-fleet.json remotes --mirror-sources --apply
+rfm repos --config repo-fleet.json mirror --provider gitlab --apply
+```
+
+After create/fork/publish, compare provider state and repair metadata drift:
+
+```bash
+rfm repos --config repo-fleet.json reconcile --provider github
+rfm repos --config repo-fleet.json reconcile --provider github --apply
+```

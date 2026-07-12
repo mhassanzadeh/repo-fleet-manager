@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "catalog_version": "0.5.0",
+  "catalog_version": "0.6.0",
   "project": {
     "name": "Repo Fleet Manager",
     "short_name": "RFM",
@@ -133,23 +133,30 @@
         {
           "id": "config.schema-validation",
           "name": "Versioned JSON Schema validation",
-          "status": "missing",
-          "maturity": "not-started",
-          "commands": [],
-          "components": [],
-          "gap_refs": [
-            "GAP-001"
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm config --config repo-fleet.json validate --strict"
+          ],
+          "components": [
+            "schemas/repo-fleet.schema.json",
+            "src/repo_fleet_manager/schema.py",
+            "tests/test_schema_migration.py"
           ]
         },
         {
           "id": "config.migrations",
           "name": "Config schema migrations and backward compatibility",
-          "status": "missing",
-          "maturity": "not-started",
-          "commands": [],
-          "components": [],
-          "gap_refs": [
-            "GAP-001"
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm config --config repo-fleet.json migrate",
+            "rfm config --config repo-fleet.json migrate --apply"
+          ],
+          "components": [
+            "src/repo_fleet_manager/schema.py",
+            "docs/02-configuration.md",
+            "MIGRATION.md"
           ]
         },
         {
@@ -199,18 +206,16 @@
         {
           "id": "repo.existing-import",
           "name": "Import existing local worktrees",
-          "status": "partial",
-          "maturity": "alpha",
+          "status": "implemented",
+          "maturity": "beta",
           "commands": [
             "rfm local localize --apply",
             "rfm repos publish --only existing"
           ],
           "components": [
             "src/repo_fleet_manager/localops.py",
-            "src/repo_fleet_manager/gitops.py"
-          ],
-          "gap_refs": [
-            "GAP-004"
+            "src/repo_fleet_manager/gitops.py",
+            "tests/test_local_workflow.py"
           ]
         },
         {
@@ -229,45 +234,45 @@
         {
           "id": "repo.provider-publish",
           "name": "Publish local worktrees and mirrors to personal providers",
-          "status": "partial",
-          "maturity": "alpha",
+          "status": "implemented",
+          "maturity": "beta",
           "commands": [
             "rfm repos publish --provider github --apply",
             "rfm repos publish --provider gitlab --apply"
           ],
           "components": [
-            "src/repo_fleet_manager/gitops.py"
-          ],
-          "gap_refs": [
-            "GAP-003",
-            "GAP-004"
+            "src/repo_fleet_manager/gitops.py",
+            "src/repo_fleet_manager/provider.py",
+            "docs/05-repository-providers.md"
           ]
         },
         {
           "id": "repo.native-fork",
           "name": "Native GitHub/GitLab fork operation with upstream tracking",
-          "status": "missing",
-          "maturity": "not-started",
-          "commands": [],
-          "components": [],
-          "gap_refs": [
-            "GAP-003"
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm repos --config repo-fleet.json fork --provider github --apply",
+            "rfm repos --config repo-fleet.json fork --provider gitlab --apply"
+          ],
+          "components": [
+            "src/repo_fleet_manager/provider.py",
+            "tests/test_provider.py",
+            "docs/05-repository-providers.md"
           ]
         },
         {
           "id": "repo.reconcile",
           "name": "Desired-state reconciliation and drift repair",
-          "status": "partial",
-          "maturity": "alpha",
+          "status": "implemented",
+          "maturity": "beta",
           "commands": [
-            "rfm repos audit",
-            "rfm submodules sync"
+            "rfm repos --config repo-fleet.json reconcile --provider github",
+            "rfm repos --config repo-fleet.json reconcile --provider github --apply"
           ],
           "components": [
-            "src/repo_fleet_manager/gitops.py"
-          ],
-          "gap_refs": [
-            "GAP-003"
+            "src/repo_fleet_manager/provider.py",
+            "docs/05-repository-providers.md"
           ]
         }
       ]
@@ -377,38 +382,44 @@
         {
           "id": "git.dirty-safety",
           "name": "Dirty worktree, detached HEAD and divergence guards",
-          "status": "partial",
-          "maturity": "alpha",
+          "status": "implemented",
+          "maturity": "beta",
           "commands": [
-            "rfm repos audit"
+            "rfm safety --config repo-fleet.json status"
           ],
           "components": [
-            "src/repo_fleet_manager/gitops.py"
-          ],
-          "gap_refs": [
-            "GAP-004"
+            "src/repo_fleet_manager/safety.py",
+            "src/repo_fleet_manager/operations.py",
+            "tests/test_operations.py"
           ]
         },
         {
           "id": "git.dependency-order",
           "name": "Dependency-aware execution graph",
-          "status": "missing",
-          "maturity": "not-started",
-          "commands": [],
-          "components": [],
-          "gap_refs": [
-            "GAP-006"
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm graph --config repo-fleet.json show"
+          ],
+          "components": [
+            "src/repo_fleet_manager/graph.py",
+            "tests/test_graph.py"
           ]
         },
         {
           "id": "git.parallel",
           "name": "Controlled parallel fleet operations",
-          "status": "missing",
-          "maturity": "not-started",
-          "commands": [],
-          "components": [],
-          "gap_refs": [
-            "GAP-006"
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm local --config repo-fleet.json localize --jobs 4 --apply",
+            "rfm git --config repo-fleet.json pull --jobs 4 --apply"
+          ],
+          "components": [
+            "src/repo_fleet_manager/graph.py",
+            "src/repo_fleet_manager/localops.py",
+            "src/repo_fleet_manager/gitops.py",
+            "tests/test_graph.py"
           ]
         }
       ]
@@ -421,37 +432,31 @@
         {
           "id": "provider.github",
           "name": "GitHub CLI integration",
-          "status": "partial",
-          "maturity": "alpha",
+          "status": "implemented",
+          "maturity": "beta",
           "commands": [
             "rfm repos create --provider github",
             "rfm repos publish --provider github"
           ],
           "components": [
+            "src/repo_fleet_manager/provider.py",
             "src/repo_fleet_manager/gitops.py",
-            "docs/05-repository-providers.md"
-          ],
-          "gap_refs": [
-            "GAP-003",
-            "GAP-005"
+            "tests/test_provider.py"
           ]
         },
         {
           "id": "provider.gitlab",
           "name": "GitLab CLI integration",
-          "status": "partial",
-          "maturity": "alpha",
+          "status": "implemented",
+          "maturity": "beta",
           "commands": [
             "rfm repos create --provider gitlab",
             "rfm repos publish --provider gitlab"
           ],
           "components": [
+            "src/repo_fleet_manager/provider.py",
             "src/repo_fleet_manager/gitops.py",
-            "docs/05-repository-providers.md"
-          ],
-          "gap_refs": [
-            "GAP-003",
-            "GAP-005"
+            "tests/test_provider.py"
           ]
         },
         {
@@ -471,16 +476,16 @@
         {
           "id": "provider.auth-doctor",
           "name": "Authentication/session validation",
-          "status": "partial",
-          "maturity": "alpha",
+          "status": "implemented",
+          "maturity": "beta",
           "commands": [
-            "rfm doctor"
+            "rfm auth --config repo-fleet.json status --verbose",
+            "rfm doctor --config repo-fleet.json --auth --strict-auth"
           ],
           "components": [
-            "src/repo_fleet_manager/cli.py"
-          ],
-          "gap_refs": [
-            "GAP-005"
+            "src/repo_fleet_manager/provider.py",
+            "src/repo_fleet_manager/cli.py",
+            "docs/05-repository-providers.md"
           ]
         },
         {
@@ -608,34 +613,43 @@
         {
           "id": "safety.transaction",
           "name": "Transactional apply and rollback",
-          "status": "missing",
-          "maturity": "not-started",
-          "commands": [],
-          "components": [],
-          "gap_refs": [
-            "GAP-002"
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm ops --config repo-fleet.json rollback OPERATION_ID"
+          ],
+          "components": [
+            "src/repo_fleet_manager/operations.py",
+            "tests/test_operations.py",
+            "docs/11-operational-safety-and-recovery.md"
           ]
         },
         {
           "id": "safety.lock",
           "name": "Workspace operation lock",
-          "status": "missing",
-          "maturity": "not-started",
-          "commands": [],
-          "components": [],
-          "gap_refs": [
-            "GAP-004"
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm local --config repo-fleet.json localize --apply"
+          ],
+          "components": [
+            "src/repo_fleet_manager/operations.py",
+            "tests/test_operations.py"
           ]
         },
         {
           "id": "safety.journal",
           "name": "Persistent operation journal and resume",
-          "status": "missing",
-          "maturity": "not-started",
-          "commands": [],
-          "components": [],
-          "gap_refs": [
-            "GAP-002"
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm ops --config repo-fleet.json list",
+            "rfm ops --config repo-fleet.json resume OPERATION_ID"
+          ],
+          "components": [
+            "src/repo_fleet_manager/operations.py",
+            "src/repo_fleet_manager/cli.py",
+            "tests/test_operations.py"
           ]
         }
       ]
@@ -648,25 +662,29 @@
         {
           "id": "security.secret-guidance",
           "name": "Avoid secrets in config documentation",
-          "status": "partial",
-          "maturity": "alpha",
-          "commands": [],
-          "components": [
-            "docs/05-repository-providers.md"
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm config --config repo-fleet.json validate --strict",
+            "rfm auth --config repo-fleet.json status"
           ],
-          "gap_refs": [
-            "GAP-005"
+          "components": [
+            "src/repo_fleet_manager/schema.py",
+            "src/repo_fleet_manager/provider.py",
+            "docs/11-operational-safety-and-recovery.md"
           ]
         },
         {
           "id": "security.credentials",
           "name": "Credential profiles and secret-store integration",
-          "status": "missing",
-          "maturity": "not-started",
-          "commands": [],
-          "components": [],
-          "gap_refs": [
-            "GAP-005"
+          "status": "partial",
+          "maturity": "beta",
+          "commands": [
+            "rfm auth --config repo-fleet.json status --strict-scopes"
+          ],
+          "components": [
+            "src/repo_fleet_manager/provider.py",
+            "docs/05-repository-providers.md"
           ]
         },
         {
@@ -683,12 +701,14 @@
         {
           "id": "security.audit-log",
           "name": "Structured immutable audit log",
-          "status": "missing",
-          "maturity": "not-started",
-          "commands": [],
-          "components": [],
-          "gap_refs": [
-            "GAP-007"
+          "status": "partial",
+          "maturity": "beta",
+          "commands": [
+            "rfm ops --config repo-fleet.json list",
+            "rfm ops --config repo-fleet.json show OPERATION_ID --json"
+          ],
+          "components": [
+            "src/repo_fleet_manager/operations.py"
           ]
         },
         {
@@ -780,40 +800,39 @@
         {
           "id": "quality.unit-tests",
           "name": "Python unit tests",
-          "status": "partial",
-          "maturity": "alpha",
+          "status": "implemented",
+          "maturity": "beta",
           "commands": [
             "make test"
           ],
           "components": [
             "tests/test_config.py",
-            "tests/test_local_workflow.py",
-            "tests/test_cli_completion.py"
-          ],
-          "gap_refs": [
-            "GAP-006"
+            "tests/test_schema_migration.py",
+            "tests/test_provider.py"
           ]
         },
         {
           "id": "quality.integration-tests",
           "name": "End-to-end local Git graph tests",
-          "status": "missing",
-          "maturity": "not-started",
-          "commands": [],
-          "components": [],
-          "gap_refs": [
-            "GAP-006"
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "make test"
+          ],
+          "components": [
+            "tests/test_local_workflow.py",
+            "tests/test_operations.py"
           ]
         },
         {
           "id": "quality.ci",
           "name": "CI pipeline and cross-platform matrix",
-          "status": "missing",
-          "maturity": "not-started",
+          "status": "implemented",
+          "maturity": "beta",
           "commands": [],
-          "components": [],
-          "gap_refs": [
-            "GAP-006"
+          "components": [
+            ".github/workflows/ci.yml",
+            ".gitlab-ci.yml"
           ]
         },
         {
@@ -852,7 +871,7 @@
       "title": "Versioned config schema and migration engine",
       "priority": "P0",
       "category": "reliability",
-      "status": "missing",
+      "status": "implemented",
       "rationale": "The config is the desired-state source of truth. Without strict schema validation, typos or incompatible fields can fail midway through destructive operations.",
       "recommended_scope": [
         "Publish a JSON Schema",
@@ -864,14 +883,16 @@
         "Invalid fields fail before any filesystem change",
         "Old supported schema versions can be migrated deterministically",
         "Validation errors include JSON paths and remediation"
-      ]
+      ],
+      "resolved_in": "0.6.0",
+      "resolution": "Implemented with schema validation/migration, operation journals and compensating rollback, provider fork/mirror/reconciliation, workspace safety locks, authentication diagnostics, dependency-aware execution, integration tests and CI."
     },
     {
       "id": "GAP-002",
       "title": "Transactional apply, operation journal and rollback",
       "priority": "P0",
       "category": "recovery",
-      "status": "missing",
+      "status": "implemented",
       "rationale": "A multi-repository operation can succeed for some repos and fail for others, leaving an inconsistent workspace with no reliable resume or rollback path.",
       "recommended_scope": [
         "Create an execution plan with operation IDs",
@@ -883,14 +904,16 @@
         "Interrupted localize can resume",
         "Changed remotes and .gitmodules can be restored",
         "The journal records every command result"
-      ]
+      ],
+      "resolved_in": "0.6.0",
+      "resolution": "Implemented with schema validation/migration, operation journals and compensating rollback, provider fork/mirror/reconciliation, workspace safety locks, authentication diagnostics, dependency-aware execution, integration tests and CI."
     },
     {
       "id": "GAP-003",
       "title": "Native fork/mirror workflows and provider reconciliation",
       "priority": "P0",
       "category": "providers",
-      "status": "partial",
+      "status": "implemented",
       "rationale": "Current publish logic creates and pushes repositories but does not fully model native forks, upstream relationships, mirror settings, default branches or provider-side drift.",
       "recommended_scope": [
         "Use gh repo fork and GitLab fork APIs/CLI",
@@ -902,14 +925,16 @@
         "Fork lineage is visible on the provider",
         "upstream and personal remotes are configured consistently",
         "Audit reports provider drift and can repair it"
-      ]
+      ],
+      "resolved_in": "0.6.0",
+      "resolution": "Implemented with schema validation/migration, operation journals and compensating rollback, provider fork/mirror/reconciliation, workspace safety locks, authentication diagnostics, dependency-aware execution, integration tests and CI."
     },
     {
       "id": "GAP-004",
       "title": "Workspace safety guards and concurrency lock",
       "priority": "P0",
       "category": "safety",
-      "status": "partial",
+      "status": "implemented",
       "rationale": "Imports, remote rewrites and bulk pushes need stronger checks for dirty trees, divergence, path collisions and concurrent RFM processes.",
       "recommended_scope": [
         "Add a .repo-fleet/lock",
@@ -921,14 +946,16 @@
         "Two apply processes cannot mutate one workspace",
         "Dirty or divergent repos are listed before mutation",
         "Unsafe overrides are recorded in the journal"
-      ]
+      ],
+      "resolved_in": "0.6.0",
+      "resolution": "Implemented with schema validation/migration, operation journals and compensating rollback, provider fork/mirror/reconciliation, workspace safety locks, authentication diagnostics, dependency-aware execution, integration tests and CI."
     },
     {
       "id": "GAP-005",
       "title": "Authentication profiles and credential diagnostics",
       "priority": "P0",
       "category": "security",
-      "status": "partial",
+      "status": "implemented",
       "rationale": "Checking only that gh/glab exists is insufficient. The tool must identify account, host, scopes and non-interactive authentication before starting a fleet operation.",
       "recommended_scope": [
         "Add provider auth check",
@@ -940,14 +967,16 @@
         "doctor reports authenticated identity and required scopes",
         "CI/non-interactive mode fails fast",
         "Secrets are redacted from all output"
-      ]
+      ],
+      "resolved_in": "0.6.0",
+      "resolution": "Implemented with schema validation/migration, operation journals and compensating rollback, provider fork/mirror/reconciliation, workspace safety locks, authentication diagnostics, dependency-aware execution, integration tests and CI."
     },
     {
       "id": "GAP-006",
       "title": "Integration tests, dependency graph and controlled parallelism",
       "priority": "P0",
       "category": "quality",
-      "status": "missing",
+      "status": "implemented",
       "rationale": "Unit tests do not prove that multi-repo, submodule, bare remote, failure and resume scenarios work together. Sequential execution will also become slow at fleet scale.",
       "recommended_scope": [
         "Build temporary end-to-end Git graphs in tests",
@@ -959,7 +988,9 @@
         "new/upstream/existing scenarios run end to end",
         "Failures are deterministic and resumable",
         "Parallel mode preserves readable per-repo logs"
-      ]
+      ],
+      "resolved_in": "0.6.0",
+      "resolution": "Implemented with schema validation/migration, operation journals and compensating rollback, provider fork/mirror/reconciliation, workspace safety locks, authentication diagnostics, dependency-aware execution, integration tests and CI."
     },
     {
       "id": "GAP-007",

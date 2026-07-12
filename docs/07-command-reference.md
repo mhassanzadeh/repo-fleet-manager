@@ -191,3 +191,104 @@ rfm docs [--root .] validate-links
 ```
 
 لینک‌های داخلی Markdown را بررسی می‌کند.
+
+## `config validate|migrate`
+
+```bash
+rfm config --config repo-fleet.json validate
+rfm config --config repo-fleet.json validate --strict
+rfm config --config repo-fleet.json validate --json
+rfm config --config repo-fleet.json migrate
+rfm config --config repo-fleet.json migrate --apply
+```
+
+`validate` performs schema and semantic checks. Without `--strict`, legacy defaults are migrated in memory before validation. `migrate` is dry-run by default and writes a backup when applied.
+
+## `auth status`
+
+```bash
+rfm auth --config repo-fleet.json status
+rfm auth --config repo-fleet.json status --provider github --verbose
+rfm auth --config repo-fleet.json status --strict-scopes
+```
+
+Shows provider driver/host/profile, expected and active user, required/detected scopes and capability probes without exposing token values.
+
+## `graph show`
+
+```bash
+rfm graph --config repo-fleet.json show
+rfm graph --config repo-fleet.json show --format json
+rfm graph --config repo-fleet.json show --format dot --output fleet.dot
+```
+
+Renders validated topological execution levels from repository `depends_on` declarations.
+
+## `safety status`
+
+```bash
+rfm safety --config repo-fleet.json status
+rfm safety --config repo-fleet.json status --json
+```
+
+Reports dirty state, current/configured branch, detached HEAD, upstream, ahead/behind and divergence for root and repository worktrees.
+
+## `repos fork`
+
+```bash
+rfm repos --config repo-fleet.json fork \
+  --provider github \
+  [--namespace my-org] \
+  [--remote-name personal] \
+  [--strict-scopes] \
+  [--apply]
+```
+
+Uses native provider fork behavior for `source_type=upstream` and `remote_mode=fork`, then connects the destination remote locally.
+
+## `repos mirror`
+
+```bash
+rfm repos --config repo-fleet.json mirror \
+  --provider gitlab \
+  [--namespace my-group] \
+  [--apply]
+```
+
+Pushes the corresponding local bare repository using `git push --mirror`. The local mirror must already exist.
+
+## `repos reconcile`
+
+```bash
+rfm repos --config repo-fleet.json reconcile --provider github
+rfm repos --config repo-fleet.json reconcile --provider github --json
+rfm repos --config repo-fleet.json reconcile --provider github --apply
+```
+
+Compares remote existence, fork lineage, default branch, visibility and topics against config. Apply mode repairs supported metadata drift.
+
+## `ops list|show|resume|rollback`
+
+```bash
+rfm ops --config repo-fleet.json list
+rfm ops --config repo-fleet.json show OPERATION_ID
+rfm ops --config repo-fleet.json show OPERATION_ID --json
+rfm ops --config repo-fleet.json resume OPERATION_ID
+rfm ops --config repo-fleet.json rollback OPERATION_ID
+```
+
+Applied mutations are persisted under `local.operations_dir`. Resume replays the original desired-state command and adds an attempt to the same journal. Rollback executes recorded compensating actions.
+
+## Common mutation safety flags
+
+```text
+--apply
+--jobs N
+--force --reason "explicit operator reason"
+--strict-scopes
+```
+
+- `--apply` changes state; without it mutating commands remain dry-run.
+- `--jobs` enables bounded parallelism within dependency levels where supported.
+- `--force` requires a non-empty `--reason`, stored in the journal.
+- `--strict-scopes` rejects provider mutation when configured permission scopes cannot be established.

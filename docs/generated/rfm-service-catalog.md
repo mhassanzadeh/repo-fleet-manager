@@ -1,6 +1,6 @@
 # Repo Fleet Manager service catalog
 
-> Catalog version `0.5.0` · schema `1.0` · lifecycle `beta`
+> Catalog version `0.6.0` · schema `1.0` · lifecycle `beta`
 
 Config-driven orchestration for large Git repository fleets, submodules, local development, providers, Compose runtimes and source/image integrity.
 
@@ -10,11 +10,11 @@ Config-driven orchestration for large Git repository fleets, submodules, local d
 |---|---:|
 | Domains | 11 |
 | Capabilities | 57 |
-| Implemented | 19 |
-| Partial | 15 |
+| Implemented | 38 |
+| Partial | 8 |
 | Planned | 1 |
-| Missing | 22 |
-| Logical completion | 46.8% |
+| Missing | 10 |
+| Logical completion | 73.9% |
 | Open gaps | 17 |
 
 The completion percentage is a planning indicator: implemented capabilities count as 100%, partial as 50%, and planned as 15%. It is not a production-readiness certification.
@@ -41,8 +41,8 @@ Central definition of projects, providers, repository lifecycle, Compose and fin
 |---|---|---|---|
 | `config.central-manifest` — Single repo-fleet.json inventory | ✓ implemented | beta | `rfm doctor`<br>`rfm catalog`<br>`src/repo_fleet_manager/config.py`<br>`configs/repo-fleet.example.json` |
 | `config.lifecycle-model` — new/upstream/existing repository lifecycle | ✓ implemented | beta | `rfm local plan`<br>`rfm local localize`<br>`src/repo_fleet_manager/config.py`<br>`configs/repo-fleet.lifecycle.example.json`<br>`docs/09-repository-lifecycle.md` |
-| `config.schema-validation` — Versioned JSON Schema validation | × missing | not-started | — |
-| `config.migrations` — Config schema migrations and backward compatibility | × missing | not-started | — |
+| `config.schema-validation` — Versioned JSON Schema validation | ✓ implemented | beta | `rfm config --config repo-fleet.json validate --strict`<br>`schemas/repo-fleet.schema.json`<br>`src/repo_fleet_manager/schema.py`<br>`tests/test_schema_migration.py` |
+| `config.migrations` — Config schema migrations and backward compatibility | ✓ implemented | beta | `rfm config --config repo-fleet.json migrate`<br>`rfm config --config repo-fleet.json migrate --apply`<br>`src/repo_fleet_manager/schema.py`<br>`docs/02-configuration.md`<br>`MIGRATION.md` |
 | `config.overlays` — Environment/user overlays without duplicating the base config | × missing | not-started | — |
 
 ### Repository lifecycle management
@@ -53,11 +53,11 @@ Create, import, localize, mirror and publish repositories across local, GitHub a
 |---|---|---|---|
 | `repo.new` — Create new local repositories and bare remotes | ✓ implemented | beta | `rfm local remotes --apply --seed`<br>`rfm local init --apply`<br>`src/repo_fleet_manager/localops.py` |
 | `repo.upstream-local` — Clone or mirror upstream repositories locally | ✓ implemented | beta | `rfm local remotes --mirror-sources --apply`<br>`rfm local localize --apply`<br>`src/repo_fleet_manager/localops.py` |
-| `repo.existing-import` — Import existing local worktrees | ~ partial | alpha | `rfm local localize --apply`<br>`rfm repos publish --only existing`<br>`src/repo_fleet_manager/localops.py`<br>`src/repo_fleet_manager/gitops.py` |
+| `repo.existing-import` — Import existing local worktrees | ✓ implemented | beta | `rfm local localize --apply`<br>`rfm repos publish --only existing`<br>`src/repo_fleet_manager/localops.py`<br>`src/repo_fleet_manager/gitops.py`<br>`tests/test_local_workflow.py` |
 | `repo.provider-create` — Create repositories through gh/glab | ✓ implemented | beta | `rfm repos create --provider github --apply`<br>`rfm repos create --provider gitlab --apply`<br>`src/repo_fleet_manager/gitops.py` |
-| `repo.provider-publish` — Publish local worktrees and mirrors to personal providers | ~ partial | alpha | `rfm repos publish --provider github --apply`<br>`rfm repos publish --provider gitlab --apply`<br>`src/repo_fleet_manager/gitops.py` |
-| `repo.native-fork` — Native GitHub/GitLab fork operation with upstream tracking | × missing | not-started | — |
-| `repo.reconcile` — Desired-state reconciliation and drift repair | ~ partial | alpha | `rfm repos audit`<br>`rfm submodules sync`<br>`src/repo_fleet_manager/gitops.py` |
+| `repo.provider-publish` — Publish local worktrees and mirrors to personal providers | ✓ implemented | beta | `rfm repos publish --provider github --apply`<br>`rfm repos publish --provider gitlab --apply`<br>`src/repo_fleet_manager/gitops.py`<br>`src/repo_fleet_manager/provider.py`<br>`docs/05-repository-providers.md` |
+| `repo.native-fork` — Native GitHub/GitLab fork operation with upstream tracking | ✓ implemented | beta | `rfm repos --config repo-fleet.json fork --provider github --apply`<br>`rfm repos --config repo-fleet.json fork --provider gitlab --apply`<br>`src/repo_fleet_manager/provider.py`<br>`tests/test_provider.py`<br>`docs/05-repository-providers.md` |
+| `repo.reconcile` — Desired-state reconciliation and drift repair | ✓ implemented | beta | `rfm repos --config repo-fleet.json reconcile --provider github`<br>`rfm repos --config repo-fleet.json reconcile --provider github --apply`<br>`src/repo_fleet_manager/provider.py`<br>`docs/05-repository-providers.md` |
 
 ### Local-only workspace
 
@@ -79,9 +79,9 @@ Synchronize submodule metadata and execute Git actions across the repository fle
 |---|---|---|---|
 | `git.submodule-sync` — Generate and synchronize .gitmodules | ✓ implemented | beta | `rfm submodules sync --apply`<br>`src/repo_fleet_manager/gitops.py` |
 | `git.fleet-actions` — Fleet status, pull and push | ✓ implemented | beta | `rfm git status`<br>`rfm git pull --apply`<br>`rfm git push --apply`<br>`src/repo_fleet_manager/gitops.py` |
-| `git.dirty-safety` — Dirty worktree, detached HEAD and divergence guards | ~ partial | alpha | `rfm repos audit`<br>`src/repo_fleet_manager/gitops.py` |
-| `git.dependency-order` — Dependency-aware execution graph | × missing | not-started | — |
-| `git.parallel` — Controlled parallel fleet operations | × missing | not-started | — |
+| `git.dirty-safety` — Dirty worktree, detached HEAD and divergence guards | ✓ implemented | beta | `rfm safety --config repo-fleet.json status`<br>`src/repo_fleet_manager/safety.py`<br>`src/repo_fleet_manager/operations.py`<br>`tests/test_operations.py` |
+| `git.dependency-order` — Dependency-aware execution graph | ✓ implemented | beta | `rfm graph --config repo-fleet.json show`<br>`src/repo_fleet_manager/graph.py`<br>`tests/test_graph.py` |
+| `git.parallel` — Controlled parallel fleet operations | ✓ implemented | beta | `rfm local --config repo-fleet.json localize --jobs 4 --apply`<br>`rfm git --config repo-fleet.json pull --jobs 4 --apply`<br>`src/repo_fleet_manager/graph.py`<br>`src/repo_fleet_manager/localops.py`<br>`src/repo_fleet_manager/gitops.py`<br>`tests/test_graph.py` |
 
 ### Provider integrations
 
@@ -89,10 +89,10 @@ GitHub, GitLab and local provider adapters, authentication and remote URL polici
 
 | Capability | Status | Maturity | Commands / evidence |
 |---|---|---|---|
-| `provider.github` — GitHub CLI integration | ~ partial | alpha | `rfm repos create --provider github`<br>`rfm repos publish --provider github`<br>`src/repo_fleet_manager/gitops.py`<br>`docs/05-repository-providers.md` |
-| `provider.gitlab` — GitLab CLI integration | ~ partial | alpha | `rfm repos create --provider gitlab`<br>`rfm repos publish --provider gitlab`<br>`src/repo_fleet_manager/gitops.py`<br>`docs/05-repository-providers.md` |
+| `provider.github` — GitHub CLI integration | ✓ implemented | beta | `rfm repos create --provider github`<br>`rfm repos publish --provider github`<br>`src/repo_fleet_manager/provider.py`<br>`src/repo_fleet_manager/gitops.py`<br>`tests/test_provider.py` |
+| `provider.gitlab` — GitLab CLI integration | ✓ implemented | beta | `rfm repos create --provider gitlab`<br>`rfm repos publish --provider gitlab`<br>`src/repo_fleet_manager/provider.py`<br>`src/repo_fleet_manager/gitops.py`<br>`tests/test_provider.py` |
 | `provider.local` — Local file provider | ✓ implemented | beta | `rfm local remotes`<br>`rfm repos audit --provider local`<br>`src/repo_fleet_manager/localops.py`<br>`src/repo_fleet_manager/config.py` |
-| `provider.auth-doctor` — Authentication/session validation | ~ partial | alpha | `rfm doctor`<br>`src/repo_fleet_manager/cli.py` |
+| `provider.auth-doctor` — Authentication/session validation | ✓ implemented | beta | `rfm auth --config repo-fleet.json status --verbose`<br>`rfm doctor --config repo-fleet.json --auth --strict-auth`<br>`src/repo_fleet_manager/provider.py`<br>`src/repo_fleet_manager/cli.py`<br>`docs/05-repository-providers.md` |
 | `provider.remote-policy` — Per-repository multi-remote and push policy | ~ partial | alpha | `rfm repos publish --remote-name personal`<br>`src/repo_fleet_manager/gitops.py` |
 
 ### Runtime, Compose and image integrity
@@ -115,9 +115,9 @@ Idempotency, transactions, locking, recovery and traceability for destructive op
 |---|---|---|---|
 | `safety.dry-run` — Safe dry-run default | ✓ implemented | beta | `rfm local remotes`<br>`rfm repos create`<br>`src/repo_fleet_manager/cli.py` |
 | `safety.idempotency` — Idempotent repeat execution | ~ partial | alpha | `rfm local localize --apply`<br>`src/repo_fleet_manager/localops.py`<br>`src/repo_fleet_manager/gitops.py` |
-| `safety.transaction` — Transactional apply and rollback | × missing | not-started | — |
-| `safety.lock` — Workspace operation lock | × missing | not-started | — |
-| `safety.journal` — Persistent operation journal and resume | × missing | not-started | — |
+| `safety.transaction` — Transactional apply and rollback | ✓ implemented | beta | `rfm ops --config repo-fleet.json rollback OPERATION_ID`<br>`src/repo_fleet_manager/operations.py`<br>`tests/test_operations.py`<br>`docs/11-operational-safety-and-recovery.md` |
+| `safety.lock` — Workspace operation lock | ✓ implemented | beta | `rfm local --config repo-fleet.json localize --apply`<br>`src/repo_fleet_manager/operations.py`<br>`tests/test_operations.py` |
+| `safety.journal` — Persistent operation journal and resume | ✓ implemented | beta | `rfm ops --config repo-fleet.json list`<br>`rfm ops --config repo-fleet.json resume OPERATION_ID`<br>`src/repo_fleet_manager/operations.py`<br>`src/repo_fleet_manager/cli.py`<br>`tests/test_operations.py` |
 
 ### Security and governance
 
@@ -125,10 +125,10 @@ Credentials, policy enforcement, auditability and supply-chain controls.
 
 | Capability | Status | Maturity | Commands / evidence |
 |---|---|---|---|
-| `security.secret-guidance` — Avoid secrets in config documentation | ~ partial | alpha | `docs/05-repository-providers.md` |
-| `security.credentials` — Credential profiles and secret-store integration | × missing | not-started | — |
+| `security.secret-guidance` — Avoid secrets in config documentation | ✓ implemented | beta | `rfm config --config repo-fleet.json validate --strict`<br>`rfm auth --config repo-fleet.json status`<br>`src/repo_fleet_manager/schema.py`<br>`src/repo_fleet_manager/provider.py`<br>`docs/11-operational-safety-and-recovery.md` |
+| `security.credentials` — Credential profiles and secret-store integration | ~ partial | beta | `rfm auth --config repo-fleet.json status --strict-scopes`<br>`src/repo_fleet_manager/provider.py`<br>`docs/05-repository-providers.md` |
 | `security.policy` — Policy-as-code for provider, branch and image rules | × missing | not-started | — |
-| `security.audit-log` — Structured immutable audit log | × missing | not-started | — |
+| `security.audit-log` — Structured immutable audit log | ~ partial | beta | `rfm ops --config repo-fleet.json list`<br>`rfm ops --config repo-fleet.json show OPERATION_ID --json`<br>`src/repo_fleet_manager/operations.py` |
 | `security.supply-chain` — SBOM, image signing and commit verification | × missing | not-started | — |
 
 ### Catalog and extensibility
@@ -149,9 +149,9 @@ Automated verification, compatibility matrix, packaging and release discipline.
 
 | Capability | Status | Maturity | Commands / evidence |
 |---|---|---|---|
-| `quality.unit-tests` — Python unit tests | ~ partial | alpha | `make test`<br>`tests/test_config.py`<br>`tests/test_local_workflow.py`<br>`tests/test_cli_completion.py` |
-| `quality.integration-tests` — End-to-end local Git graph tests | × missing | not-started | — |
-| `quality.ci` — CI pipeline and cross-platform matrix | × missing | not-started | — |
+| `quality.unit-tests` — Python unit tests | ✓ implemented | beta | `make test`<br>`tests/test_config.py`<br>`tests/test_schema_migration.py`<br>`tests/test_provider.py` |
+| `quality.integration-tests` — End-to-end local Git graph tests | ✓ implemented | beta | `make test`<br>`tests/test_local_workflow.py`<br>`tests/test_operations.py` |
+| `quality.ci` — CI pipeline and cross-platform matrix | ✓ implemented | beta | `.github/workflows/ci.yml`<br>`.gitlab-ci.yml` |
 | `quality.packaging` — Installable Python package and Makefile | ✓ implemented | beta | `make install`<br>`python -m build`<br>`pyproject.toml`<br>`Makefile` |
 | `quality.release` — Automated semantic versioning and changelog | ~ partial | alpha | `PATCH_NOTES_v0.4.0.md` |
 
@@ -161,7 +161,7 @@ Automated verification, compatibility matrix, packaging and release discipline.
 
 #### GAP-001 — Versioned config schema and migration engine
 
-**Category:** `reliability` · **Current state:** `missing`
+**Category:** `reliability` · **Current state:** `implemented`
 
 The config is the desired-state source of truth. Without strict schema validation, typos or incompatible fields can fail midway through destructive operations.
 
@@ -180,7 +180,7 @@ Acceptance criteria:
 
 #### GAP-002 — Transactional apply, operation journal and rollback
 
-**Category:** `recovery` · **Current state:** `missing`
+**Category:** `recovery` · **Current state:** `implemented`
 
 A multi-repository operation can succeed for some repos and fail for others, leaving an inconsistent workspace with no reliable resume or rollback path.
 
@@ -199,7 +199,7 @@ Acceptance criteria:
 
 #### GAP-003 — Native fork/mirror workflows and provider reconciliation
 
-**Category:** `providers` · **Current state:** `partial`
+**Category:** `providers` · **Current state:** `implemented`
 
 Current publish logic creates and pushes repositories but does not fully model native forks, upstream relationships, mirror settings, default branches or provider-side drift.
 
@@ -218,7 +218,7 @@ Acceptance criteria:
 
 #### GAP-004 — Workspace safety guards and concurrency lock
 
-**Category:** `safety` · **Current state:** `partial`
+**Category:** `safety` · **Current state:** `implemented`
 
 Imports, remote rewrites and bulk pushes need stronger checks for dirty trees, divergence, path collisions and concurrent RFM processes.
 
@@ -237,7 +237,7 @@ Acceptance criteria:
 
 #### GAP-005 — Authentication profiles and credential diagnostics
 
-**Category:** `security` · **Current state:** `partial`
+**Category:** `security` · **Current state:** `implemented`
 
 Checking only that gh/glab exists is insufficient. The tool must identify account, host, scopes and non-interactive authentication before starting a fleet operation.
 
@@ -256,7 +256,7 @@ Acceptance criteria:
 
 #### GAP-006 — Integration tests, dependency graph and controlled parallelism
 
-**Category:** `quality` · **Current state:** `missing`
+**Category:** `quality` · **Current state:** `implemented`
 
 Unit tests do not prove that multi-repo, submodule, bare remote, failure and resume scenarios work together. Sequential execution will also become slow at fleet scale.
 

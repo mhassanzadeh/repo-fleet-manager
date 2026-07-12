@@ -1,12 +1,12 @@
 # Repo Fleet Manager logical gap analysis
 
-> Catalog version `0.5.0` · 17 prioritized gaps
+> Catalog version `0.6.0` · 17 prioritized gaps
 
 ## P0
 
 ### GAP-001 — Versioned config schema and migration engine
 
-**Category:** `reliability` · **Current state:** `missing`
+**Category:** `reliability` · **Current state:** `implemented`
 
 The config is the desired-state source of truth. Without strict schema validation, typos or incompatible fields can fail midway through destructive operations.
 
@@ -25,7 +25,7 @@ Acceptance criteria:
 
 ### GAP-002 — Transactional apply, operation journal and rollback
 
-**Category:** `recovery` · **Current state:** `missing`
+**Category:** `recovery` · **Current state:** `implemented`
 
 A multi-repository operation can succeed for some repos and fail for others, leaving an inconsistent workspace with no reliable resume or rollback path.
 
@@ -44,7 +44,7 @@ Acceptance criteria:
 
 ### GAP-003 — Native fork/mirror workflows and provider reconciliation
 
-**Category:** `providers` · **Current state:** `partial`
+**Category:** `providers` · **Current state:** `implemented`
 
 Current publish logic creates and pushes repositories but does not fully model native forks, upstream relationships, mirror settings, default branches or provider-side drift.
 
@@ -63,7 +63,7 @@ Acceptance criteria:
 
 ### GAP-004 — Workspace safety guards and concurrency lock
 
-**Category:** `safety` · **Current state:** `partial`
+**Category:** `safety` · **Current state:** `implemented`
 
 Imports, remote rewrites and bulk pushes need stronger checks for dirty trees, divergence, path collisions and concurrent RFM processes.
 
@@ -82,7 +82,7 @@ Acceptance criteria:
 
 ### GAP-005 — Authentication profiles and credential diagnostics
 
-**Category:** `security` · **Current state:** `partial`
+**Category:** `security` · **Current state:** `implemented`
 
 Checking only that gh/glab exists is insufficient. The tool must identify account, host, scopes and non-interactive authentication before starting a fleet operation.
 
@@ -101,7 +101,7 @@ Acceptance criteria:
 
 ### GAP-006 — Integration tests, dependency graph and controlled parallelism
 
-**Category:** `quality` · **Current state:** `missing`
+**Category:** `quality` · **Current state:** `implemented`
 
 Unit tests do not prove that multi-repo, submodule, bare remote, failure and resume scenarios work together. Sequential execution will also become slow at fleet scale.
 

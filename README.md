@@ -23,6 +23,11 @@ Repo Fleet Manager یک ابزار واحد و config-driven برای مدیری
 - اجرای compose stack در محیط local development
 - validation لینک‌های مستندات
 - کاتالوگ ماشین‌خوان قابلیت‌های RFM، درخت بلوغ و gap analysis اولویت‌بندی‌شده
+- JSON Schema نسخه‌دار، migration خودکار و validation معنایی config
+- dependency graph و اجرای کنترل‌شده موازی با `--jobs`
+- workspace lock، safety guard، operation journal، resume و rollback
+- تشخیص identity/scope برای providerها بدون نمایش token
+- fork واقعی GitHub/GitLab، انتشار mirror و reconciliation متادیتای remote
 
 ## شروع سریع
 
@@ -33,6 +38,7 @@ cd repo-fleet-manager
 make install
 
 rfm --version
+rfm config --config configs/goftaroo.example.json validate --strict
 rfm doctor --config configs/goftaroo.example.json
 rfm catalog --config configs/goftaroo.example.json
 rfm catalog --root . --view summary
@@ -88,6 +94,24 @@ sudo make install-completions \
   FISH_COMPLETION_DIR=/usr/share/fish/vendor_completions.d
 ```
 
+## گیت ایمنی قبل از apply
+
+```bash
+rfm config --config repo-fleet.json validate --strict
+rfm graph --config repo-fleet.json show
+rfm safety --config repo-fleet.json status
+rfm auth --config repo-fleet.json status --verbose
+```
+
+هر عملیات واقعی یک lock و journal می‌سازد. برای مشاهده، ادامه یا بازگردانی:
+
+```bash
+rfm ops --config repo-fleet.json list
+rfm ops --config repo-fleet.json show OPERATION_ID
+rfm ops --config repo-fleet.json resume OPERATION_ID
+rfm ops --config repo-fleet.json rollback OPERATION_ID
+```
+
 ## جریان‌های کاری پرکاربرد
 
 ### 0. اجرای کامل بدون GitHub/GitLab
@@ -106,6 +130,8 @@ rfm repos --config repo-fleet.json audit --provider local
 ```bash
 rfm repos --config repo-fleet.json publish --provider github --namespace my-user --remote-name personal
 rfm repos --config repo-fleet.json publish --provider github --namespace my-user --remote-name personal --apply
+rfm repos --config repo-fleet.json fork --provider github --namespace my-user --apply
+rfm repos --config repo-fleet.json reconcile --provider github
 ```
 
 ### 1. بررسی وضعیت root و submoduleها
@@ -159,8 +185,13 @@ make install-editable     # نصب editable برای توسعه
 make install-completions  # نصب completionهای Bash و Fish
 make uninstall            # حذف پکیج Python
 make uninstall-completions
+make config-validate CONFIG=repo-fleet.json
+make auth-status CONFIG=repo-fleet.json ROOT=/path/to/workspace
+make graph CONFIG=repo-fleet.json ROOT=/path/to/workspace
+make safety-status CONFIG=repo-fleet.json ROOT=/path/to/workspace
+make ops-list CONFIG=repo-fleet.json ROOT=/path/to/workspace
 make test
-make validate-docs
+make validate
 make local-plan CONFIG=repo-fleet.json ROOT=/path/to/workspace
 make local-localize CONFIG=repo-fleet.json ROOT=/path/to/workspace
 make local-localize-apply CONFIG=repo-fleet.json ROOT=/path/to/workspace
@@ -183,7 +214,9 @@ repo-fleet-manager/
 ├── configs/                 # نمونه config برای Goftaroo و قالب عمومی
 ├── docs/                    # مستندات معماری، workflow و کاتالوگ تولیدشده
 ├── legacy-scripts/goftaroo/ # اسکریپت‌های اولیه بدون تغییر
-├── reports/                 # گزارش audit روی اسکریپت‌های اولیه
+├── reports/                 # گزارش audit و gap analysis
+├── schemas/                 # JSON Schema رسمی repo-fleet.json
+├── .github/workflows/       # CI برای test/validation/package
 ├── scripts/rfm.sh           # wrapper بدون نصب پکیج
 ├── src/repo_fleet_manager/  # CLI و منطق اصلی
 └── tests/                   # تست‌های پایه
@@ -202,10 +235,16 @@ repo-fleet-manager/
 - [برنامه مهاجرت از اسکریپت‌های فعلی](docs/06-migration-plan.md)
 - [مرجع فرمان‌ها](docs/07-command-reference.md)
 - [راهنمای service catalog](docs/10-service-catalog.md)
+- [ایمنی عملیاتی، journal، resume و rollback](docs/11-operational-safety-and-recovery.md)
 - [خروجی کامل service catalog](docs/generated/rfm-service-catalog.md)
 - [gap analysis منطقی](reports/gap-analysis.md)
 - [گزارش بررسی اسکریپت‌های ارسالی](reports/script-audit.md)
 
 ## نکته مهم درباره dry-run
 
-فرمان‌هایی که state را تغییر می‌دهند، مثل ساخت ریپو، sync ریموت، pull/push و compose up/down، تا وقتی `--apply` ندهید فقط دستورهای پیشنهادی را چاپ می‌کنند. این رفتار عمداً انتخاب شده تا روی پروژه‌های بزرگ و حساس تغییر ناخواسته انجام نشود.
+فرمان‌هایی که state را تغییر می‌دهند، مثل ساخت ریپو، sync ریموت، pull/push و compose up/down، تا وقتی `--apply` ندهید فقط دستورهای پیشنهادی را چاپ می‌کنند. با `--apply` نیز lock، safety guard و operation journal فعال می‌شود. عبور اجباری از guard فقط با `--force --reason "..."` ممکن است تا علت تصمیم در journal بماند.
+
+
+## Git commit guide
+
+دستورهای پیشنهادی commit، tag و ثبت pointer ساب‌ماژول در [`GIT_COMMIT_GUIDE_v0.6.0.md`](GIT_COMMIT_GUIDE_v0.6.0.md) قرار دارد.

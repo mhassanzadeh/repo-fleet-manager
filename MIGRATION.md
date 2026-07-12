@@ -1,38 +1,63 @@
-# Migration Guide
+# Migration guide
 
-برای مهاجرت پروژه فعلی به Repo Fleet Manager:
+## 0.5.0 to 0.6.0
 
-1. پکیج را کنار پروژه اصلی clone یا extract کنید.
-2. فایل نمونه را کپی کنید:
+RFM 0.6 introduces a versioned configuration contract and safety journal. Existing 0.5 files continue to load through in-memory migration, but writing the normalized form is recommended.
 
-```bash
-cp repo-fleet-manager/configs/goftaroo.example.json main-platform/repo-fleet.json
-```
-
-3. در پروژه اصلی:
+### 1. Preview migration
 
 ```bash
-cd main-platform
-../repo-fleet-manager/scripts/rfm.sh doctor
-../repo-fleet-manager/scripts/rfm.sh repos audit
+rfm config --config repo-fleet.json migrate
 ```
 
-4. برای sync ریموت‌ها ابتدا dry-run بگیرید:
+### 2. Apply with backup
 
 ```bash
-../repo-fleet-manager/scripts/rfm.sh submodules sync --provider github --namespace <owner>
+rfm config --config repo-fleet.json migrate --apply
 ```
 
-5. بعد از بازبینی خروجی:
+The original file is saved as `repo-fleet.json.bak` or a numbered backup if one already exists.
+
+### 3. Validate strictly
 
 ```bash
-../repo-fleet-manager/scripts/rfm.sh submodules sync --provider github --namespace <owner> --apply
+rfm config --config repo-fleet.json validate --strict
 ```
 
-6. fingerprint و compose metadata:
+The migrated file includes:
+
+- `schema_version: "1.0.0"`;
+- provider `driver` and `required_scopes` defaults;
+- repository `source_type`, `remote_mode` and `depends_on` defaults;
+- `local.operations_dir`, `local.lock_file` and `local.default_jobs`.
+
+Unknown custom fields should be renamed with an `x-` prefix or moved into repository `metadata`. Secrets must be removed from the manifest and supplied through the provider CLI, environment or an external credential store.
+
+### 4. Review execution order
 
 ```bash
-../repo-fleet-manager/scripts/rfm.sh source fingerprint --write
-../repo-fleet-manager/scripts/rfm.sh compose up --apply -- -d --build --force-recreate
-../repo-fleet-manager/scripts/rfm.sh images verify
+rfm graph --config repo-fleet.json show
 ```
+
+Declare `depends_on` where repositories must be created, cloned, pulled or built in order.
+
+### 5. Verify provider identity
+
+```bash
+rfm auth --config repo-fleet.json status --verbose
+```
+
+Before a provider-side `--apply`, verify the expected user, host and namespace.
+
+### 6. Apply local desired state
+
+```bash
+rfm local --config repo-fleet.json plan
+rfm local --config repo-fleet.json localize --apply
+```
+
+Every applied mutation is now recorded under `.repo-fleet/operations` and protected by `.repo-fleet/lock`.
+
+## Older versions
+
+Configurations from 0.3 and 0.4 are migrated through the same normalization path. Review `source_type` and `remote_mode` inference before applying changes.

@@ -132,3 +132,87 @@ Provider محلی از placeholderهای زیر پشتیبانی می‌کند:
   "mirror": true
 }
 ```
+
+## Schema version and validation
+
+Current normalized manifests use:
+
+```json
+{
+  "schema_version": "1.0.0"
+}
+```
+
+Validate the exact file without compatibility migration:
+
+```bash
+rfm config --config repo-fleet.json validate --strict
+```
+
+Preview or apply migration of older manifests:
+
+```bash
+rfm config --config repo-fleet.json migrate
+rfm config --config repo-fleet.json migrate --apply
+```
+
+The validation layer checks JSON types and allowed fields as well as provider references, duplicate/nested paths, dependency references, cycles and accidental secret fields. Use `x-*` for extension fields or repository `metadata` for free-form metadata.
+
+## Provider driver, profile and scope policy
+
+```json
+{
+  "github-work": {
+    "type": "remote",
+    "driver": "github",
+    "namespace": "my-org",
+    "host": "github.com",
+    "cli": "gh",
+    "profile": "work",
+    "user": "my-user",
+    "required_scopes": ["repo"],
+    "url_template": "git@github.com:{namespace}/{repo}.git"
+  }
+}
+```
+
+`driver` determines provider behavior independently of the provider key. This allows names such as `github-work` and `gitlab-customer`. `profile` is diagnostic metadata for the configured CLI/session; `user` is the expected active account. `required_scopes` is optional and can be enforced with `--strict-scopes`.
+
+## Repository dependencies and provider desired state
+
+```json
+{
+  "path": "services/api",
+  "repo": "my-api-service",
+  "source_type": "upstream",
+  "remote_mode": "fork",
+  "fork_from": "frappe/frappe",
+  "depends_on": ["shared-contracts"],
+  "visibility": "private",
+  "topics": ["rfm", "backend"]
+}
+```
+
+`depends_on` can reference either a configured repository name or path. RFM validates the graph and executes independent repositories in the same topological level concurrently when `--jobs` is greater than one.
+
+`visibility`, `topics` and `branch` form the provider desired state used by `rfm repos reconcile`.
+
+## Local operation state
+
+```json
+{
+  "local": {
+    "remotes_dir": ".repo-fleet/remotes",
+    "workspace_mode": "submodules",
+    "operations_dir": ".repo-fleet/operations",
+    "lock_file": ".repo-fleet/lock",
+    "default_jobs": 2
+  }
+}
+```
+
+| Field | Purpose |
+|---|---|
+| `operations_dir` | Persistent JSON operation journals and rollback backups |
+| `lock_file` | Exclusive lock for applied mutations |
+| `default_jobs` | Default controlled parallelism for graph-aware commands |
