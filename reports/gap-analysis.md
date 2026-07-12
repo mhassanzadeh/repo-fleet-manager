@@ -1,6 +1,6 @@
 # Repo Fleet Manager logical gap analysis
 
-> Catalog version `0.8.0` · 17 prioritized gaps
+> Catalog version `0.9.0` · 17 prioritized gaps
 
 ## P0
 
@@ -178,7 +178,7 @@ Acceptance criteria:
 
 ### GAP-010 — Portable parent bootstrap and repository scaffolding
 
-**Category:** `developer-experience` · **Current state:** `partial`
+**Category:** `developer-experience` · **Current state:** `implemented`
 
 After cloning the parent repo, new modules should be created from consistent templates and the root repository should declare the exact bootstrap contract.
 

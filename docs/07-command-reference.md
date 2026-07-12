@@ -337,3 +337,45 @@ rfm config --config repo-fleet.json profiles [--json]
 rfm config --config repo-fleet.json groups [--json]
 rfm config --config repo-fleet.json --profile NAME --group NAME render [--output FILE]
 ```
+
+## `init-project`
+
+```bash
+rfm init-project NAME \
+  [--directory PATH] \
+  [--branch main] \
+  [--provider local|github|gitlab] \
+  [--namespace OWNER] \
+  [--visibility private|internal|public] \
+  [--no-git-init] \
+  [--apply]
+```
+
+یک parent project استاندارد شامل `repo-fleet.json`، `repo-fleet.lock.json`، README، LICENSE، gitignore و workflow پایه CI می‌سازد. بدون `--apply` فقط برنامه فایل‌ها چاپ می‌شود.
+
+## `scaffold templates|repository`
+
+```bash
+rfm scaffold templates [--json]
+
+rfm scaffold repository NAME \
+  --config repo-fleet.json \
+  --root . \
+  --path services/NAME \
+  --template generic|python-cli|python-service|node-service \
+  [--kind module|service|tooling|library] \
+  [--tag TAG] \
+  [--depends-on REPOSITORY] \
+  [--apply]
+```
+
+فایل‌های template، entry کانفیگ و bootstrap lock را هماهنگ ایجاد می‌کند. `--tag` و `--depends-on` قابل تکرار یا comma-separated هستند.
+
+## `bootstrap lock|verify`
+
+```bash
+rfm bootstrap --config repo-fleet.json --root . lock [--output repo-fleet.lock.json] [--apply]
+rfm bootstrap --config repo-fleet.json --root . verify [--lock-file repo-fleet.lock.json] [--json]
+```
+
+`lock` قرارداد deterministic پروژه را تولید می‌کند. `verify` digest کانفیگ، repository contract، template metadata و فایل‌های baseline را بررسی می‌کند و در صورت drift با exit code برابر `2` خاتمه می‌یابد.

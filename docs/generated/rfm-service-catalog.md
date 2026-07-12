@@ -1,6 +1,6 @@
 # Repo Fleet Manager service catalog
 
-> Catalog version `0.8.0` · schema `1.0` · lifecycle `beta`
+> Catalog version `0.9.0` · schema `1.0` · lifecycle `beta`
 
 Config-driven orchestration for large Git repository fleets, submodules, local development, providers, Compose runtimes and source/image integrity.
 
@@ -10,11 +10,11 @@ Config-driven orchestration for large Git repository fleets, submodules, local d
 |---|---:|
 | Domains | 11 |
 | Capabilities | 57 |
-| Implemented | 41 |
-| Partial | 7 |
+| Implemented | 43 |
+| Partial | 6 |
 | Planned | 1 |
-| Missing | 8 |
-| Logical completion | 78.3% |
+| Missing | 7 |
+| Logical completion | 81.0% |
 | Open gaps | 17 |
 
 The completion percentage is a planning indicator: implemented capabilities count as 100%, partial as 50%, and planned as 15%. It is not a production-readiness certification.
@@ -67,7 +67,7 @@ Operate a complete multi-repository project without GitHub or GitLab after requi
 |---|---|---|---|
 | `local.bare-remotes` — Local file:// bare remotes | ✓ implemented | beta | `rfm local remotes --apply`<br>`src/repo_fleet_manager/localops.py`<br>`docs/08-local-only-workflows.md` |
 | `local.materialize` — Materialize workspace from lifecycle config | ✓ implemented | beta | `rfm local plan`<br>`rfm local localize --apply`<br>`src/repo_fleet_manager/localops.py` |
-| `local.parent-bootstrap` — Bootstrap after cloning the parent repository | ~ partial | alpha | `rfm local localize --apply`<br>`docs/09-repository-lifecycle.md`<br>`src/repo_fleet_manager/localops.py` |
+| `local.parent-bootstrap` — Bootstrap after cloning the parent repository | ✓ implemented | beta | `rfm init-project NAME --apply`<br>`rfm bootstrap --config repo-fleet.json verify`<br>`rfm local --config repo-fleet.json bootstrap --apply`<br>`src/repo_fleet_manager/scaffold.py`<br>`src/repo_fleet_manager/localops.py`<br>`docs/14-project-scaffolding-and-bootstrap-lock.md` |
 | `local.offline-cache` — Portable offline source/image cache | × missing | not-started | — |
 | `local.backup-restore` — Backup and restore local bare remotes and state | ✓ implemented | beta | `rfm local backup --apply`<br>`rfm local verify-backup ARCHIVE`<br>`rfm local restore ARCHIVE --apply`<br>`src/repo_fleet_manager/backup.py`<br>`src/repo_fleet_manager/operations.py`<br>`docs/12-backup-and-restore.md`<br>`tests/test_backup_restore.py` |
 
@@ -141,7 +141,7 @@ Capability inventory, gap analysis, templates and external developer portal inte
 | `catalog.markdown-export` — Markdown and JSON catalog export | ✓ implemented | beta | `rfm catalog --view all --format markdown --output docs/generated/rfm-service-catalog.md`<br>`src/repo_fleet_manager/service_catalog.py`<br>`docs/generated/rfm-service-catalog.md` |
 | `catalog.backstage` — Backstage catalog-info.yaml export | → planned | not-started | — |
 | `extension.plugins` — Plugin/provider extension API | × missing | not-started | — |
-| `extension.templates` — Repository and service scaffolding templates | × missing | not-started | — |
+| `extension.templates` — Repository and service scaffolding templates | ✓ implemented | beta | `rfm scaffold templates`<br>`rfm scaffold repository NAME --path PATH --template TEMPLATE --apply`<br>`src/repo_fleet_manager/scaffold.py`<br>`tests/test_scaffold_bootstrap.py`<br>`docs/14-project-scaffolding-and-bootstrap-lock.md` |
 
 ### Quality, testing and release
 
@@ -333,7 +333,7 @@ Acceptance criteria:
 
 #### GAP-010 — Portable parent bootstrap and repository scaffolding
 
-**Category:** `developer-experience` · **Current state:** `partial`
+**Category:** `developer-experience` · **Current state:** `implemented`
 
 After cloning the parent repo, new modules should be created from consistent templates and the root repository should declare the exact bootstrap contract.
 

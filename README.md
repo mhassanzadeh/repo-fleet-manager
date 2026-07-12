@@ -36,6 +36,7 @@ Repo Fleet Manager یک ابزار واحد و config-driven برای مدیری
 - fork واقعی GitHub/GitLab، انتشار mirror و reconciliation متادیتای remote
 - backup و restore تأییدشده برای bare remoteهای محلی، config و operation state
 - profileهای قابل ارث‌بری، overlayهای محیطی و repository groupهای مبتنی بر نام یا tag
+- ساخت پروژه مادر، scaffolding repository/service و bootstrap lockfile قابل‌حمل
 
 ## شروع سریع
 
@@ -58,6 +59,11 @@ rfm catalog --root . --view gaps --priority P0
 ```bash
 make install-editable
 make install-completions
+make init-project PROJECT_NAME=banking-platform PROJECT_DIR=./banking-platform
+make scaffold-templates
+make scaffold-repository CONFIG=repo-fleet.json ROOT=. REPO_NAME=customer-api REPO_PATH=services/customer-api TEMPLATE=python-service REPO_KIND=service
+make bootstrap-lock-apply CONFIG=repo-fleet.json ROOT=.
+make bootstrap-verify CONFIG=repo-fleet.json ROOT=.
 ```
 
 یا بدون نصب پکیج:
@@ -80,14 +86,14 @@ rfm doctor
 برای نصب ایزوله آخرین نسخه مستقیم از GitHub:
 
 ```bash
-pipx install git+https://github.com/mhassanzadeh/repo-fleet-manager.git@v0.8.0
+pipx install git+https://github.com/mhassanzadeh/repo-fleet-manager.git@v0.9.0
 rfm --version
 ```
 
 یا Wheel را از GitHub Release دانلود و نصب کنید:
 
 ```bash
-python3 -m pip install ./repo_fleet_manager-0.8.0-py3-none-any.whl
+python3 -m pip install ./repo_fleet_manager-0.9.0-py3-none-any.whl
 rfm --version
 ```
 
@@ -158,6 +164,40 @@ rfm repos --config repo-fleet.json --profile production --group runtime audit
 ```
 
 Profileها قابل ارث‌بری هستند، repository overlayها از `enabled: false` پشتیبانی می‌کنند و groupها می‌توانند dependencyها را به‌صورت بازگشتی وارد کنند.
+
+## ساخت پروژه و bootstrap contract
+
+ساخت یک parent project استاندارد:
+
+```bash
+rfm init-project banking-platform \
+  --directory ./banking-platform \
+  --provider github \
+  --namespace my-org \
+  --apply
+```
+
+ساخت repository یا service از template:
+
+```bash
+rfm scaffold templates
+rfm scaffold repository customer-api \
+  --config repo-fleet.json \
+  --root . \
+  --path services/customer-api \
+  --template python-service \
+  --kind service \
+  --tag backend \
+  --apply
+```
+
+اعتبارسنجی قرارداد bootstrap:
+
+```bash
+rfm bootstrap --config repo-fleet.json --root . verify
+```
+
+جزئیات کامل در [راهنمای scaffolding و bootstrap lock](docs/14-project-scaffolding-and-bootstrap-lock.md) آمده است.
 
 ## جریان‌های کاری پرکاربرد
 
@@ -284,7 +324,7 @@ CI روی هر دو شاخه `master` و `main` اجرا می‌شود. tagها�
 
 ```bash
 make validate
-python scripts/check_release_version.py 0.8.0
+python scripts/check_release_version.py 0.9.0
 make release-artifacts
 ```
 
@@ -323,6 +363,7 @@ repo-fleet-manager/
 - [ایمنی عملیاتی، journal، resume و rollback](docs/11-operational-safety-and-recovery.md)
 - [پشتیبان‌گیری و بازیابی local fleet](docs/12-backup-and-restore.md)
 - [Profileها، overlayها و repository groupها](docs/13-profiles-overlays-and-groups.md)
+- [ساخت پروژه، templateها و bootstrap lock](docs/14-project-scaffolding-and-bootstrap-lock.md)
 - [خروجی کامل service catalog](docs/generated/rfm-service-catalog.md)
 - [gap analysis منطقی](reports/gap-analysis.md)
 - [گزارش بررسی اسکریپت‌های ارسالی](reports/script-audit.md)
@@ -349,4 +390,4 @@ rfm config --config repo-fleet.json validate --strict
 
 ## Git commit guide
 
-تغییرات، روش انتشار و دستورهای commit نسخه جاری در [`PATCH_NOTES_v0.8.0.md`](PATCH_NOTES_v0.8.0.md)، [`CHANGELOG.md`](CHANGELOG.md) و [`GIT_COMMIT_GUIDE_v0.7.0.md`](GIT_COMMIT_GUIDE_v0.7.0.md) قرار دارد.
+تغییرات و روش انتشار نسخه جاری در [`PATCH_NOTES_v0.9.0.md`](PATCH_NOTES_v0.9.0.md)، [`GIT_COMMIT_GUIDE_v0.9.0.md`](GIT_COMMIT_GUIDE_v0.9.0.md) و [`CHANGELOG.md`](CHANGELOG.md) قرار دارد.

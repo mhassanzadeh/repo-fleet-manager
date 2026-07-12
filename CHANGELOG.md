@@ -6,6 +6,22 @@ The format follows Keep a Changelog and the project uses Semantic Versioning whi
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-07-12
+
+### Added
+
+- `rfm init-project` for generating portable parent projects with config, CI, license and Git initialization.
+- Built-in `generic`, `python-cli`, `python-service` and `node-service` repository templates.
+- `rfm scaffold repository` with safe config updates, tags, dependencies and automatic lock regeneration.
+- Deterministic `repo-fleet.lock.json` bootstrap contracts with config, repository and baseline file digests.
+- `rfm bootstrap lock` and `rfm bootstrap verify` commands with JSON output and drift exit codes.
+
+### Security
+
+- Scaffold paths reject absolute paths and parent-directory traversal.
+- Existing generated files are not overwritten without explicit `--force`.
+- Bootstrap locks reject absolute workspace paths and detect config or baseline-file drift.
+
 ## [0.8.0] - 2026-07-12
 
 ### Added
@@ -72,7 +88,8 @@ The format follows Keep a Changelog and the project uses Semantic Versioning whi
 - Workspace locking, safety guards, operation journal, resume and rollback.
 - Dependency graph and controlled parallel execution.
 
-[Unreleased]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.6.3...v0.7.0
 [0.6.3]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.6.2...v0.6.3
