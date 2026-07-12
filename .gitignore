@@ -136,3 +136,4 @@ test-results/
 scratch/
 sandbox/
 .local-remotes/
+build/*
