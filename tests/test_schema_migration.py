@@ -56,5 +56,68 @@ class SchemaMigrationTests(unittest.TestCase):
         self.assertIn("nested-path-collision", str(ctx.exception))
 
 
+class LegacyShapeMigrationTests(unittest.TestCase):
+    def test_short_06_schema_and_legacy_provider_type_are_migrated(self) -> None:
+        legacy = {
+            "schema_version": "0.6",
+            "project_name": "erpnext-frappe-platform",
+            "default_provider": "github",
+            "providers": {
+                "github": {
+                    "type": "github",
+                    "namespace": "mhassanzadeh",
+                    "host": "github.com",
+                    "cli": "gh",
+                    "url_template": "git@github.com:{namespace}/{repo}.git",
+                },
+                "local": {
+                    "type": "local",
+                    "namespace": ".repo-fleet/remotes",
+                },
+            },
+            "repos": [
+                {"path": ".", "name": "erpnext-frappe-platform", "kind": "root"},
+                {"path": "infra-compose", "name": "erpnext-frappe-infra-compose"},
+            ],
+        }
+
+        migrated, changes = migrate_config_data(legacy)
+
+        self.assertEqual(migrated["schema_version"], "1.0.0")
+        self.assertEqual(migrated["project"]["name"], "erpnext-frappe-platform")
+        self.assertEqual(migrated["project"]["default_provider"], "github")
+        self.assertEqual(migrated["providers"]["github"]["type"], "remote")
+        self.assertEqual(migrated["providers"]["github"]["driver"], "github")
+        self.assertEqual(migrated["repositories"][0]["repo"], "erpnext-frappe-platform")
+        self.assertNotIn("repos", migrated)
+        self.assertTrue(any("repos renamed to repositories" in change for change in changes))
+        validate_or_raise(migrated)
+
+    def test_services_map_is_converted_to_repository_list(self) -> None:
+        legacy = {
+            "schema_version": "0.5",
+            "name": "demo-platform",
+            "providers": {
+                "github": {
+                    "type": "github",
+                    "owner": "demo-user",
+                }
+            },
+            "services": {
+                "demo-platform": {"path": ".", "kind": "root"},
+                "demo-api": {"path": "services/api", "lifecycle": "new"},
+            },
+        }
+
+        migrated, _ = migrate_config_data(legacy)
+
+        self.assertEqual(migrated["project"]["name"], "demo-platform")
+        self.assertEqual(migrated["providers"]["github"]["namespace"], "demo-user")
+        self.assertEqual(migrated["providers"]["github"]["url_template"], "git@{host}:{namespace}/{repo}.git")
+        self.assertEqual(len(migrated["repositories"]), 2)
+        self.assertEqual(migrated["repositories"][1]["source_type"], "new")
+        validate_or_raise(migrated)
+
+
 if __name__ == "__main__":
     unittest.main()
