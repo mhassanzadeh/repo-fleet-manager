@@ -18,6 +18,12 @@
       "host": "gitlab.com",
       "cli": "glab",
       "url_template": "git@gitlab.com:{namespace}/{repo}.git"
+    },
+    "local": {
+      "type": "local",
+      "namespace": ".repo-fleet/remotes",
+      "cli": "git",
+      "url_template": "file://{root}/{namespace}/{repo}.git"
     }
   },
   "compose": {
@@ -279,5 +285,9 @@
       "provider": "github",
       "description": "Goftaroo platform repository: goftaroo-platform-infra"
     }
-  ]
+  ],
+  "local": {
+    "remotes_dir": ".repo-fleet/remotes",
+    "workspace_mode": "submodules"
+  }
 }

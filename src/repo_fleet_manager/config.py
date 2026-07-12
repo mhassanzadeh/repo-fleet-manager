@@ -13,9 +13,17 @@ class Provider:
     url_template: str
     cli: str
     host: str | None = None
+    type: str = "remote"
 
-    def expected_url(self, repo: str) -> str:
-        return self.url_template.format(namespace=self.namespace, repo=repo, host=self.host or "")
+    @property
+    def is_local(self) -> bool:
+        return self.type == "local" or self.name == "local" or self.url_template.startswith("file://")
+
+    def expected_url(self, repo: str, root: str | Path | None = None) -> str:
+        root_text = ""
+        if root is not None:
+            root_text = Path(root).expanduser().resolve().as_posix()
+        return self.url_template.format(namespace=self.namespace, repo=repo, host=self.host or "", root=root_text)
 
 
 @dataclass(slots=True)
@@ -51,6 +59,7 @@ class ProjectConfig:
     repositories: list[Repository]
     compose: dict[str, Any]
     fingerprint: dict[str, Any]
+    local: dict[str, Any]
 
     @property
     def default_provider_name(self) -> str:
@@ -69,7 +78,7 @@ class ProjectConfig:
             raise KeyError(f"unknown provider: {name}")
         provider = self.providers[name]
         if namespace:
-            return Provider(provider.name, namespace, provider.url_template, provider.cli, provider.host)
+            return Provider(provider.name, namespace, provider.url_template, provider.cli, provider.host, provider.type)
         return provider
 
     def submodules(self) -> list[Repository]:
@@ -95,25 +104,35 @@ def find_config(start: Path | None = None, explicit: str | None = None) -> Path:
 def load_config(path: str | Path | None = None) -> ProjectConfig:
     config_path = find_config(explicit=str(path)) if path else find_config()
     raw = json.loads(config_path.read_text(encoding="utf-8"))
-    providers = {
-        name: Provider(
+    local_cfg = raw.get("local", {})
+    providers = {}
+    for name, data in raw.get("providers", {}).items():
+        provider_type = str(data.get("type") or data.get("kind") or ("local" if name == "local" else "remote"))
+        default_url_template = "file://{root}/{namespace}/{repo}.git" if provider_type == "local" else None
+        url_template = data.get("url_template") or default_url_template
+        if not url_template:
+            raise ValueError(f"provider {name!r} must define url_template")
+        namespace = str(data.get("namespace") or data.get("owner") or data.get("group") or "")
+        if provider_type == "local" and not namespace:
+            namespace = str(local_cfg.get("remotes_dir") or ".repo-fleet/remotes")
+        providers[name] = Provider(
             name=name,
-            namespace=str(data.get("namespace") or data.get("owner") or data.get("group") or ""),
-            url_template=str(data["url_template"]),
-            cli=str(data.get("cli") or name),
+            namespace=namespace,
+            url_template=str(url_template),
+            cli=str(data.get("cli") or ("git" if provider_type == "local" else name)),
             host=data.get("host"),
+            type=provider_type,
         )
-        for name, data in raw.get("providers", {}).items()
-    }
     if not providers:
         raise ValueError("config must define at least one provider")
     repositories = []
+    known_keys = {
+        "path", "repo", "kind", "provider", "branch", "host_port", "compose_service",
+        "docker_context", "dockerfile", "health_url", "description", "include_roots",
+    }
     for item in raw.get("repositories", []):
-        known = {k: item.get(k) for k in [
-            "path", "repo", "kind", "provider", "branch", "host_port", "compose_service",
-            "docker_context", "dockerfile", "health_url", "description", "include_roots"
-        ] if k in item}
-        extra = {k: v for k, v in item.items() if k not in known}
+        known = {k: item.get(k) for k in known_keys if k in item}
+        extra = {k: v for k, v in item.items() if k not in known_keys}
         repositories.append(Repository(**known, extra=extra))
     return ProjectConfig(
         path=config_path.resolve(),
@@ -122,4 +141,5 @@ def load_config(path: str | Path | None = None) -> ProjectConfig:
         repositories=repositories,
         compose=raw.get("compose", {}),
         fingerprint=raw.get("fingerprint", {}),
+        local=local_cfg,
     )

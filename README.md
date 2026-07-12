@@ -11,6 +11,8 @@ Repo Fleet Manager یک ابزار واحد و config-driven برای مدیری
 - مدیریت کاتالوگ پروژه از یک فایل مرکزی `repo-fleet.json`
 - audit کردن `.gitmodules`، ریموت‌های محلی، branchها و وضعیت submoduleها
 - ساخت ریپوها روی GitHub و GitLab با CLIهای رسمی `gh` و `glab`
+- اجرای کامل workflowها به‌صورت local-only با bare remoteهای محلی و URLهای `file://`
+- ساخت workspace محلی از روی config، شامل root repo، submoduleها و `.gitmodules`
 - sync کردن ریموت submoduleها از روی config
 - اجرای `git status`، `git pull` و `git push` روی root و submoduleها
 - fingerprint گرفتن از سورس سرویس‌ها و تزریق label/metadata به Docker Compose
@@ -82,6 +84,23 @@ sudo make install-completions \
 
 ## جریان‌های کاری پرکاربرد
 
+### 0. اجرای کامل بدون GitHub/GitLab
+
+برای ساخت پروژه محلی از روی config و ایجاد submoduleهای واقعی با bare remoteهای local:
+
+```bash
+rfm local --config repo-fleet.json bootstrap
+rfm local --config repo-fleet.json bootstrap --apply --set-origin
+rfm repos --config repo-fleet.json audit --provider local
+```
+
+برای repoهایی که باید mirror/fork محلی داشته باشند:
+
+```bash
+rfm local --config repo-fleet.json remotes --mirror-sources --apply
+rfm local --config repo-fleet.json clone --apply
+```
+
 ### 1. بررسی وضعیت root و submoduleها
 
 ```bash
@@ -135,6 +154,8 @@ make uninstall            # حذف پکیج Python
 make uninstall-completions
 make test
 make validate-docs
+make local-bootstrap CONFIG=repo-fleet.json ROOT=/path/to/workspace
+make local-bootstrap-apply CONFIG=repo-fleet.json ROOT=/path/to/workspace
 ```
 
 ## ساختار پروژه
@@ -159,6 +180,7 @@ repo-fleet-manager/
 - [workflowهای عملیاتی](docs/03-workflows.md)
 - [fingerprint سورس و Docker image](docs/04-source-fingerprint-and-images.md)
 - [GitHub/GitLab providers](docs/05-repository-providers.md)
+- [workflowهای local-only](docs/08-local-only-workflows.md)
 - [برنامه مهاجرت از اسکریپت‌های فعلی](docs/06-migration-plan.md)
 - [مرجع فرمان‌ها](docs/07-command-reference.md)
 - [گزارش بررسی اسکریپت‌های ارسالی](reports/script-audit.md)

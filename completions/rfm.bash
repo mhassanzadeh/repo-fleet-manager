@@ -14,7 +14,7 @@ _rfm()
         prev="${COMP_WORDS[COMP_CWORD-1]}"
     fi
 
-    local commands="doctor catalog repos submodules git source compose images docs completion"
+    local commands="doctor catalog repos submodules local git source compose images docs completion"
     local global_opts="--help --version --config --root"
 
     case "$prev" in
@@ -35,7 +35,7 @@ _rfm()
             return
             ;;
         --provider)
-            COMPREPLY=( $(compgen -W "github gitlab" -- "$cur") )
+            COMPREPLY=( $(compgen -W "github gitlab local" -- "$cur") )
             return
             ;;
         --visibility)
@@ -104,6 +104,18 @@ _rfm()
                 return
             fi
             opts="--help --provider --namespace --apply"
+            ;;
+        local)
+            for ((i=1; i<cword; i++)); do
+                case "${words[i]}" in
+                    remotes|init|clone|bootstrap) action="${words[i]}" ;;
+                esac
+            done
+            if [[ -z "$action" ]]; then
+                COMPREPLY=( $(compgen -W "remotes init clone bootstrap --help --config --root" -- "$cur") )
+                return
+            fi
+            opts="--help --config --root --remotes-dir --apply --mirror-sources --seed --with-remotes --set-origin"
             ;;
         git)
             for ((i=1; i<cword; i++)); do

@@ -12,6 +12,7 @@ from .config import load_config
 from .docs import validate_links
 from .fingerprint import build_metadata, write_compose_override, write_metadata
 from .gitops import audit, create_repositories, git_foreach, print_audit_report, sync_submodules
+from .localops import bootstrap_local, clone_local_repositories, create_local_remotes, init_local_worktrees
 from .images import verify_images
 from .shell import command_exists
 
@@ -33,7 +34,7 @@ _rfm()
         prev="${COMP_WORDS[COMP_CWORD-1]}"
     fi
 
-    local commands="doctor catalog repos submodules git source compose images docs completion"
+    local commands="doctor catalog repos submodules local git source compose images docs completion"
     local global_opts="--help --version --config --root"
 
     case "$prev" in
@@ -54,7 +55,7 @@ _rfm()
             return
             ;;
         --provider)
-            COMPREPLY=( $(compgen -W "github gitlab" -- "$cur") )
+            COMPREPLY=( $(compgen -W "github gitlab local" -- "$cur") )
             return
             ;;
         --visibility)
@@ -123,6 +124,18 @@ _rfm()
                 return
             fi
             opts="--help --provider --namespace --apply"
+            ;;
+        local)
+            for ((i=1; i<cword; i++)); do
+                case "${words[i]}" in
+                    remotes|init|clone|bootstrap) action="${words[i]}" ;;
+                esac
+            done
+            if [[ -z "$action" ]]; then
+                COMPREPLY=( $(compgen -W "remotes init clone bootstrap --help --config --root" -- "$cur") )
+                return
+            fi
+            opts="--help --config --root --remotes-dir --apply --mirror-sources --seed --with-remotes --set-origin"
             ;;
         git)
             for ((i=1; i<cword; i++)); do
@@ -198,16 +211,17 @@ complete -c rfm -l version -d 'Show version'
 complete -c rfm -l config -r -d 'Path to repo-fleet.json'
 complete -c rfm -l root -r -a '(__fish_complete_directories)' -d 'Repository root'
 
-complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules git source compose images docs completion' -a doctor -d 'Check dependencies and config'
-complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules git source compose images docs completion' -a catalog -d 'Print repository catalog'
-complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules git source compose images docs completion' -a repos -d 'Repository provider operations'
-complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules git source compose images docs completion' -a submodules -d 'Submodule operations'
-complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules git source compose images docs completion' -a git -d 'Run git across root and submodules'
-complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules git source compose images docs completion' -a source -d 'Source/image metadata operations'
-complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules git source compose images docs completion' -a compose -d 'Run compose operations'
-complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules git source compose images docs completion' -a images -d 'Verify image labels'
-complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules git source compose images docs completion' -a docs -d 'Documentation utilities'
-complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules git source compose images docs completion' -a completion -d 'Print shell completion script'
+complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules local git source compose images docs completion' -a doctor -d 'Check dependencies and config'
+complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules local git source compose images docs completion' -a catalog -d 'Print repository catalog'
+complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules local git source compose images docs completion' -a repos -d 'Repository provider operations'
+complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules local git source compose images docs completion' -a submodules -d 'Submodule operations'
+complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules local git source compose images docs completion' -a local -d 'Local-only repository operations'
+complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules local git source compose images docs completion' -a git -d 'Run git across root and submodules'
+complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules local git source compose images docs completion' -a source -d 'Source/image metadata operations'
+complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules local git source compose images docs completion' -a compose -d 'Run compose operations'
+complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules local git source compose images docs completion' -a images -d 'Verify image labels'
+complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules local git source compose images docs completion' -a docs -d 'Documentation utilities'
+complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules local git source compose images docs completion' -a completion -d 'Print shell completion script'
 
 complete -c rfm -n '__fish_seen_subcommand_from completion' -a bash -d 'Print Bash completion'
 complete -c rfm -n '__fish_seen_subcommand_from completion' -a fish -d 'Print Fish completion'
@@ -216,7 +230,7 @@ complete -c rfm -n '__fish_seen_subcommand_from catalog' -l json -d 'Print JSON 
 
 complete -c rfm -n '__fish_seen_subcommand_from repos; and not __fish_seen_subcommand_from audit create' -a audit -d 'Audit .gitmodules and remotes'
 complete -c rfm -n '__fish_seen_subcommand_from repos; and not __fish_seen_subcommand_from audit create' -a create -d 'Create repositories'
-complete -c rfm -n '__fish_seen_subcommand_from repos' -l provider -r -a 'github gitlab' -d 'Repository provider'
+complete -c rfm -n '__fish_seen_subcommand_from repos' -l provider -r -a 'github gitlab local' -d 'Repository provider'
 complete -c rfm -n '__fish_seen_subcommand_from repos' -l namespace -r -d 'Provider namespace/group/org'
 complete -c rfm -n '__fish_seen_subcommand_from audit' -l check-remote -d 'Check remote existence'
 complete -c rfm -n '__fish_seen_subcommand_from audit' -l json -d 'Print JSON output'
@@ -224,9 +238,21 @@ complete -c rfm -n '__fish_seen_subcommand_from create' -l visibility -r -a 'pri
 complete -c rfm -n '__fish_seen_subcommand_from create' -l apply -d 'Apply changes'
 
 complete -c rfm -n '__fish_seen_subcommand_from submodules; and not __fish_seen_subcommand_from sync' -a sync -d 'Sync .gitmodules and origins'
-complete -c rfm -n '__fish_seen_subcommand_from submodules' -l provider -r -a 'github gitlab' -d 'Repository provider'
+complete -c rfm -n '__fish_seen_subcommand_from submodules' -l provider -r -a 'github gitlab local' -d 'Repository provider'
 complete -c rfm -n '__fish_seen_subcommand_from submodules' -l namespace -r -d 'Provider namespace/group/org'
 complete -c rfm -n '__fish_seen_subcommand_from submodules' -l apply -d 'Apply changes'
+
+complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from remotes init clone bootstrap' -a remotes -d 'Create local bare remotes'
+complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from remotes init clone bootstrap' -a init -d 'Create local working repositories'
+complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from remotes init clone bootstrap' -a clone -d 'Clone from local remotes'
+complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from remotes init clone bootstrap' -a bootstrap -d 'Bootstrap full local submodule workspace'
+complete -c rfm -n '__fish_seen_subcommand_from local' -l remotes-dir -r -a '(__fish_complete_directories)' -d 'Local bare remotes directory'
+complete -c rfm -n '__fish_seen_subcommand_from local' -l apply -d 'Apply changes'
+complete -c rfm -n '__fish_seen_subcommand_from local' -l mirror-sources -d 'Mirror configured source/upstream URLs'
+complete -c rfm -n '__fish_seen_subcommand_from remotes' -l seed -d 'Seed empty bare repositories with an initial commit'
+complete -c rfm -n '__fish_seen_subcommand_from init' -l with-remotes -d 'Create local bare remotes too'
+complete -c rfm -n '__fish_seen_subcommand_from init' -l set-origin -d 'Point origin to local bare remotes'
+complete -c rfm -n '__fish_seen_subcommand_from bootstrap' -l set-origin -d 'Point root origin to local bare remote'
 
 complete -c rfm -n '__fish_seen_subcommand_from git; and not __fish_seen_subcommand_from status pull push' -a status -d 'Run git status'
 complete -c rfm -n '__fish_seen_subcommand_from git; and not __fish_seen_subcommand_from status pull push' -a pull -d 'Run git pull'
@@ -325,6 +351,26 @@ def cmd_submodules_sync(args: argparse.Namespace) -> int:
     return sync_submodules(cfg, Path(args.root).resolve(), args.provider, args.namespace, args.apply)
 
 
+def cmd_local_remotes(args: argparse.Namespace) -> int:
+    cfg = load_config(args.config)
+    return create_local_remotes(cfg, Path(args.root).resolve(), args.remotes_dir, args.apply, args.mirror_sources, seed=args.seed)
+
+
+def cmd_local_init(args: argparse.Namespace) -> int:
+    cfg = load_config(args.config)
+    return init_local_worktrees(cfg, Path(args.root).resolve(), args.remotes_dir, args.apply, args.with_remotes, args.set_origin)
+
+
+def cmd_local_clone(args: argparse.Namespace) -> int:
+    cfg = load_config(args.config)
+    return clone_local_repositories(cfg, Path(args.root).resolve(), args.remotes_dir, args.apply, args.mirror_sources)
+
+
+def cmd_local_bootstrap(args: argparse.Namespace) -> int:
+    cfg = load_config(args.config)
+    return bootstrap_local(cfg, Path(args.root).resolve(), args.remotes_dir, args.apply, args.mirror_sources, args.set_origin)
+
+
 def cmd_git(args: argparse.Namespace) -> int:
     cfg = load_config(args.config)
     return git_foreach(cfg, Path(args.root).resolve(), args.git_action, args.apply, include_root=not args.no_root)
@@ -376,14 +422,36 @@ def build_parser() -> argparse.ArgumentParser:
     repos = sub.add_parser("repos", help="Repository provider operations.")
     add_common(repos); repos_sub = repos.add_subparsers(dest="repos_action", required=True)
     p = repos_sub.add_parser("audit", help="Audit .gitmodules, local remotes and optional remote existence.")
-    p.add_argument("--provider", choices=["github", "gitlab"]); p.add_argument("--namespace"); p.add_argument("--check-remote", action="store_true"); p.add_argument("--json", action="store_true"); p.set_defaults(func=cmd_repos_audit)
+    p.add_argument("--provider", help="Provider name from config, for example github, gitlab or local."); p.add_argument("--namespace"); p.add_argument("--check-remote", action="store_true"); p.add_argument("--json", action="store_true"); p.set_defaults(func=cmd_repos_audit)
     p = repos_sub.add_parser("create", help="Create missing repositories through gh/glab. Dry-run by default.")
-    p.add_argument("--provider", choices=["github", "gitlab"]); p.add_argument("--namespace"); p.add_argument("--visibility", choices=["private", "public"], default="private"); p.add_argument("--apply", action="store_true"); p.set_defaults(func=cmd_repos_create)
+    p.add_argument("--provider", help="Provider name from config, for example github, gitlab or local."); p.add_argument("--namespace"); p.add_argument("--visibility", choices=["private", "public"], default="private"); p.add_argument("--apply", action="store_true"); p.set_defaults(func=cmd_repos_create)
 
     p = sub.add_parser("submodules", help="Submodule operations.")
     add_common(p); subm = p.add_subparsers(dest="submodules_action", required=True)
     sp = subm.add_parser("sync", help="Rewrite .gitmodules and local origin URLs from config. Dry-run by default.")
-    sp.add_argument("--provider", choices=["github", "gitlab"]); sp.add_argument("--namespace"); sp.add_argument("--apply", action="store_true"); sp.set_defaults(func=cmd_submodules_sync)
+    sp.add_argument("--provider", help="Provider name from config, for example github, gitlab or local."); sp.add_argument("--namespace"); sp.add_argument("--apply", action="store_true"); sp.set_defaults(func=cmd_submodules_sync)
+
+    p = sub.add_parser("local", help="Local-only repository operations; no GitHub/GitLab required.")
+    add_common(p); local_sub = p.add_subparsers(dest="local_action", required=True)
+    sp = local_sub.add_parser("remotes", help="Create local bare remotes from config. Dry-run by default.")
+    sp.add_argument("--remotes-dir", help="Directory for local bare remotes. Defaults to local.remotes_dir or .repo-fleet/remotes.")
+    sp.add_argument("--mirror-sources", action="store_true", help="Use configured source/upstream URLs with git clone --mirror instead of empty bare init.")
+    sp.add_argument("--seed", action="store_true", help="Seed empty local bare repositories with an initial README commit.")
+    sp.add_argument("--apply", action="store_true"); sp.set_defaults(func=cmd_local_remotes)
+    sp = local_sub.add_parser("init", help="Create local working repositories/directories from config. Dry-run by default.")
+    sp.add_argument("--remotes-dir", help="Directory for local bare remotes.")
+    sp.add_argument("--with-remotes", action="store_true", help="Create local bare remotes before initializing worktrees.")
+    sp.add_argument("--set-origin", action="store_true", help="Set each worktree origin to its local bare remote and push the initial branch.")
+    sp.add_argument("--apply", action="store_true"); sp.set_defaults(func=cmd_local_init)
+    sp = local_sub.add_parser("clone", help="Clone configured repositories from local bare remotes into missing paths. Dry-run by default.")
+    sp.add_argument("--remotes-dir", help="Directory for local bare remotes.")
+    sp.add_argument("--mirror-sources", action="store_true", help="Create missing local mirrors from configured source/upstream URLs first.")
+    sp.add_argument("--apply", action="store_true"); sp.set_defaults(func=cmd_local_clone)
+    sp = local_sub.add_parser("bootstrap", help="Create a complete local submodule workspace with local bare remotes. Dry-run by default.")
+    sp.add_argument("--remotes-dir", help="Directory for local bare remotes.")
+    sp.add_argument("--mirror-sources", action="store_true", help="Mirror configured source/upstream URLs before bootstrapping.")
+    sp.add_argument("--set-origin", action="store_true", help="Set root origin to its local bare remote and push root commits.")
+    sp.add_argument("--apply", action="store_true"); sp.set_defaults(func=cmd_local_bootstrap)
 
     p = sub.add_parser("git", help="Run git operations across root + submodules.")
     add_common(p); p.add_argument("git_action", choices=["status", "pull", "push"]); p.add_argument("--apply", action="store_true"); p.add_argument("--no-root", action="store_true"); p.set_defaults(func=cmd_git)

@@ -1,5 +1,23 @@
 # workflowهای عملیاتی
 
+## Bootstrap کاملاً محلی و بدون GitHub/GitLab
+
+```bash
+rfm local bootstrap
+rfm local bootstrap --apply --set-origin
+rfm repos audit --provider local
+```
+
+برای ساخت bare remoteهای local از روی source/mirrorهای تعریف‌شده در config:
+
+```bash
+rfm local remotes --mirror-sources --apply
+rfm local clone --apply
+```
+
+جزئیات بیشتر در [workflowهای local-only](08-local-only-workflows.md).
+
+
 ## Bootstrap اولیه پروژه
 
 ```bash

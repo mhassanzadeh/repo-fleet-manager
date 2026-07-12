@@ -8,6 +8,7 @@ from pathlib import Path
 
 from .config import ProjectConfig, Repository
 from .shell import command_exists, run, run_interactive, shlex_join
+from .localops import local_bare_path, path_from_file_url, remotes_dir
 
 
 @dataclass(slots=True)
@@ -113,7 +114,7 @@ def audit(config: ProjectConfig, root: Path, provider_override: str | None = Non
     for repo in config.submodules():
         provider = config.provider_for(repo, provider_override, namespace)
         full_path = root / repo.path
-        expected = provider.expected_url(repo.repo)
+        expected = provider.expected_url(repo.repo, root=root)
         exists = full_path.exists()
         worktree = False
         branch = None
@@ -130,7 +131,7 @@ def audit(config: ProjectConfig, root: Path, provider_override: str | None = Non
         remote_state = remote_exists(provider.name, provider.cli, provider.namespace, repo.repo, root) if check_remote else None
         if gm_url != expected:
             issues.append("gitmodules-url-mismatch")
-        if repo.path not in root_cfg:
+        if repo.path not in root_cfg and gitdir_type != "gitfile-submodule":
             issues.append("submodule-not-initialized-in-root-config")
         if not exists:
             issues.append("local-path-missing")
@@ -150,7 +151,7 @@ def audit(config: ProjectConfig, root: Path, provider_override: str | None = Non
     root_repo = config.root_repository
     root_provider = config.provider_for(root_repo, provider_override, namespace) if root_repo else None
     root_origin = git_output(["remote", "get-url", "origin"], root)
-    root_expected = root_provider.expected_url(root_repo.repo) if root_provider and root_repo else None
+    root_expected = root_provider.expected_url(root_repo.repo, root=root) if root_provider and root_repo else None
     root_issues: list[str] = []
     if root_expected and root_origin != root_expected:
         root_issues.append("root-origin-url-mismatch")
@@ -199,7 +200,7 @@ def sync_submodules(config: ProjectConfig, root: Path, provider_override: str | 
     lines: list[str] = []
     for repo in config.submodules():
         provider = config.provider_for(repo, provider_override, namespace)
-        url = provider.expected_url(repo.repo)
+        url = provider.expected_url(repo.repo, root=root)
         lines.extend([f'[submodule "{repo.path}"]', f"\tpath = {repo.path}", f"\turl = {url}"])
     content = "\n".join(lines) + "\n"
     gitmodules = root / ".gitmodules"
@@ -210,7 +211,7 @@ def sync_submodules(config: ProjectConfig, root: Path, provider_override: str | 
             provider = config.provider_for(repo, provider_override, namespace)
             path = root / repo.path
             if path.exists():
-                print(f"[DRY-RUN] git -C {repo.path} remote set-url origin {provider.expected_url(repo.repo)}")
+                print(f"[DRY-RUN] git -C {repo.path} remote set-url origin {provider.expected_url(repo.repo, root=root)}")
         print("[DRY-RUN] git submodule sync --recursive")
         return 0
     if gitmodules.exists():
@@ -224,9 +225,9 @@ def sync_submodules(config: ProjectConfig, root: Path, provider_override: str | 
         if not path.exists():
             continue
         if run(["git", "rev-parse", "--is-inside-work-tree"], cwd=path).code == 0:
-            result = run(["git", "remote", "set-url", "origin", provider.expected_url(repo.repo)], cwd=path)
+            result = run(["git", "remote", "set-url", "origin", provider.expected_url(repo.repo, root=root)], cwd=path)
             if result.code != 0:
-                run(["git", "remote", "add", "origin", provider.expected_url(repo.repo)], cwd=path, check=True)
+                run(["git", "remote", "add", "origin", provider.expected_url(repo.repo, root=root)], cwd=path, check=True)
     run(["git", "submodule", "sync", "--recursive"], cwd=root, check=True)
     print("[OK] .gitmodules and local submodule origin URLs synchronized.")
     return 0
@@ -238,6 +239,20 @@ def create_repositories(config: ProjectConfig, root: Path, provider_override: st
     for repo in repositories:
         provider = config.provider_for(repo, provider_override, namespace)
         desc = repo.description or f"{config.project.get('name', 'platform')} repository: {repo.repo}"
+        if provider.is_local:
+            url = provider.expected_url(repo.repo, root=root)
+            path = path_from_file_url(url) or local_bare_path(repo, remotes_dir(config, root, namespace))
+            if path.exists():
+                print(f"[SKIP] local:{path} exists")
+                continue
+            print(f"[INIT] local bare repository: {path}")
+            if apply:
+                path.parent.mkdir(parents=True, exist_ok=True)
+            code = run_interactive(["git", "init", "--bare", "-b", repo.branch, str(path)], cwd=root, dry_run=not apply)
+            if code == 0 and apply:
+                run(["git", f"--git-dir={path}", "symbolic-ref", "HEAD", f"refs/heads/{repo.branch}"])
+            failed = failed or code != 0
+            continue
         view_cmd = provider_view_command(provider.name, provider.cli, provider.namespace, repo.repo)
         create_cmd = provider_create_command(provider.name, provider.cli, provider.namespace, repo.repo, visibility, desc)
         if not command_exists(provider.cli):

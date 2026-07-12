@@ -2,8 +2,10 @@ PYTHON ?= python3
 PIP ?= $(PYTHON) -m pip
 BASH_COMPLETION_DIR ?= $(HOME)/.local/share/bash-completion/completions
 FISH_COMPLETION_DIR ?= $(HOME)/.config/fish/completions
+CONFIG ?= configs/repo-fleet.example.json
+ROOT ?= .
 
-.PHONY: install install-cli install-editable install-completions install-all uninstall uninstall-completions doctor test validate-docs completion-bash completion-fish build clean
+.PHONY: install install-cli install-editable install-completions install-all uninstall uninstall-completions doctor test validate-docs completion-bash completion-fish local-bootstrap local-bootstrap-apply local-remotes local-remotes-apply build clean
 
 install: install-cli install-completions
 
@@ -33,6 +35,18 @@ completion-bash:
 
 completion-fish:
 	./scripts/rfm.sh completion fish
+
+local-remotes:
+	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" remotes
+
+local-remotes-apply:
+	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" remotes --apply --seed
+
+local-bootstrap:
+	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" bootstrap
+
+local-bootstrap-apply:
+	./scripts/rfm.sh local --config "$(CONFIG)" --root "$(ROOT)" bootstrap --apply --set-origin
 
 doctor:
 	./scripts/rfm.sh doctor --config configs/goftaroo.example.json
