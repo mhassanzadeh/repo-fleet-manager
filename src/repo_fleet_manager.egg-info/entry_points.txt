@@ -1,0 +1,2 @@
+[console_scripts]
+rfm = repo_fleet_manager.cli:main

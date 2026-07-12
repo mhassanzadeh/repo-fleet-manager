@@ -1,3 +1,12 @@
+Metadata-Version: 2.4
+Name: repo-fleet-manager
+Version: 0.5.0
+Summary: Config-driven manager for large Git submodule based repositories and local development workflows.
+Author: Architecture Automation Team
+License: MIT
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+
 # Repo Fleet Manager
 
 Repo Fleet Manager یک ابزار واحد و config-driven برای مدیریت پروژه‌های بزرگ چندریپویی است؛ مخصوصاً پروژه‌هایی که یک ریپوی ریشه دارند و چندین Git Submodule برای سرویس‌ها، کلاینت‌ها، پکیج‌های مشترک و زیرساخت در آن‌ها نگهداری می‌شود.

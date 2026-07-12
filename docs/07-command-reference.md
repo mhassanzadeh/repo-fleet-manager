@@ -27,11 +27,30 @@ rfm doctor [--config repo-fleet.json] [--root .]
 
 ## `catalog`
 
+نمای repositoryهای پروژه همچنان رفتار پیش‌فرض است:
+
 ```bash
-rfm catalog [--config repo-fleet.json] [--root .] [--json]
+rfm catalog [--config repo-fleet.json] [--root .]
+rfm catalog --view repositories --format json
 ```
 
-کاتالوگ repositoryها را از config چاپ می‌کند.
+کاتالوگ قابلیت‌ها و شکاف‌های خود RFM:
+
+```bash
+rfm catalog --root . --view summary
+rfm catalog --root . --view tree
+rfm catalog --root . --view gaps [--priority P0|P1|P2|P3]
+rfm catalog --root . --view all --format text|json|markdown
+```
+
+ذخیره خروجی و بررسی evidenceهای اعلام‌شده:
+
+```bash
+rfm catalog --root . --view all --format markdown --output docs/generated/rfm-service-catalog.md
+rfm catalog --root . --view summary --check-evidence
+```
+
+`--json` برای سازگاری نسخه‌های قبل معادل `--format json` است.
 
 ## `repos audit`
 

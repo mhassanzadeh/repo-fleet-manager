@@ -1,8 +1,8 @@
-include README.md MIGRATION.md Makefile
-recursive-include configs *.json
+include README.md
+include MIGRATION.md
+include Makefile
+recursive-include src/repo_fleet_manager/data *.json
+recursive-include catalog *.json
 recursive-include docs *.md
-recursive-include reports *.md
-recursive-include scripts *.sh
 recursive-include completions *
-recursive-include legacy-scripts *
-recursive-include tests *.py
+recursive-include configs *.json

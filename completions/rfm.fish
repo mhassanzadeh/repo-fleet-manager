@@ -23,7 +23,14 @@ complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodu
 complete -c rfm -n '__fish_seen_subcommand_from completion' -a bash -d 'Print Bash completion'
 complete -c rfm -n '__fish_seen_subcommand_from completion' -a fish -d 'Print Fish completion'
 
-complete -c rfm -n '__fish_seen_subcommand_from catalog' -l json -d 'Print JSON output'
+complete -c rfm -n '__fish_seen_subcommand_from catalog' -l view -r -a 'repositories summary tree gaps all' -d 'Catalog view'
+complete -c rfm -n '__fish_seen_subcommand_from catalog' -l format -r -a 'text json markdown' -d 'Output format'
+complete -c rfm -n '__fish_seen_subcommand_from catalog' -l json -d 'Alias for JSON output'
+complete -c rfm -n '__fish_seen_subcommand_from catalog' -l output -r -d 'Write catalog to file'
+complete -c rfm -n '__fish_seen_subcommand_from catalog' -l catalog-file -r -d 'Override capability catalog JSON'
+complete -c rfm -n '__fish_seen_subcommand_from catalog' -l priority -r -a 'P0 P1 P2 P3' -d 'Filter gaps by priority'
+complete -c rfm -n '__fish_seen_subcommand_from catalog' -l status -r -a 'implemented partial planned missing' -d 'Filter gaps by status'
+complete -c rfm -n '__fish_seen_subcommand_from catalog' -l check-evidence -d 'Fail when component evidence is missing'
 
 complete -c rfm -n '__fish_seen_subcommand_from repos; and not __fish_seen_subcommand_from audit create publish' -a audit -d 'Audit .gitmodules and remotes'
 complete -c rfm -n '__fish_seen_subcommand_from repos; and not __fish_seen_subcommand_from audit create publish' -a create -d 'Create repositories'

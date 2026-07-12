@@ -1,0 +1,1169 @@
+{
+  "schema_version": "1.0",
+  "catalog_version": "0.5.0",
+  "project": {
+    "name": "Repo Fleet Manager",
+    "short_name": "RFM",
+    "type": "developer-platform-cli",
+    "description": "Config-driven orchestration for large Git repository fleets, submodules, local development, providers, Compose runtimes and source/image integrity.",
+    "owners": [
+      "Architecture Automation Team"
+    ],
+    "lifecycle": "beta"
+  },
+  "status_definitions": {
+    "implemented": "Available and covered by at least basic tests or executable documentation.",
+    "partial": "Usable for common paths but missing important safety, provider or edge-case behavior.",
+    "planned": "Defined in the catalog and backlog but not implemented.",
+    "missing": "Required for a production-grade implementation and currently absent."
+  },
+  "domains": [
+    {
+      "id": "cli-ux",
+      "name": "CLI and operator experience",
+      "description": "Terminal entrypoint, discoverability, safety switches and machine-readable output.",
+      "capabilities": [
+        {
+          "id": "cli.entrypoint",
+          "name": "Installable rfm terminal command",
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm --version",
+            "make install"
+          ],
+          "components": [
+            "pyproject.toml",
+            "src/repo_fleet_manager/cli.py",
+            "Makefile"
+          ]
+        },
+        {
+          "id": "cli.completion",
+          "name": "Bash and Fish completion",
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm completion bash",
+            "rfm completion fish"
+          ],
+          "components": [
+            "completions/rfm.bash",
+            "completions/rfm.fish",
+            "src/repo_fleet_manager/cli.py"
+          ]
+        },
+        {
+          "id": "cli.plan-apply",
+          "name": "Dry-run and explicit apply model",
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm local plan",
+            "rfm local localize --apply"
+          ],
+          "components": [
+            "src/repo_fleet_manager/cli.py",
+            "src/repo_fleet_manager/localops.py"
+          ]
+        },
+        {
+          "id": "cli.structured-output",
+          "name": "Consistent JSON output and exit codes",
+          "status": "partial",
+          "maturity": "alpha",
+          "commands": [
+            "rfm catalog --json",
+            "rfm repos audit --json"
+          ],
+          "components": [
+            "src/repo_fleet_manager/cli.py"
+          ],
+          "gap_refs": [
+            "GAP-007"
+          ]
+        },
+        {
+          "id": "cli.profiles",
+          "name": "Named execution profiles and environment overlays",
+          "status": "missing",
+          "maturity": "not-started",
+          "commands": [],
+          "components": [],
+          "gap_refs": [
+            "GAP-009"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "configuration",
+      "name": "Configuration and inventory",
+      "description": "Central definition of projects, providers, repository lifecycle, Compose and fingerprint behavior.",
+      "capabilities": [
+        {
+          "id": "config.central-manifest",
+          "name": "Single repo-fleet.json inventory",
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm doctor",
+            "rfm catalog"
+          ],
+          "components": [
+            "src/repo_fleet_manager/config.py",
+            "configs/repo-fleet.example.json"
+          ]
+        },
+        {
+          "id": "config.lifecycle-model",
+          "name": "new/upstream/existing repository lifecycle",
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm local plan",
+            "rfm local localize"
+          ],
+          "components": [
+            "src/repo_fleet_manager/config.py",
+            "configs/repo-fleet.lifecycle.example.json",
+            "docs/09-repository-lifecycle.md"
+          ]
+        },
+        {
+          "id": "config.schema-validation",
+          "name": "Versioned JSON Schema validation",
+          "status": "missing",
+          "maturity": "not-started",
+          "commands": [],
+          "components": [],
+          "gap_refs": [
+            "GAP-001"
+          ]
+        },
+        {
+          "id": "config.migrations",
+          "name": "Config schema migrations and backward compatibility",
+          "status": "missing",
+          "maturity": "not-started",
+          "commands": [],
+          "components": [],
+          "gap_refs": [
+            "GAP-001"
+          ]
+        },
+        {
+          "id": "config.overlays",
+          "name": "Environment/user overlays without duplicating the base config",
+          "status": "missing",
+          "maturity": "not-started",
+          "commands": [],
+          "components": [],
+          "gap_refs": [
+            "GAP-009"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "repository-lifecycle",
+      "name": "Repository lifecycle management",
+      "description": "Create, import, localize, mirror and publish repositories across local, GitHub and GitLab targets.",
+      "capabilities": [
+        {
+          "id": "repo.new",
+          "name": "Create new local repositories and bare remotes",
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm local remotes --apply --seed",
+            "rfm local init --apply"
+          ],
+          "components": [
+            "src/repo_fleet_manager/localops.py"
+          ]
+        },
+        {
+          "id": "repo.upstream-local",
+          "name": "Clone or mirror upstream repositories locally",
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm local remotes --mirror-sources --apply",
+            "rfm local localize --apply"
+          ],
+          "components": [
+            "src/repo_fleet_manager/localops.py"
+          ]
+        },
+        {
+          "id": "repo.existing-import",
+          "name": "Import existing local worktrees",
+          "status": "partial",
+          "maturity": "alpha",
+          "commands": [
+            "rfm local localize --apply",
+            "rfm repos publish --only existing"
+          ],
+          "components": [
+            "src/repo_fleet_manager/localops.py",
+            "src/repo_fleet_manager/gitops.py"
+          ],
+          "gap_refs": [
+            "GAP-004"
+          ]
+        },
+        {
+          "id": "repo.provider-create",
+          "name": "Create repositories through gh/glab",
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm repos create --provider github --apply",
+            "rfm repos create --provider gitlab --apply"
+          ],
+          "components": [
+            "src/repo_fleet_manager/gitops.py"
+          ]
+        },
+        {
+          "id": "repo.provider-publish",
+          "name": "Publish local worktrees and mirrors to personal providers",
+          "status": "partial",
+          "maturity": "alpha",
+          "commands": [
+            "rfm repos publish --provider github --apply",
+            "rfm repos publish --provider gitlab --apply"
+          ],
+          "components": [
+            "src/repo_fleet_manager/gitops.py"
+          ],
+          "gap_refs": [
+            "GAP-003",
+            "GAP-004"
+          ]
+        },
+        {
+          "id": "repo.native-fork",
+          "name": "Native GitHub/GitLab fork operation with upstream tracking",
+          "status": "missing",
+          "maturity": "not-started",
+          "commands": [],
+          "components": [],
+          "gap_refs": [
+            "GAP-003"
+          ]
+        },
+        {
+          "id": "repo.reconcile",
+          "name": "Desired-state reconciliation and drift repair",
+          "status": "partial",
+          "maturity": "alpha",
+          "commands": [
+            "rfm repos audit",
+            "rfm submodules sync"
+          ],
+          "components": [
+            "src/repo_fleet_manager/gitops.py"
+          ],
+          "gap_refs": [
+            "GAP-003"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "local-workspace",
+      "name": "Local-only workspace",
+      "description": "Operate a complete multi-repository project without GitHub or GitLab after required sources are available.",
+      "capabilities": [
+        {
+          "id": "local.bare-remotes",
+          "name": "Local file:// bare remotes",
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm local remotes --apply"
+          ],
+          "components": [
+            "src/repo_fleet_manager/localops.py",
+            "docs/08-local-only-workflows.md"
+          ]
+        },
+        {
+          "id": "local.materialize",
+          "name": "Materialize workspace from lifecycle config",
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm local plan",
+            "rfm local localize --apply"
+          ],
+          "components": [
+            "src/repo_fleet_manager/localops.py"
+          ]
+        },
+        {
+          "id": "local.parent-bootstrap",
+          "name": "Bootstrap after cloning the parent repository",
+          "status": "partial",
+          "maturity": "alpha",
+          "commands": [
+            "rfm local localize --apply"
+          ],
+          "components": [
+            "docs/09-repository-lifecycle.md",
+            "src/repo_fleet_manager/localops.py"
+          ],
+          "gap_refs": [
+            "GAP-010"
+          ]
+        },
+        {
+          "id": "local.offline-cache",
+          "name": "Portable offline source/image cache",
+          "status": "missing",
+          "maturity": "not-started",
+          "commands": [],
+          "components": [],
+          "gap_refs": [
+            "GAP-011"
+          ]
+        },
+        {
+          "id": "local.backup-restore",
+          "name": "Backup and restore local bare remotes and state",
+          "status": "missing",
+          "maturity": "not-started",
+          "commands": [],
+          "components": [],
+          "gap_refs": [
+            "GAP-008"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "git-submodules",
+      "name": "Git and submodule fleet operations",
+      "description": "Synchronize submodule metadata and execute Git actions across the repository fleet.",
+      "capabilities": [
+        {
+          "id": "git.submodule-sync",
+          "name": "Generate and synchronize .gitmodules",
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm submodules sync --apply"
+          ],
+          "components": [
+            "src/repo_fleet_manager/gitops.py"
+          ]
+        },
+        {
+          "id": "git.fleet-actions",
+          "name": "Fleet status, pull and push",
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm git status",
+            "rfm git pull --apply",
+            "rfm git push --apply"
+          ],
+          "components": [
+            "src/repo_fleet_manager/gitops.py"
+          ]
+        },
+        {
+          "id": "git.dirty-safety",
+          "name": "Dirty worktree, detached HEAD and divergence guards",
+          "status": "partial",
+          "maturity": "alpha",
+          "commands": [
+            "rfm repos audit"
+          ],
+          "components": [
+            "src/repo_fleet_manager/gitops.py"
+          ],
+          "gap_refs": [
+            "GAP-004"
+          ]
+        },
+        {
+          "id": "git.dependency-order",
+          "name": "Dependency-aware execution graph",
+          "status": "missing",
+          "maturity": "not-started",
+          "commands": [],
+          "components": [],
+          "gap_refs": [
+            "GAP-006"
+          ]
+        },
+        {
+          "id": "git.parallel",
+          "name": "Controlled parallel fleet operations",
+          "status": "missing",
+          "maturity": "not-started",
+          "commands": [],
+          "components": [],
+          "gap_refs": [
+            "GAP-006"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "providers",
+      "name": "Provider integrations",
+      "description": "GitHub, GitLab and local provider adapters, authentication and remote URL policies.",
+      "capabilities": [
+        {
+          "id": "provider.github",
+          "name": "GitHub CLI integration",
+          "status": "partial",
+          "maturity": "alpha",
+          "commands": [
+            "rfm repos create --provider github",
+            "rfm repos publish --provider github"
+          ],
+          "components": [
+            "src/repo_fleet_manager/gitops.py",
+            "docs/05-repository-providers.md"
+          ],
+          "gap_refs": [
+            "GAP-003",
+            "GAP-005"
+          ]
+        },
+        {
+          "id": "provider.gitlab",
+          "name": "GitLab CLI integration",
+          "status": "partial",
+          "maturity": "alpha",
+          "commands": [
+            "rfm repos create --provider gitlab",
+            "rfm repos publish --provider gitlab"
+          ],
+          "components": [
+            "src/repo_fleet_manager/gitops.py",
+            "docs/05-repository-providers.md"
+          ],
+          "gap_refs": [
+            "GAP-003",
+            "GAP-005"
+          ]
+        },
+        {
+          "id": "provider.local",
+          "name": "Local file provider",
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm local remotes",
+            "rfm repos audit --provider local"
+          ],
+          "components": [
+            "src/repo_fleet_manager/localops.py",
+            "src/repo_fleet_manager/config.py"
+          ]
+        },
+        {
+          "id": "provider.auth-doctor",
+          "name": "Authentication/session validation",
+          "status": "partial",
+          "maturity": "alpha",
+          "commands": [
+            "rfm doctor"
+          ],
+          "components": [
+            "src/repo_fleet_manager/cli.py"
+          ],
+          "gap_refs": [
+            "GAP-005"
+          ]
+        },
+        {
+          "id": "provider.remote-policy",
+          "name": "Per-repository multi-remote and push policy",
+          "status": "partial",
+          "maturity": "alpha",
+          "commands": [
+            "rfm repos publish --remote-name personal"
+          ],
+          "components": [
+            "src/repo_fleet_manager/gitops.py"
+          ],
+          "gap_refs": [
+            "GAP-003"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "runtime-images",
+      "name": "Runtime, Compose and image integrity",
+      "description": "Run local services and compare source state with built container image metadata.",
+      "capabilities": [
+        {
+          "id": "runtime.compose",
+          "name": "Docker/Podman Compose lifecycle",
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm compose up --apply",
+            "rfm compose down --apply",
+            "rfm compose ps"
+          ],
+          "components": [
+            "src/repo_fleet_manager/compose.py"
+          ]
+        },
+        {
+          "id": "runtime.source-fingerprint",
+          "name": "Deterministic source fingerprint metadata",
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm source fingerprint --write"
+          ],
+          "components": [
+            "src/repo_fleet_manager/fingerprint.py",
+            "docs/04-source-fingerprint-and-images.md"
+          ]
+        },
+        {
+          "id": "runtime.image-label-verify",
+          "name": "Verify image labels against source fingerprints",
+          "status": "partial",
+          "maturity": "alpha",
+          "commands": [
+            "rfm images verify"
+          ],
+          "components": [
+            "src/repo_fleet_manager/images.py"
+          ],
+          "gap_refs": [
+            "GAP-012"
+          ]
+        },
+        {
+          "id": "runtime.registry-provenance",
+          "name": "Registry digest, SBOM and signature verification",
+          "status": "missing",
+          "maturity": "not-started",
+          "commands": [],
+          "components": [],
+          "gap_refs": [
+            "GAP-012"
+          ]
+        },
+        {
+          "id": "runtime.health",
+          "name": "Service health/readiness orchestration",
+          "status": "missing",
+          "maturity": "not-started",
+          "commands": [],
+          "components": [],
+          "gap_refs": [
+            "GAP-013"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "reliability-safety",
+      "name": "Reliability and safety",
+      "description": "Idempotency, transactions, locking, recovery and traceability for destructive operations.",
+      "capabilities": [
+        {
+          "id": "safety.dry-run",
+          "name": "Safe dry-run default",
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm local remotes",
+            "rfm repos create"
+          ],
+          "components": [
+            "src/repo_fleet_manager/cli.py"
+          ]
+        },
+        {
+          "id": "safety.idempotency",
+          "name": "Idempotent repeat execution",
+          "status": "partial",
+          "maturity": "alpha",
+          "commands": [
+            "rfm local localize --apply"
+          ],
+          "components": [
+            "src/repo_fleet_manager/localops.py",
+            "src/repo_fleet_manager/gitops.py"
+          ],
+          "gap_refs": [
+            "GAP-002"
+          ]
+        },
+        {
+          "id": "safety.transaction",
+          "name": "Transactional apply and rollback",
+          "status": "missing",
+          "maturity": "not-started",
+          "commands": [],
+          "components": [],
+          "gap_refs": [
+            "GAP-002"
+          ]
+        },
+        {
+          "id": "safety.lock",
+          "name": "Workspace operation lock",
+          "status": "missing",
+          "maturity": "not-started",
+          "commands": [],
+          "components": [],
+          "gap_refs": [
+            "GAP-004"
+          ]
+        },
+        {
+          "id": "safety.journal",
+          "name": "Persistent operation journal and resume",
+          "status": "missing",
+          "maturity": "not-started",
+          "commands": [],
+          "components": [],
+          "gap_refs": [
+            "GAP-002"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "security-governance",
+      "name": "Security and governance",
+      "description": "Credentials, policy enforcement, auditability and supply-chain controls.",
+      "capabilities": [
+        {
+          "id": "security.secret-guidance",
+          "name": "Avoid secrets in config documentation",
+          "status": "partial",
+          "maturity": "alpha",
+          "commands": [],
+          "components": [
+            "docs/05-repository-providers.md"
+          ],
+          "gap_refs": [
+            "GAP-005"
+          ]
+        },
+        {
+          "id": "security.credentials",
+          "name": "Credential profiles and secret-store integration",
+          "status": "missing",
+          "maturity": "not-started",
+          "commands": [],
+          "components": [],
+          "gap_refs": [
+            "GAP-005"
+          ]
+        },
+        {
+          "id": "security.policy",
+          "name": "Policy-as-code for provider, branch and image rules",
+          "status": "missing",
+          "maturity": "not-started",
+          "commands": [],
+          "components": [],
+          "gap_refs": [
+            "GAP-014"
+          ]
+        },
+        {
+          "id": "security.audit-log",
+          "name": "Structured immutable audit log",
+          "status": "missing",
+          "maturity": "not-started",
+          "commands": [],
+          "components": [],
+          "gap_refs": [
+            "GAP-007"
+          ]
+        },
+        {
+          "id": "security.supply-chain",
+          "name": "SBOM, image signing and commit verification",
+          "status": "missing",
+          "maturity": "not-started",
+          "commands": [],
+          "components": [],
+          "gap_refs": [
+            "GAP-012",
+            "GAP-014"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "catalog-extensibility",
+      "name": "Catalog and extensibility",
+      "description": "Capability inventory, gap analysis, templates and external developer portal integration.",
+      "capabilities": [
+        {
+          "id": "catalog.capability-manifest",
+          "name": "Machine-readable RFM capability catalog",
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm catalog --view tree",
+            "rfm catalog --view gaps"
+          ],
+          "components": [
+            "catalog/rfm-service-catalog.json",
+            "src/repo_fleet_manager/service_catalog.py"
+          ]
+        },
+        {
+          "id": "catalog.markdown-export",
+          "name": "Markdown and JSON catalog export",
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm catalog --view all --format markdown --output docs/generated/rfm-service-catalog.md"
+          ],
+          "components": [
+            "src/repo_fleet_manager/service_catalog.py",
+            "docs/generated/rfm-service-catalog.md"
+          ]
+        },
+        {
+          "id": "catalog.backstage",
+          "name": "Backstage catalog-info.yaml export",
+          "status": "planned",
+          "maturity": "not-started",
+          "commands": [],
+          "components": [],
+          "gap_refs": [
+            "GAP-015"
+          ]
+        },
+        {
+          "id": "extension.plugins",
+          "name": "Plugin/provider extension API",
+          "status": "missing",
+          "maturity": "not-started",
+          "commands": [],
+          "components": [],
+          "gap_refs": [
+            "GAP-016"
+          ]
+        },
+        {
+          "id": "extension.templates",
+          "name": "Repository and service scaffolding templates",
+          "status": "missing",
+          "maturity": "not-started",
+          "commands": [],
+          "components": [],
+          "gap_refs": [
+            "GAP-010"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "quality-release",
+      "name": "Quality, testing and release",
+      "description": "Automated verification, compatibility matrix, packaging and release discipline.",
+      "capabilities": [
+        {
+          "id": "quality.unit-tests",
+          "name": "Python unit tests",
+          "status": "partial",
+          "maturity": "alpha",
+          "commands": [
+            "make test"
+          ],
+          "components": [
+            "tests/test_config.py",
+            "tests/test_local_workflow.py",
+            "tests/test_cli_completion.py"
+          ],
+          "gap_refs": [
+            "GAP-006"
+          ]
+        },
+        {
+          "id": "quality.integration-tests",
+          "name": "End-to-end local Git graph tests",
+          "status": "missing",
+          "maturity": "not-started",
+          "commands": [],
+          "components": [],
+          "gap_refs": [
+            "GAP-006"
+          ]
+        },
+        {
+          "id": "quality.ci",
+          "name": "CI pipeline and cross-platform matrix",
+          "status": "missing",
+          "maturity": "not-started",
+          "commands": [],
+          "components": [],
+          "gap_refs": [
+            "GAP-006"
+          ]
+        },
+        {
+          "id": "quality.packaging",
+          "name": "Installable Python package and Makefile",
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "make install",
+            "python -m build"
+          ],
+          "components": [
+            "pyproject.toml",
+            "Makefile"
+          ]
+        },
+        {
+          "id": "quality.release",
+          "name": "Automated semantic versioning and changelog",
+          "status": "partial",
+          "maturity": "alpha",
+          "commands": [],
+          "components": [
+            "PATCH_NOTES_v0.4.0.md"
+          ],
+          "gap_refs": [
+            "GAP-017"
+          ]
+        }
+      ]
+    }
+  ],
+  "gaps": [
+    {
+      "id": "GAP-001",
+      "title": "Versioned config schema and migration engine",
+      "priority": "P0",
+      "category": "reliability",
+      "status": "missing",
+      "rationale": "The config is the desired-state source of truth. Without strict schema validation, typos or incompatible fields can fail midway through destructive operations.",
+      "recommended_scope": [
+        "Publish a JSON Schema",
+        "Add schema_version to configs",
+        "Validate before every command",
+        "Provide rfm config migrate and config validate"
+      ],
+      "acceptance_criteria": [
+        "Invalid fields fail before any filesystem change",
+        "Old supported schema versions can be migrated deterministically",
+        "Validation errors include JSON paths and remediation"
+      ]
+    },
+    {
+      "id": "GAP-002",
+      "title": "Transactional apply, operation journal and rollback",
+      "priority": "P0",
+      "category": "recovery",
+      "status": "missing",
+      "rationale": "A multi-repository operation can succeed for some repos and fail for others, leaving an inconsistent workspace with no reliable resume or rollback path.",
+      "recommended_scope": [
+        "Create an execution plan with operation IDs",
+        "Persist before/after state",
+        "Support resume and compensating rollback",
+        "Make all mutating commands idempotent"
+      ],
+      "acceptance_criteria": [
+        "Interrupted localize can resume",
+        "Changed remotes and .gitmodules can be restored",
+        "The journal records every command result"
+      ]
+    },
+    {
+      "id": "GAP-003",
+      "title": "Native fork/mirror workflows and provider reconciliation",
+      "priority": "P0",
+      "category": "providers",
+      "status": "partial",
+      "rationale": "Current publish logic creates and pushes repositories but does not fully model native forks, upstream relationships, mirror settings, default branches or provider-side drift.",
+      "recommended_scope": [
+        "Use gh repo fork and GitLab fork APIs/CLI",
+        "Set upstream and personal remotes",
+        "Reconcile visibility/default branch/topics/mirror state",
+        "Support provider-side mirror updates"
+      ],
+      "acceptance_criteria": [
+        "Fork lineage is visible on the provider",
+        "upstream and personal remotes are configured consistently",
+        "Audit reports provider drift and can repair it"
+      ]
+    },
+    {
+      "id": "GAP-004",
+      "title": "Workspace safety guards and concurrency lock",
+      "priority": "P0",
+      "category": "safety",
+      "status": "partial",
+      "rationale": "Imports, remote rewrites and bulk pushes need stronger checks for dirty trees, divergence, path collisions and concurrent RFM processes.",
+      "recommended_scope": [
+        "Add a .repo-fleet/lock",
+        "Refuse unsafe dirty/diverged operations unless explicitly overridden",
+        "Detect nested/path collisions",
+        "Add --force with explicit reason"
+      ],
+      "acceptance_criteria": [
+        "Two apply processes cannot mutate one workspace",
+        "Dirty or divergent repos are listed before mutation",
+        "Unsafe overrides are recorded in the journal"
+      ]
+    },
+    {
+      "id": "GAP-005",
+      "title": "Authentication profiles and credential diagnostics",
+      "priority": "P0",
+      "category": "security",
+      "status": "partial",
+      "rationale": "Checking only that gh/glab exists is insufficient. The tool must identify account, host, scopes and non-interactive authentication before starting a fleet operation.",
+      "recommended_scope": [
+        "Add provider auth check",
+        "Support named accounts/hosts",
+        "Integrate with native credential helpers",
+        "Never persist tokens in repo-fleet.json"
+      ],
+      "acceptance_criteria": [
+        "doctor reports authenticated identity and required scopes",
+        "CI/non-interactive mode fails fast",
+        "Secrets are redacted from all output"
+      ]
+    },
+    {
+      "id": "GAP-006",
+      "title": "Integration tests, dependency graph and controlled parallelism",
+      "priority": "P0",
+      "category": "quality",
+      "status": "missing",
+      "rationale": "Unit tests do not prove that multi-repo, submodule, bare remote, failure and resume scenarios work together. Sequential execution will also become slow at fleet scale.",
+      "recommended_scope": [
+        "Build temporary end-to-end Git graphs in tests",
+        "Model depends_on between repos/services",
+        "Execute independent nodes in parallel",
+        "Add CI matrix for Linux Docker and Podman"
+      ],
+      "acceptance_criteria": [
+        "new/upstream/existing scenarios run end to end",
+        "Failures are deterministic and resumable",
+        "Parallel mode preserves readable per-repo logs"
+      ]
+    },
+    {
+      "id": "GAP-007",
+      "title": "Unified structured output and audit logging",
+      "priority": "P1",
+      "category": "observability",
+      "status": "partial",
+      "rationale": "Automation and support need stable event records rather than mixed human text and command-specific JSON shapes.",
+      "recommended_scope": [
+        "Define a common event schema",
+        "Add --format text|json|jsonl",
+        "Write operation logs under .repo-fleet/logs",
+        "Include command, repo, duration and result"
+      ],
+      "acceptance_criteria": [
+        "All commands can emit JSONL",
+        "Sensitive values are redacted",
+        "A failed fleet run can be diagnosed from one log directory"
+      ]
+    },
+    {
+      "id": "GAP-008",
+      "title": "Backup and restore for local remotes and state",
+      "priority": "P1",
+      "category": "recovery",
+      "status": "missing",
+      "rationale": "Local-only mode makes .repo-fleet/remotes valuable infrastructure. Losing it can remove unpublished branches and tags.",
+      "recommended_scope": [
+        "Add rfm local backup/restore",
+        "Bundle refs, config, lockfiles and metadata",
+        "Support verification and retention"
+      ],
+      "acceptance_criteria": [
+        "A clean machine can restore the fleet",
+        "Backup integrity is verified",
+        "Unpublished refs are preserved"
+      ]
+    },
+    {
+      "id": "GAP-009",
+      "title": "Profiles, overlays and repository groups",
+      "priority": "P1",
+      "category": "configuration",
+      "status": "missing",
+      "rationale": "Large projects need developer/CI/production differences and selective operations without duplicating the full catalog.",
+      "recommended_scope": [
+        "Add config inheritance/overlays",
+        "Define tags and groups",
+        "Support --profile and --group filters",
+        "Render final merged config"
+      ],
+      "acceptance_criteria": [
+        "Base config stays provider-neutral",
+        "Users can operate on a subset",
+        "Merged configuration is inspectable and validated"
+      ]
+    },
+    {
+      "id": "GAP-010",
+      "title": "Portable parent bootstrap and repository scaffolding",
+      "priority": "P1",
+      "category": "developer-experience",
+      "status": "partial",
+      "rationale": "After cloning the parent repo, new modules should be created from consistent templates and the root repository should declare the exact bootstrap contract.",
+      "recommended_scope": [
+        "Add rfm init-project",
+        "Add repo/service templates",
+        "Generate README, license, CI and baseline files",
+        "Create a portable bootstrap lockfile"
+      ],
+      "acceptance_criteria": [
+        "A new developer runs one documented command",
+        "New repos follow the same conventions",
+        "Bootstrap does not depend on the original author's filesystem"
+      ]
+    },
+    {
+      "id": "GAP-011",
+      "title": "Offline source and image cache",
+      "priority": "P1",
+      "category": "offline",
+      "status": "missing",
+      "rationale": "Local mode is only fully offline after upstream repos and container images have already been fetched.",
+      "recommended_scope": [
+        "Export/import Git bundle or mirror pack",
+        "Save/load OCI images",
+        "Track cache manifest and checksums",
+        "Support air-gapped bootstrap"
+      ],
+      "acceptance_criteria": [
+        "Workspace and images can be prepared on a connected machine",
+        "Air-gapped import requires no provider access",
+        "Cache completeness is validated before bootstrap"
+      ]
+    },
+    {
+      "id": "GAP-012",
+      "title": "Container registry provenance, SBOM and signatures",
+      "priority": "P1",
+      "category": "supply-chain",
+      "status": "partial",
+      "rationale": "Source labels alone do not establish which registry digest was deployed or whether the image and dependencies are trusted.",
+      "recommended_scope": [
+        "Resolve immutable registry digests",
+        "Generate/attach SBOM",
+        "Verify cosign signatures/attestations",
+        "Compare source lock to image provenance"
+      ],
+      "acceptance_criteria": [
+        "Verification works without mutable tags",
+        "Unsigned/untrusted images can be blocked by policy",
+        "Reports identify exact source and image digests"
+      ]
+    },
+    {
+      "id": "GAP-013",
+      "title": "Service health, readiness and ordered runtime startup",
+      "priority": "P1",
+      "category": "runtime",
+      "status": "missing",
+      "rationale": "Compose up returning successfully does not mean the development platform is usable. Dependencies need readiness checks and actionable diagnostics.",
+      "recommended_scope": [
+        "Read Compose health checks",
+        "Add configurable readiness probes",
+        "Wait on dependency graph",
+        "Provide rfm runtime doctor"
+      ],
+      "acceptance_criteria": [
+        "Bootstrap waits for required services",
+        "Failures show logs and remediation",
+        "Status distinguishes running from ready"
+      ]
+    },
+    {
+      "id": "GAP-014",
+      "title": "Policy-as-code for repository and supply-chain governance",
+      "priority": "P2",
+      "category": "governance",
+      "status": "missing",
+      "rationale": "Teams need enforceable rules for visibility, branches, remotes, signing, image sources and destructive actions.",
+      "recommended_scope": [
+        "Define policy rules in config or Rego",
+        "Add check/enforce modes",
+        "Support exceptions with expiry and reason"
+      ],
+      "acceptance_criteria": [
+        "Policy violations are visible in audit",
+        "CI can block non-compliant state",
+        "Exceptions are explicit and traceable"
+      ]
+    },
+    {
+      "id": "GAP-015",
+      "title": "Backstage and external service catalog export",
+      "priority": "P2",
+      "category": "catalog",
+      "status": "planned",
+      "rationale": "The internal RFM catalog is useful for the CLI, while larger organizations often need ownership and dependency data in a developer portal.",
+      "recommended_scope": [
+        "Export catalog-info.yaml",
+        "Map repositories/services to System/Component/Resource",
+        "Include owners, lifecycle and links"
+      ],
+      "acceptance_criteria": [
+        "Generated entities pass Backstage validation",
+        "Dependencies and ownership remain generated from one source of truth"
+      ]
+    },
+    {
+      "id": "GAP-016",
+      "title": "Stable plugin API for providers and workflows",
+      "priority": "P2",
+      "category": "extensibility",
+      "status": "missing",
+      "rationale": "Hard-coding every provider, runtime and artifact backend in the core will make RFM difficult to extend and test.",
+      "recommended_scope": [
+        "Define provider/runtime/catalog interfaces",
+        "Load plugins through Python entry points",
+        "Publish compatibility contract"
+      ],
+      "acceptance_criteria": [
+        "A provider can be added without editing cli.py",
+        "Plugin failures are isolated and reported",
+        "Version compatibility is checked"
+      ]
+    },
+    {
+      "id": "GAP-017",
+      "title": "Automated release and compatibility discipline",
+      "priority": "P2",
+      "category": "release",
+      "status": "partial",
+      "rationale": "Manual patch notes are useful but do not guarantee reproducible packages, changelogs or compatibility across Python, Git and container engines.",
+      "recommended_scope": [
+        "Automate tests/build/tag/release",
+        "Generate changelog from conventional commits",
+        "Publish checksums and package metadata",
+        "Maintain compatibility matrix"
+      ],
+      "acceptance_criteria": [
+        "A tagged release is reproducible",
+        "Artifacts include checksums",
+        "Supported versions are tested and documented"
+      ]
+    }
+  ]
+}

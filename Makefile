@@ -5,7 +5,7 @@ FISH_COMPLETION_DIR ?= $(HOME)/.config/fish/completions
 CONFIG ?= configs/repo-fleet.example.json
 ROOT ?= .
 
-.PHONY: install install-cli install-editable install-completions install-all uninstall uninstall-completions doctor test validate-docs completion-bash completion-fish local-plan local-localize local-localize-apply local-bootstrap local-bootstrap-apply local-remotes local-remotes-apply local-remotes-update publish-github publish-gitlab build clean
+.PHONY: install install-cli install-editable install-completions install-all uninstall uninstall-completions doctor test validate-docs completion-bash completion-fish local-plan local-localize local-localize-apply local-bootstrap local-bootstrap-apply local-remotes local-remotes-apply local-remotes-update publish-github publish-gitlab catalog-summary catalog-tree catalog-gaps catalog-docs catalog-check build clean
 
 install: install-cli install-completions
 
@@ -65,6 +65,22 @@ publish-github:
 
 publish-gitlab:
 	./scripts/rfm.sh repos --config "$(CONFIG)" --root "$(ROOT)" publish --provider gitlab --namespace "$(NAMESPACE)"
+
+catalog-summary:
+	./scripts/rfm.sh catalog --root "$(ROOT)" --view summary
+
+catalog-tree:
+	./scripts/rfm.sh catalog --root "$(ROOT)" --view tree
+
+catalog-gaps:
+	./scripts/rfm.sh catalog --root "$(ROOT)" --view gaps
+
+catalog-docs:
+	./scripts/rfm.sh catalog --root "$(ROOT)" --view all --format markdown --output docs/generated/rfm-service-catalog.md
+	./scripts/rfm.sh catalog --root "$(ROOT)" --view gaps --format markdown --output reports/gap-analysis.md
+
+catalog-check:
+	./scripts/rfm.sh catalog --root "$(ROOT)" --view summary --check-evidence
 
 doctor:
 	./scripts/rfm.sh doctor --config configs/goftaroo.example.json

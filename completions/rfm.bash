@@ -80,7 +80,7 @@ _rfm()
             opts="--help --config --root"
             ;;
         catalog)
-            opts="--help --config --root --json"
+            opts="--help --config --root --view --format --json --output --catalog-file --priority --status --check-evidence"
             ;;
         repos)
             for ((i=1; i<cword; i++)); do
