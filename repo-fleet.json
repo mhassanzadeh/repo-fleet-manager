@@ -1,0 +1,99 @@
+{
+  "schema_version": "1.0.0",
+  "project": {
+    "name": "repo-fleet-manager",
+    "description": "Repo Fleet Manager (RFM) standalone CLI for managing large multi-repository and Git submodule workspaces.",
+    "default_provider": "github",
+    "default_branch": "master",
+    "env_prefix": "RFM",
+    "build_dir": ".repo-fleet/build"
+  },
+  "providers": {
+    "github": {
+      "type": "remote",
+      "driver": "github",
+      "namespace": "mhassanzadeh",
+      "owner": "mhassanzadeh",
+      "host": "github.com",
+      "cli": "gh",
+      "user": "mhassanzadeh",
+      "required_scopes": [
+        "repo"
+      ],
+      "url_template": "git@github.com:{namespace}/{repo}.git"
+    },
+    "local": {
+      "type": "local",
+      "driver": "local",
+      "namespace": ".repo-fleet/remotes",
+      "cli": "git",
+      "url_template": "file://{root}/{namespace}/{repo}.git"
+    }
+  },
+  "repositories": [
+    {
+      "path": ".",
+      "repo": "repo-fleet-manager",
+      "kind": "tooling",
+      "provider": "github",
+      "branch": "master",
+      "description": "Standalone RFM command-line application and its documentation, schemas, tests and shell completions.",
+      "source_type": "existing",
+      "remote_mode": "create",
+      "depends_on": [],
+      "visibility": "private",
+      "topics": [
+        "repository-management",
+        "git",
+        "developer-tools",
+        "cli",
+        "python",
+        "docker",
+        "podman",
+        "github",
+        "gitlab"
+      ],
+      "include_roots": [
+        "src",
+        "tests",
+        "schemas",
+        "configs",
+        "docs",
+        "scripts",
+        "completions",
+        "catalog",
+        "reports"
+      ],
+      "metadata": {
+        "standalone": true,
+        "uses_submodules": false,
+        "package_name": "repo-fleet-manager",
+        "entrypoint": "rfm",
+        "config_schema": "1.0.0"
+      }
+    }
+  ],
+  "local": {
+    "remotes_dir": ".repo-fleet/remotes",
+    "workspace_mode": "independent",
+    "operations_dir": ".repo-fleet/operations",
+    "lock_file": ".repo-fleet/lock",
+    "default_jobs": 1
+  },
+  "fingerprint": {
+    "algorithm": "sha256",
+    "short_length": 16,
+    "exclude": [
+      ".git",
+      ".repo-fleet",
+      ".venv",
+      "venv",
+      "build",
+      "dist",
+      "__pycache__",
+      ".pytest_cache",
+      ".mypy_cache",
+      ".ruff_cache"
+    ]
+  }
+}
