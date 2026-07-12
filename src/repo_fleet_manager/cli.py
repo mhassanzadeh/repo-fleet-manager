@@ -16,9 +16,255 @@ from .images import verify_images
 from .shell import command_exists
 
 
+BASH_COMPLETION = r'''
+# bash completion for Repo Fleet Manager (rfm)
+# Install manually with:
+#   rfm completion bash > ~/.local/share/bash-completion/completions/rfm
+
+_rfm()
+{
+    local cur prev words cword
+    if declare -F _init_completion >/dev/null 2>&1; then
+        _init_completion -n : || return
+    else
+        words=("${COMP_WORDS[@]}")
+        cword=$COMP_CWORD
+        cur="${COMP_WORDS[COMP_CWORD]}"
+        prev="${COMP_WORDS[COMP_CWORD-1]}"
+    fi
+
+    local commands="doctor catalog repos submodules git source compose images docs completion"
+    local global_opts="--help --version --config --root"
+
+    case "$prev" in
+        --config)
+            if declare -F _filedir >/dev/null 2>&1; then
+                _filedir '@(json)'
+            else
+                COMPREPLY=( $(compgen -f -- "$cur") )
+            fi
+            return
+            ;;
+        --root)
+            if declare -F _filedir >/dev/null 2>&1; then
+                _filedir -d
+            else
+                COMPREPLY=( $(compgen -d -- "$cur") )
+            fi
+            return
+            ;;
+        --provider)
+            COMPREPLY=( $(compgen -W "github gitlab" -- "$cur") )
+            return
+            ;;
+        --visibility)
+            COMPREPLY=( $(compgen -W "private public" -- "$cur") )
+            return
+            ;;
+        completion)
+            COMPREPLY=( $(compgen -W "bash fish" -- "$cur") )
+            return
+            ;;
+    esac
+
+    local cmd="" token i skip_next=0
+    for ((i=1; i<cword; i++)); do
+        token="${words[i]}"
+        if (( skip_next )); then
+            skip_next=0
+            continue
+        fi
+        case "$token" in
+            --config|--root|--provider|--namespace|--visibility)
+                skip_next=1
+                continue
+                ;;
+            --*)
+                continue
+                ;;
+        esac
+        case " $commands " in
+            *" $token "*) cmd="$token"; break ;;
+        esac
+    done
+
+    if [[ -z "$cmd" ]]; then
+        COMPREPLY=( $(compgen -W "$commands $global_opts" -- "$cur") )
+        return
+    fi
+
+    local opts action=""
+    case "$cmd" in
+        doctor)
+            opts="--help --config --root"
+            ;;
+        catalog)
+            opts="--help --config --root --json"
+            ;;
+        repos)
+            for ((i=1; i<cword; i++)); do
+                [[ "${words[i]}" == "audit" || "${words[i]}" == "create" ]] && action="${words[i]}"
+            done
+            if [[ -z "$action" ]]; then
+                COMPREPLY=( $(compgen -W "audit create --help --config --root" -- "$cur") )
+                return
+            fi
+            case "$action" in
+                audit) opts="--help --provider --namespace --check-remote --json" ;;
+                create) opts="--help --provider --namespace --visibility --apply" ;;
+            esac
+            ;;
+        submodules)
+            for ((i=1; i<cword; i++)); do
+                [[ "${words[i]}" == "sync" ]] && action="${words[i]}"
+            done
+            if [[ -z "$action" ]]; then
+                COMPREPLY=( $(compgen -W "sync --help --config --root" -- "$cur") )
+                return
+            fi
+            opts="--help --provider --namespace --apply"
+            ;;
+        git)
+            for ((i=1; i<cword; i++)); do
+                [[ "${words[i]}" == "status" || "${words[i]}" == "pull" || "${words[i]}" == "push" ]] && action="${words[i]}"
+            done
+            if [[ -z "$action" ]]; then
+                COMPREPLY=( $(compgen -W "status pull push --help --config --root" -- "$cur") )
+                return
+            fi
+            opts="--help --config --root --apply --no-root"
+            ;;
+        source)
+            for ((i=1; i<cword; i++)); do
+                [[ "${words[i]}" == "fingerprint" ]] && action="${words[i]}"
+            done
+            if [[ -z "$action" ]]; then
+                COMPREPLY=( $(compgen -W "fingerprint --help --config --root" -- "$cur") )
+                return
+            fi
+            opts="--help --write"
+            ;;
+        compose)
+            for ((i=1; i<cword; i++)); do
+                case "${words[i]}" in
+                    ps|up|down|build|pull|logs) action="${words[i]}" ;;
+                esac
+            done
+            if [[ -z "$action" ]]; then
+                COMPREPLY=( $(compgen -W "ps up down build pull logs --help --config --root" -- "$cur") )
+                return
+            fi
+            opts="--help --apply"
+            ;;
+        images)
+            for ((i=1; i<cword; i++)); do
+                [[ "${words[i]}" == "verify" ]] && action="${words[i]}"
+            done
+            if [[ -z "$action" ]]; then
+                COMPREPLY=( $(compgen -W "verify --help --config --root" -- "$cur") )
+                return
+            fi
+            opts="--help --json"
+            ;;
+        docs)
+            for ((i=1; i<cword; i++)); do
+                [[ "${words[i]}" == "validate-links" ]] && action="${words[i]}"
+            done
+            if [[ -z "$action" ]]; then
+                COMPREPLY=( $(compgen -W "validate-links --help --config --root" -- "$cur") )
+                return
+            fi
+            opts="--help"
+            ;;
+        completion)
+            opts="bash fish --help"
+            ;;
+    esac
+
+    COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
+}
+
+complete -F _rfm rfm
+'''
+
+FISH_COMPLETION = r'''
+# fish completion for Repo Fleet Manager (rfm)
+# Install manually with:
+#   rfm completion fish > ~/.config/fish/completions/rfm.fish
+
+complete -c rfm -f
+complete -c rfm -s h -l help -d 'Show help'
+complete -c rfm -l version -d 'Show version'
+complete -c rfm -l config -r -d 'Path to repo-fleet.json'
+complete -c rfm -l root -r -a '(__fish_complete_directories)' -d 'Repository root'
+
+complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules git source compose images docs completion' -a doctor -d 'Check dependencies and config'
+complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules git source compose images docs completion' -a catalog -d 'Print repository catalog'
+complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules git source compose images docs completion' -a repos -d 'Repository provider operations'
+complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules git source compose images docs completion' -a submodules -d 'Submodule operations'
+complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules git source compose images docs completion' -a git -d 'Run git across root and submodules'
+complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules git source compose images docs completion' -a source -d 'Source/image metadata operations'
+complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules git source compose images docs completion' -a compose -d 'Run compose operations'
+complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules git source compose images docs completion' -a images -d 'Verify image labels'
+complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules git source compose images docs completion' -a docs -d 'Documentation utilities'
+complete -c rfm -n 'not __fish_seen_subcommand_from doctor catalog repos submodules git source compose images docs completion' -a completion -d 'Print shell completion script'
+
+complete -c rfm -n '__fish_seen_subcommand_from completion' -a bash -d 'Print Bash completion'
+complete -c rfm -n '__fish_seen_subcommand_from completion' -a fish -d 'Print Fish completion'
+
+complete -c rfm -n '__fish_seen_subcommand_from catalog' -l json -d 'Print JSON output'
+
+complete -c rfm -n '__fish_seen_subcommand_from repos; and not __fish_seen_subcommand_from audit create' -a audit -d 'Audit .gitmodules and remotes'
+complete -c rfm -n '__fish_seen_subcommand_from repos; and not __fish_seen_subcommand_from audit create' -a create -d 'Create repositories'
+complete -c rfm -n '__fish_seen_subcommand_from repos' -l provider -r -a 'github gitlab' -d 'Repository provider'
+complete -c rfm -n '__fish_seen_subcommand_from repos' -l namespace -r -d 'Provider namespace/group/org'
+complete -c rfm -n '__fish_seen_subcommand_from audit' -l check-remote -d 'Check remote existence'
+complete -c rfm -n '__fish_seen_subcommand_from audit' -l json -d 'Print JSON output'
+complete -c rfm -n '__fish_seen_subcommand_from create' -l visibility -r -a 'private public' -d 'Repository visibility'
+complete -c rfm -n '__fish_seen_subcommand_from create' -l apply -d 'Apply changes'
+
+complete -c rfm -n '__fish_seen_subcommand_from submodules; and not __fish_seen_subcommand_from sync' -a sync -d 'Sync .gitmodules and origins'
+complete -c rfm -n '__fish_seen_subcommand_from submodules' -l provider -r -a 'github gitlab' -d 'Repository provider'
+complete -c rfm -n '__fish_seen_subcommand_from submodules' -l namespace -r -d 'Provider namespace/group/org'
+complete -c rfm -n '__fish_seen_subcommand_from submodules' -l apply -d 'Apply changes'
+
+complete -c rfm -n '__fish_seen_subcommand_from git; and not __fish_seen_subcommand_from status pull push' -a status -d 'Run git status'
+complete -c rfm -n '__fish_seen_subcommand_from git; and not __fish_seen_subcommand_from status pull push' -a pull -d 'Run git pull'
+complete -c rfm -n '__fish_seen_subcommand_from git; and not __fish_seen_subcommand_from status pull push' -a push -d 'Run git push'
+complete -c rfm -n '__fish_seen_subcommand_from git' -l apply -d 'Apply changes'
+complete -c rfm -n '__fish_seen_subcommand_from git' -l no-root -d 'Skip root repository'
+
+complete -c rfm -n '__fish_seen_subcommand_from source; and not __fish_seen_subcommand_from fingerprint' -a fingerprint -d 'Compute source digests'
+complete -c rfm -n '__fish_seen_subcommand_from fingerprint' -l write -d 'Write metadata files'
+
+complete -c rfm -n '__fish_seen_subcommand_from compose; and not __fish_seen_subcommand_from ps up down build pull logs' -a ps -d 'Compose ps'
+complete -c rfm -n '__fish_seen_subcommand_from compose; and not __fish_seen_subcommand_from ps up down build pull logs' -a up -d 'Compose up'
+complete -c rfm -n '__fish_seen_subcommand_from compose; and not __fish_seen_subcommand_from ps up down build pull logs' -a down -d 'Compose down'
+complete -c rfm -n '__fish_seen_subcommand_from compose; and not __fish_seen_subcommand_from ps up down build pull logs' -a build -d 'Compose build'
+complete -c rfm -n '__fish_seen_subcommand_from compose; and not __fish_seen_subcommand_from ps up down build pull logs' -a pull -d 'Compose pull'
+complete -c rfm -n '__fish_seen_subcommand_from compose; and not __fish_seen_subcommand_from ps up down build pull logs' -a logs -d 'Compose logs'
+complete -c rfm -n '__fish_seen_subcommand_from compose' -l apply -d 'Apply changes'
+
+complete -c rfm -n '__fish_seen_subcommand_from images; and not __fish_seen_subcommand_from verify' -a verify -d 'Verify image labels'
+complete -c rfm -n '__fish_seen_subcommand_from verify' -l json -d 'Print JSON output'
+
+complete -c rfm -n '__fish_seen_subcommand_from docs; and not __fish_seen_subcommand_from validate-links' -a validate-links -d 'Validate Markdown links'
+'''
+
+
 def add_common(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--config", help="Path to repo-fleet.json. Defaults to nearest repo-fleet.json above cwd.")
     parser.add_argument("--root", default=".", help="Repository root. Default: current directory.")
+
+
+def cmd_completion(args: argparse.Namespace) -> int:
+    if args.shell == "bash":
+        print(BASH_COMPLETION.strip())
+    elif args.shell == "fish":
+        print(FISH_COMPLETION.strip())
+    else:  # argparse prevents this branch.
+        raise ValueError(f"Unsupported shell: {args.shell}")
+    return 0
 
 
 def cmd_doctor(args: argparse.Namespace) -> int:
@@ -159,6 +405,10 @@ def build_parser() -> argparse.ArgumentParser:
     add_common(p); docs_sub = p.add_subparsers(dest="docs_action", required=True)
     sp = docs_sub.add_parser("validate-links", help="Validate local Markdown links.")
     sp.set_defaults(func=cmd_docs_validate)
+
+    p = sub.add_parser("completion", help="Print shell completion script.")
+    p.add_argument("shell", choices=["bash", "fish"], help="Shell to generate completion for.")
+    p.set_defaults(func=cmd_completion)
     return parser
 
 

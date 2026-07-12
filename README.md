@@ -6,6 +6,8 @@ Repo Fleet Manager یک ابزار واحد و config-driven برای مدیری
 
 ## قابلیت‌های اصلی
 
+- نصب به‌عنوان ابزار ترمینالی `rfm`
+- completion برای Bash و Fish
 - مدیریت کاتالوگ پروژه از یک فایل مرکزی `repo-fleet.json`
 - audit کردن `.gitmodules`، ریموت‌های محلی، branchها و وضعیت submoduleها
 - ساخت ریپوها روی GitHub و GitLab با CLIهای رسمی `gh` و `glab`
@@ -18,14 +20,22 @@ Repo Fleet Manager یک ابزار واحد و config-driven برای مدیری
 
 ## شروع سریع
 
+نصب ابزار و completionها در مسیر user:
+
 ```bash
 cd repo-fleet-manager
-python3 -m venv .venv
-. .venv/bin/activate
-pip install -e .
+make install
 
+rfm --version
 rfm doctor --config configs/goftaroo.example.json
 rfm catalog --config configs/goftaroo.example.json
+```
+
+نصب editable برای توسعه:
+
+```bash
+make install-editable
+make install-completions
 ```
 
 یا بدون نصب پکیج:
@@ -39,7 +49,35 @@ rfm catalog --config configs/goftaroo.example.json
 ```bash
 cp configs/goftaroo.example.json /path/to/main-platform/repo-fleet.json
 cd /path/to/main-platform
-/path/to/repo-fleet-manager/scripts/rfm.sh doctor
+rfm doctor
+```
+
+## completion
+
+بعد از `make install` فایل‌های completion نصب می‌شوند:
+
+- Bash: `~/.local/share/bash-completion/completions/rfm`
+- Fish: `~/.config/fish/completions/rfm.fish`
+
+برای نصب فقط completionها:
+
+```bash
+make install-completions
+```
+
+برای تولید دستی:
+
+```bash
+rfm completion bash > ~/.local/share/bash-completion/completions/rfm
+rfm completion fish > ~/.config/fish/completions/rfm.fish
+```
+
+برای نصب system-wide می‌توانید مسیرها را override کنید:
+
+```bash
+sudo make install-completions \
+  BASH_COMPLETION_DIR=/usr/share/bash-completion/completions \
+  FISH_COMPLETION_DIR=/usr/share/fish/vendor_completions.d
 ```
 
 ## جریان‌های کاری پرکاربرد
@@ -86,10 +124,24 @@ rfm compose --config repo-fleet.json up --apply -- -d --build --force-recreate
 rfm images --config repo-fleet.json verify
 ```
 
+## Makefile
+
+```bash
+make install              # نصب rfm و completionها در user scope
+make install-cli          # فقط نصب ابزار rfm
+make install-editable     # نصب editable برای توسعه
+make install-completions  # نصب completionهای Bash و Fish
+make uninstall            # حذف پکیج Python
+make uninstall-completions
+make test
+make validate-docs
+```
+
 ## ساختار پروژه
 
 ```text
 repo-fleet-manager/
+├── completions/             # نسخه static completionها برای Bash و Fish
 ├── configs/                 # نمونه config برای Goftaroo و قالب عمومی
 ├── docs/                    # مستندات معماری، نصب، workflow و migration
 ├── legacy-scripts/goftaroo/ # اسکریپت‌های اولیه بدون تغییر
