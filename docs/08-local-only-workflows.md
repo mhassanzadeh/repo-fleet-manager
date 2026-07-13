@@ -170,3 +170,24 @@ rfm repos publish --provider github --namespace my-user --only new --apply
 rfm repos publish --provider github --namespace my-user --only existing --apply
 rfm repos publish --provider github --namespace my-user --only upstream --apply
 ```
+
+## 9. انتقال workspace به محیط air-gapped
+
+Backup برای disaster recovery از state محلی است؛ offline cache برای انتقال قابل‌کنترل سورس‌ها و imageها به شبکه‌ای بدون provider/registry طراحی شده است.
+
+روی ماشین متصل:
+
+```bash
+rfm cache --config repo-fleet.json export --apply
+rfm cache verify .repo-fleet/cache/<archive>.rfm-cache.tar.gz --require-complete
+```
+
+بعد از انتقال archive:
+
+```bash
+rfm cache --root /srv/airgap-platform \
+  bootstrap /media/transfer/<archive>.rfm-cache.tar.gz \
+  --apply
+```
+
+در bootstrap آفلاین، root و submoduleها از Git bundleهای داخل cache ساخته می‌شوند و imageها از archive محلی load می‌شوند. راهنمای کامل در [Offline cache و air-gapped bootstrap](15-offline-cache-and-air-gapped-bootstrap.md) قرار دارد.

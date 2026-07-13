@@ -1,6 +1,6 @@
 # Repo Fleet Manager service catalog
 
-> Catalog version `0.9.0` · schema `1.0` · lifecycle `beta`
+> Catalog version `0.10.0` · schema `1.0` · lifecycle `beta`
 
 Config-driven orchestration for large Git repository fleets, submodules, local development, providers, Compose runtimes and source/image integrity.
 
@@ -10,11 +10,11 @@ Config-driven orchestration for large Git repository fleets, submodules, local d
 |---|---:|
 | Domains | 11 |
 | Capabilities | 57 |
-| Implemented | 43 |
+| Implemented | 44 |
 | Partial | 6 |
 | Planned | 1 |
-| Missing | 7 |
-| Logical completion | 81.0% |
+| Missing | 6 |
+| Logical completion | 82.7% |
 | Open gaps | 17 |
 
 The completion percentage is a planning indicator: implemented capabilities count as 100%, partial as 50%, and planned as 15%. It is not a production-readiness certification.
@@ -68,7 +68,7 @@ Operate a complete multi-repository project without GitHub or GitLab after requi
 | `local.bare-remotes` — Local file:// bare remotes | ✓ implemented | beta | `rfm local remotes --apply`<br>`src/repo_fleet_manager/localops.py`<br>`docs/08-local-only-workflows.md` |
 | `local.materialize` — Materialize workspace from lifecycle config | ✓ implemented | beta | `rfm local plan`<br>`rfm local localize --apply`<br>`src/repo_fleet_manager/localops.py` |
 | `local.parent-bootstrap` — Bootstrap after cloning the parent repository | ✓ implemented | beta | `rfm init-project NAME --apply`<br>`rfm bootstrap --config repo-fleet.json verify`<br>`rfm local --config repo-fleet.json bootstrap --apply`<br>`src/repo_fleet_manager/scaffold.py`<br>`src/repo_fleet_manager/localops.py`<br>`docs/14-project-scaffolding-and-bootstrap-lock.md` |
-| `local.offline-cache` — Portable offline source/image cache | × missing | not-started | — |
+| `local.offline-cache` — Portable offline source/image cache | ✓ implemented | beta | `rfm cache --config repo-fleet.json export --apply`<br>`rfm cache verify FILE.rfm-cache.tar.gz --require-complete`<br>`rfm cache --root TARGET import FILE.rfm-cache.tar.gz --apply`<br>`rfm cache --root TARGET bootstrap FILE.rfm-cache.tar.gz --apply`<br>`src/repo_fleet_manager/cache.py`<br>`src/repo_fleet_manager/cli.py`<br>`tests/test_offline_cache.py`<br>`docs/15-offline-cache-and-air-gapped-bootstrap.md` |
 | `local.backup-restore` — Backup and restore local bare remotes and state | ✓ implemented | beta | `rfm local backup --apply`<br>`rfm local verify-backup ARCHIVE`<br>`rfm local restore ARCHIVE --apply`<br>`src/repo_fleet_manager/backup.py`<br>`src/repo_fleet_manager/operations.py`<br>`docs/12-backup-and-restore.md`<br>`tests/test_backup_restore.py` |
 
 ### Git and submodule fleet operations
@@ -352,7 +352,7 @@ Acceptance criteria:
 
 #### GAP-011 — Offline source and image cache
 
-**Category:** `offline` · **Current state:** `missing`
+**Category:** `offline` · **Current state:** `implemented`
 
 Local mode is only fully offline after upstream repos and container images have already been fetched.
 

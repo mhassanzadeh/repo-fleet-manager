@@ -6,6 +6,22 @@ The format follows Keep a Changelog and the project uses Semantic Versioning whi
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-07-13
+
+### Added
+
+- Verified `rfm cache export`, `verify`, `list`, `import` and `bootstrap` workflows.
+- Portable Git bundle archives preserving repository branches and tags.
+- Docker/Podman image save/load support for air-gapped environments.
+- Cache manifest, SHA-256 inventory, completeness state and configurable retention.
+- Provider-free workspace bootstrap using only imported local bare remotes.
+
+### Security
+
+- Cache verification rejects path traversal, links, device entries, unexpected files and checksum tampering.
+- Incomplete caches require explicit `--allow-missing` at export and `--allow-incomplete` at import.
+- Existing local remotes are not replaced without explicit `--overwrite`.
+
 ## [0.9.0] - 2026-07-12
 
 ### Added
@@ -88,7 +104,8 @@ The format follows Keep a Changelog and the project uses Semantic Versioning whi
 - Workspace locking, safety guards, operation journal, resume and rollback.
 - Dependency graph and controlled parallel execution.
 
-[Unreleased]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.6.3...v0.7.0

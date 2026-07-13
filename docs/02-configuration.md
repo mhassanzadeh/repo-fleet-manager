@@ -246,3 +246,30 @@ rfm config --config repo-fleet.json --profile ci --group backend render
 ```
 
 See [Profiles, overlays and repository groups](13-profiles-overlays-and-groups.md) for merge semantics and examples.
+
+## تنظیمات offline cache
+
+برای تعیین محل cache، retention و imageهای موردنیاز محیط air-gapped:
+
+```json
+{
+  "local": {
+    "cache_dir": ".repo-fleet/cache",
+    "cache_retention": 3
+  },
+  "compose": {
+    "engine": "podman",
+    "cache_images": [
+      "docker.io/library/postgres:16",
+      "docker.io/library/redis:7-alpine"
+    ]
+  }
+}
+```
+
+- `local.cache_dir`: مسیر archiveهای `.rfm-cache.tar.gz`؛ نسبی به root پروژه.
+- `local.cache_retention`: تعداد archiveهای جدید که بعد از export نگهداری می‌شوند.
+- `compose.cache_images`: فهرست image referenceهایی که به‌طور پیش‌فرض در export قرار می‌گیرند.
+- `compose.engine`: یکی از `auto`، `docker` یا `podman`.
+
+این فیلدها اختیاری‌اند و schema version همچنان `1.0.0` باقی می‌ماند.

@@ -379,3 +379,75 @@ rfm bootstrap --config repo-fleet.json --root . verify [--lock-file repo-fleet.l
 ```
 
 `lock` قرارداد deterministic پروژه را تولید می‌کند. `verify` digest کانفیگ، repository contract، template metadata و فایل‌های baseline را بررسی می‌کند و در صورت drift با exit code برابر `2` خاتمه می‌یابد.
+
+## `cache export|verify|list|import|bootstrap`
+
+### Export
+
+```bash
+rfm cache --config repo-fleet.json export \
+  [--output FILE.rfm-cache.tar.gz] \
+  [--cache-dir DIR] \
+  [--remotes-dir DIR] \
+  [--image IMAGE] \
+  [--engine docker|podman] \
+  [--fetch-missing] \
+  [--allow-missing] \
+  [--retention N] \
+  [--no-include-images] \
+  [--json] \
+  [--apply]
+```
+
+Git bundleها، config و image archiveها را با manifest و checksum تولید می‌کند. بدون `--apply` فقط plan چاپ می‌شود.
+
+### Verify
+
+```bash
+rfm cache verify FILE.rfm-cache.tar.gz \
+  [--require-complete] \
+  [--json]
+```
+
+Checksum، inventory، Git refها و completeness را کنترل می‌کند. `--require-complete` برای cache ناقص exit code برابر `2` برمی‌گرداند.
+
+### List
+
+```bash
+rfm cache --config repo-fleet.json list \
+  [--cache-dir DIR] \
+  [--json]
+```
+
+### Import
+
+```bash
+rfm cache --root TARGET import FILE.rfm-cache.tar.gz \
+  [--remotes-dir DIR] \
+  [--config-output FILE] \
+  [--no-config] \
+  [--no-load-images] \
+  [--engine docker|podman] \
+  [--overwrite] \
+  [--allow-incomplete] \
+  [--json] \
+  [--apply]
+```
+
+Import روی سیستم بدون config موجود نیز قابل اجرا است.
+
+### Bootstrap
+
+```bash
+rfm cache --root TARGET bootstrap FILE.rfm-cache.tar.gz \
+  [--remotes-dir DIR] \
+  [--no-load-images] \
+  [--engine docker|podman] \
+  [--overwrite] \
+  [--allow-incomplete] \
+  [--jobs N] \
+  [--json] \
+  [--apply]
+```
+
+Root و submoduleها را فقط از local bare remoteهای import‌شده materialize می‌کند و provider access ندارد.

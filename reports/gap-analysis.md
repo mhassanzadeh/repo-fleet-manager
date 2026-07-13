@@ -1,6 +1,6 @@
 # Repo Fleet Manager logical gap analysis
 
-> Catalog version `0.9.0` · 17 prioritized gaps
+> Catalog version `0.10.0` · 17 prioritized gaps
 
 ## P0
 
@@ -197,7 +197,7 @@ Acceptance criteria:
 
 ### GAP-011 — Offline source and image cache
 
-**Category:** `offline` · **Current state:** `missing`
+**Category:** `offline` · **Current state:** `implemented`
 
 Local mode is only fully offline after upstream repos and container images have already been fetched.
 

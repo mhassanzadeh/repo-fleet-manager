@@ -37,6 +37,7 @@ Repo Fleet Manager یک ابزار واحد و config-driven برای مدیری
 - backup و restore تأییدشده برای bare remoteهای محلی، config و operation state
 - profileهای قابل ارث‌بری، overlayهای محیطی و repository groupهای مبتنی بر نام یا tag
 - ساخت پروژه مادر، scaffolding repository/service و bootstrap lockfile قابل‌حمل
+- export/import تأییدشده Git bundleها و image archiveها برای bootstrap در محیط air-gapped
 
 ## شروع سریع
 
@@ -86,14 +87,14 @@ rfm doctor
 برای نصب ایزوله آخرین نسخه مستقیم از GitHub:
 
 ```bash
-pipx install git+https://github.com/mhassanzadeh/repo-fleet-manager.git@v0.9.0
+pipx install git+https://github.com/mhassanzadeh/repo-fleet-manager.git@v0.10.0
 rfm --version
 ```
 
 یا Wheel را از GitHub Release دانلود و نصب کنید:
 
 ```bash
-python3 -m pip install ./repo_fleet_manager-0.9.0-py3-none-any.whl
+python3 -m pip install ./repo_fleet_manager-0.10.0-py3-none-any.whl
 rfm --version
 ```
 
@@ -238,6 +239,25 @@ rfm local --root /path/to/restored-platform restore /path/to/archive.rfm-backup.
 rfm local --root /path/to/restored-platform restore /path/to/archive.rfm-backup.tar.gz --apply
 ```
 
+### 0.2. آماده‌سازی و bootstrap در محیط air-gapped
+
+روی ماشین متصل، سورس‌ها و imageهای موردنیاز را در یک cache قابل‌حمل export کنید:
+
+```bash
+rfm cache --config repo-fleet.json export
+rfm cache --config repo-fleet.json export --apply
+rfm cache verify .repo-fleet/cache/<archive>.rfm-cache.tar.gz --require-complete
+```
+
+پس از انتقال archive به شبکه جدا، بدون GitHub، GitLab یا registry خارجی workspace را بسازید:
+
+```bash
+rfm cache --root /srv/platform bootstrap /media/cache/platform.rfm-cache.tar.gz
+rfm cache --root /srv/platform bootstrap /media/cache/platform.rfm-cache.tar.gz --apply
+```
+
+برای cache کردن imageهای مشخص، از `compose.cache_images` در config یا `--image` استفاده کنید. جزئیات کامل در [راهنمای offline cache و air-gapped bootstrap](docs/15-offline-cache-and-air-gapped-bootstrap.md) آمده است.
+
 ### 1. بررسی وضعیت root و submoduleها
 
 ```bash
@@ -308,6 +328,10 @@ make local-backup-apply CONFIG=repo-fleet.json ROOT=/path/to/workspace
 make local-backup-verify ARCHIVE=/path/to/archive.rfm-backup.tar.gz
 make local-restore ROOT=/path/to/restore ARCHIVE=/path/to/archive.rfm-backup.tar.gz
 make local-restore-apply ROOT=/path/to/restore ARCHIVE=/path/to/archive.rfm-backup.tar.gz
+make cache-export-apply CONFIG=repo-fleet.json ROOT=. CACHE_OUTPUT=/path/to/fleet.rfm-cache.tar.gz
+make cache-verify ARCHIVE=/path/to/fleet.rfm-cache.tar.gz
+make cache-import-apply ROOT=/path/to/import ARCHIVE=/path/to/fleet.rfm-cache.tar.gz
+make cache-bootstrap-apply ROOT=/path/to/workspace ARCHIVE=/path/to/fleet.rfm-cache.tar.gz
 make publish-github CONFIG=repo-fleet.json ROOT=/path/to/workspace NAMESPACE=my-user
 make publish-gitlab CONFIG=repo-fleet.json ROOT=/path/to/workspace NAMESPACE=my-group
 make catalog-summary
@@ -324,7 +348,7 @@ CI روی هر دو شاخه `master` و `main` اجرا می‌شود. tagها�
 
 ```bash
 make validate
-python scripts/check_release_version.py 0.9.0
+python scripts/check_release_version.py 0.10.0
 make release-artifacts
 ```
 
@@ -364,6 +388,7 @@ repo-fleet-manager/
 - [پشتیبان‌گیری و بازیابی local fleet](docs/12-backup-and-restore.md)
 - [Profileها، overlayها و repository groupها](docs/13-profiles-overlays-and-groups.md)
 - [ساخت پروژه، templateها و bootstrap lock](docs/14-project-scaffolding-and-bootstrap-lock.md)
+- [Offline cache و bootstrap در محیط air-gapped](docs/15-offline-cache-and-air-gapped-bootstrap.md)
 - [خروجی کامل service catalog](docs/generated/rfm-service-catalog.md)
 - [gap analysis منطقی](reports/gap-analysis.md)
 - [گزارش بررسی اسکریپت‌های ارسالی](reports/script-audit.md)
@@ -390,4 +415,4 @@ rfm config --config repo-fleet.json validate --strict
 
 ## Git commit guide
 
-تغییرات و روش انتشار نسخه جاری در [`PATCH_NOTES_v0.9.0.md`](PATCH_NOTES_v0.9.0.md)، [`GIT_COMMIT_GUIDE_v0.9.0.md`](GIT_COMMIT_GUIDE_v0.9.0.md) و [`CHANGELOG.md`](CHANGELOG.md) قرار دارد.
+تغییرات و روش انتشار نسخه جاری در [`PATCH_NOTES_v0.10.0.md`](PATCH_NOTES_v0.10.0.md)، [`GIT_COMMIT_GUIDE_v0.10.0.md`](GIT_COMMIT_GUIDE_v0.10.0.md) و [`CHANGELOG.md`](CHANGELOG.md) قرار دارد.
