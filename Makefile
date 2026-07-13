@@ -6,6 +6,10 @@ CONFIG ?= configs/repo-fleet.example.json
 ROOT ?= .
 ARCHIVE ?=
 BACKUP_OUTPUT ?=
+CACHE_OUTPUT ?=
+CACHE_DIR ?=
+CACHE_ENGINE ?=
+CACHE_IMAGE ?=
 PROFILE ?=
 GROUP ?=
 PROJECT_NAME ?= demo-platform
@@ -17,7 +21,7 @@ TEMPLATE ?= generic
 LOCK_FILE ?= repo-fleet.lock.json
 SELECTION_ARGS = $(if $(PROFILE),--profile "$(PROFILE)",) $(if $(GROUP),--group "$(GROUP)",)
 
-.PHONY: install install-cli install-editable install-completions install-all uninstall uninstall-completions doctor auth-status config-validate config-migrate graph safety-status ops-list test validate validate-docs completion-bash completion-fish local-plan local-localize local-localize-apply local-bootstrap local-bootstrap-apply local-remotes local-remotes-apply local-remotes-update publish-github publish-gitlab catalog-summary catalog-tree catalog-gaps catalog-docs catalog-check release-check release-artifacts build clean local-backup local-backup-apply local-backups local-backup-verify local-restore local-restore-apply config-render config-profiles config-groups init-project init-project-apply scaffold-templates scaffold-repository scaffold-repository-apply bootstrap-lock bootstrap-lock-apply bootstrap-verify
+.PHONY: install install-cli install-editable install-completions install-all uninstall uninstall-completions doctor auth-status config-validate config-migrate graph safety-status ops-list test validate validate-docs completion-bash completion-fish local-plan local-localize local-localize-apply local-bootstrap local-bootstrap-apply local-remotes local-remotes-apply local-remotes-update publish-github publish-gitlab catalog-summary catalog-tree catalog-gaps catalog-docs catalog-check release-check release-artifacts build clean local-backup local-backup-apply local-backups local-backup-verify local-restore local-restore-apply config-render config-profiles config-groups init-project init-project-apply scaffold-templates scaffold-repository scaffold-repository-apply bootstrap-lock bootstrap-lock-apply bootstrap-verify cache-export cache-export-apply cache-list cache-verify cache-import cache-import-apply cache-bootstrap cache-bootstrap-apply
 
 install: install-cli install-completions
 
@@ -120,6 +124,35 @@ local-restore:
 local-restore-apply:
 	@test -n "$(ARCHIVE)" || (echo "ARCHIVE is required" >&2; exit 2)
 	./scripts/rfm.sh local --root "$(ROOT)" $(SELECTION_ARGS) restore "$(ARCHIVE)" --apply
+
+cache-export:
+	./scripts/rfm.sh cache --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) export $(if $(CACHE_OUTPUT),--output "$(CACHE_OUTPUT)",) $(if $(CACHE_DIR),--cache-dir "$(CACHE_DIR)",) $(if $(CACHE_ENGINE),--engine "$(CACHE_ENGINE)",) $(if $(CACHE_IMAGE),--image "$(CACHE_IMAGE)",)
+
+cache-export-apply:
+	./scripts/rfm.sh cache --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) export $(if $(CACHE_OUTPUT),--output "$(CACHE_OUTPUT)",) $(if $(CACHE_DIR),--cache-dir "$(CACHE_DIR)",) $(if $(CACHE_ENGINE),--engine "$(CACHE_ENGINE)",) $(if $(CACHE_IMAGE),--image "$(CACHE_IMAGE)",) --apply
+
+cache-list:
+	./scripts/rfm.sh cache --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) list $(if $(CACHE_DIR),--cache-dir "$(CACHE_DIR)",)
+
+cache-verify:
+	@test -n "$(ARCHIVE)" || (echo "ARCHIVE is required" >&2; exit 2)
+	./scripts/rfm.sh cache verify "$(ARCHIVE)" --require-complete
+
+cache-import:
+	@test -n "$(ARCHIVE)" || (echo "ARCHIVE is required" >&2; exit 2)
+	./scripts/rfm.sh cache --root "$(ROOT)" import "$(ARCHIVE)" $(if $(CACHE_ENGINE),--engine "$(CACHE_ENGINE)",)
+
+cache-import-apply:
+	@test -n "$(ARCHIVE)" || (echo "ARCHIVE is required" >&2; exit 2)
+	./scripts/rfm.sh cache --root "$(ROOT)" import "$(ARCHIVE)" $(if $(CACHE_ENGINE),--engine "$(CACHE_ENGINE)",) --apply
+
+cache-bootstrap:
+	@test -n "$(ARCHIVE)" || (echo "ARCHIVE is required" >&2; exit 2)
+	./scripts/rfm.sh cache --root "$(ROOT)" bootstrap "$(ARCHIVE)" $(if $(CACHE_ENGINE),--engine "$(CACHE_ENGINE)",)
+
+cache-bootstrap-apply:
+	@test -n "$(ARCHIVE)" || (echo "ARCHIVE is required" >&2; exit 2)
+	./scripts/rfm.sh cache --root "$(ROOT)" bootstrap "$(ARCHIVE)" $(if $(CACHE_ENGINE),--engine "$(CACHE_ENGINE)",) --apply
 
 publish-github:
 	./scripts/rfm.sh repos --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) publish --provider github --namespace "$(NAMESPACE)"

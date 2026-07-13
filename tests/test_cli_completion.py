@@ -26,6 +26,8 @@ class CompletionCommandTest(unittest.TestCase):
         self.assertIn("init-project", output)
         self.assertIn("python-service", output)
         self.assertIn("bootstrap", output)
+        self.assertIn("cache", output)
+        self.assertIn("allow-incomplete", output)
 
     def test_fish_completion_contains_nested_commands(self):
         output = self.run_completion("fish")
@@ -39,6 +41,8 @@ class CompletionCommandTest(unittest.TestCase):
         self.assertIn("init-project", output)
         self.assertIn("scaffold", output)
         self.assertIn("lock", output)
+        self.assertIn("cache", output)
+        self.assertIn("require-complete", output)
 
 
 if __name__ == "__main__":

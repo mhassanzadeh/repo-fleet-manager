@@ -410,6 +410,14 @@
         },
         "backup_include_operations": {
           "type": "boolean"
+        },
+        "cache_dir": {
+          "type": "string"
+        },
+        "cache_retention": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 365
         }
       }
     },
@@ -442,6 +450,13 @@
           "items": {
             "type": "string"
           }
+        },
+        "cache_images": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
         }
       }
     },

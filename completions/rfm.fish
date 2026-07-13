@@ -3,7 +3,7 @@ complete -c rfm -f
 complete -c rfm -s h -l help -d 'Show help'
 complete -c rfm -l version -d 'Show version'
 
-set -l rfm_commands config init-project scaffold bootstrap doctor auth catalog graph safety repos submodules local git source compose images ops docs completion
+set -l rfm_commands config init-project scaffold bootstrap doctor auth catalog graph safety repos submodules local cache git source compose images ops docs completion
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a config -d 'Validate and migrate configuration'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a init-project -d 'Create a portable parent project'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a scaffold -d 'Generate repositories from templates'
@@ -16,6 +16,7 @@ complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a safety -d 
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a repos -d 'Repository provider operations'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a submodules -d 'Submodule operations'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a local -d 'Local-only workflows'
+complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a cache -d 'Offline source and image cache'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a git -d 'Fleet-wide Git operations'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a source -d 'Source fingerprint operations'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a compose -d 'Compose operations'
@@ -33,6 +34,7 @@ complete -c rfm -n '__fish_seen_subcommand_from safety; and not __fish_seen_subc
 complete -c rfm -n '__fish_seen_subcommand_from repos; and not __fish_seen_subcommand_from audit create publish fork mirror reconcile' -a 'audit create publish fork mirror reconcile'
 complete -c rfm -n '__fish_seen_subcommand_from submodules; and not __fish_seen_subcommand_from sync' -a sync
 complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from plan remotes init clone bootstrap localize backup verify-backup backups restore' -a 'plan remotes init clone bootstrap localize backup verify-backup backups restore'
+complete -c rfm -n '__fish_seen_subcommand_from cache; and not __fish_seen_subcommand_from export verify list import bootstrap' -a 'export verify list import bootstrap'
 complete -c rfm -n '__fish_seen_subcommand_from git; and not __fish_seen_subcommand_from status pull push' -a 'status pull push'
 complete -c rfm -n '__fish_seen_subcommand_from source; and not __fish_seen_subcommand_from fingerprint' -a fingerprint
 complete -c rfm -n '__fish_seen_subcommand_from compose; and not __fish_seen_subcommand_from ps up down build pull logs' -a 'ps up down build pull logs'
@@ -97,3 +99,21 @@ complete -c rfm -n '__fish_seen_subcommand_from repository' -l depends-on -r -d 
 complete -c rfm -n '__fish_seen_subcommand_from repository' -l no-update-lock -d 'Do not update bootstrap lock'
 complete -c rfm -n '__fish_seen_subcommand_from lock' -l output -r -d 'Bootstrap lock output path'
 complete -c rfm -n '__fish_seen_subcommand_from verify' -l lock-file -r -d 'Bootstrap lock path'
+complete -c rfm -n '__fish_seen_subcommand_from cache' -l cache-dir -r -a '(__fish_complete_directories)' -d 'Offline cache directory'
+complete -c rfm -n '__fish_seen_subcommand_from cache' -l remotes-dir -r -a '(__fish_complete_directories)' -d 'Local bare remotes directory'
+complete -c rfm -n '__fish_seen_subcommand_from export' -l output -r -d 'Offline cache output archive'
+complete -c rfm -n '__fish_seen_subcommand_from export' -l image -r -d 'Container image to include; repeatable'
+complete -c rfm -n '__fish_seen_subcommand_from cache' -l engine -r -a 'docker podman' -d 'Container engine'
+complete -c rfm -n '__fish_seen_subcommand_from export' -l include-images -d 'Include configured container images'
+complete -c rfm -n '__fish_seen_subcommand_from export' -l no-include-images -d 'Export Git sources only'
+complete -c rfm -n '__fish_seen_subcommand_from export' -l fetch-missing -d 'Fetch missing upstream repositories before export'
+complete -c rfm -n '__fish_seen_subcommand_from export' -l allow-missing -d 'Allow an incomplete cache archive'
+complete -c rfm -n '__fish_seen_subcommand_from export' -l retention -r -d 'Number of cache archives to retain'
+complete -c rfm -n '__fish_seen_subcommand_from verify' -l require-complete -d 'Fail when the cache is incomplete'
+complete -c rfm -n '__fish_seen_subcommand_from import bootstrap' -l load-images -d 'Load image archives'
+complete -c rfm -n '__fish_seen_subcommand_from import bootstrap' -l no-load-images -d 'Skip loading images'
+complete -c rfm -n '__fish_seen_subcommand_from import' -l config-output -r -d 'Restored config output path'
+complete -c rfm -n '__fish_seen_subcommand_from import' -l no-config -d 'Do not restore repo-fleet.json'
+complete -c rfm -n '__fish_seen_subcommand_from import bootstrap' -l overwrite -d 'Replace existing local remotes'
+complete -c rfm -n '__fish_seen_subcommand_from import bootstrap' -l allow-incomplete -d 'Import an explicitly incomplete cache'
+complete -c rfm -n '__fish_seen_subcommand_from verify import bootstrap' -F -d 'Offline cache archive'

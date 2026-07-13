@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "catalog_version": "0.9.0",
+  "catalog_version": "0.10.0",
   "project": {
     "name": "Repo Fleet Manager",
     "short_name": "RFM",
@@ -340,12 +340,19 @@
         {
           "id": "local.offline-cache",
           "name": "Portable offline source/image cache",
-          "status": "missing",
-          "maturity": "not-started",
-          "commands": [],
-          "components": [],
-          "gap_refs": [
-            "GAP-011"
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm cache --config repo-fleet.json export --apply",
+            "rfm cache verify FILE.rfm-cache.tar.gz --require-complete",
+            "rfm cache --root TARGET import FILE.rfm-cache.tar.gz --apply",
+            "rfm cache --root TARGET bootstrap FILE.rfm-cache.tar.gz --apply"
+          ],
+          "components": [
+            "src/repo_fleet_manager/cache.py",
+            "src/repo_fleet_manager/cli.py",
+            "tests/test_offline_cache.py",
+            "docs/15-offline-cache-and-air-gapped-bootstrap.md"
           ]
         },
         {
@@ -1108,7 +1115,7 @@
       "title": "Offline source and image cache",
       "priority": "P1",
       "category": "offline",
-      "status": "missing",
+      "status": "implemented",
       "rationale": "Local mode is only fully offline after upstream repos and container images have already been fetched.",
       "recommended_scope": [
         "Export/import Git bundle or mirror pack",
@@ -1120,7 +1127,9 @@
         "Workspace and images can be prepared on a connected machine",
         "Air-gapped import requires no provider access",
         "Cache completeness is validated before bootstrap"
-      ]
+      ],
+      "resolved_in": "0.10.0",
+      "resolution": "Implemented verified Git bundle and container image export/import, manifest checksums, completeness enforcement and provider-free air-gapped workspace bootstrap."
     },
     {
       "id": "GAP-012",

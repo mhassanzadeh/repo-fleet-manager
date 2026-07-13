@@ -42,7 +42,9 @@
     "default_jobs": 1,
     "backups_dir": ".repo-fleet/backups",
     "backup_retention": 5,
-    "backup_include_operations": false
+    "backup_include_operations": false,
+    "cache_dir": ".repo-fleet/cache",
+    "cache_retention": 3
   },
   "repositories": [
     {
@@ -111,7 +113,8 @@
   ],
   "compose": {
     "file": "infra-compose/docker-compose.yml",
-    "project_name": "mixed-platform"
+    "project_name": "mixed-platform",
+    "cache_images": []
   },
   "fingerprint": {
     "algorithm": "sha256",

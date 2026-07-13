@@ -11,6 +11,7 @@ from importlib.resources import files
 from . import __version__
 from .compose import run_compose
 from .backup import create_backup, list_backups, restore_backup, verify_backup
+from .cache import bootstrap_from_cache, export_cache, import_cache, list_caches, verify_cache
 from .config import find_config, load_config, load_raw_config
 from .docs import validate_links
 from .fingerprint import build_metadata, write_compose_override, write_metadata
@@ -933,6 +934,81 @@ def cmd_local_restore(args: argparse.Namespace) -> int:
         return code
 
 
+def cmd_cache_export(args: argparse.Namespace) -> int:
+    cfg = _config(args)
+    callback = lambda: export_cache(
+        cfg,
+        _root(args),
+        output=args.output,
+        cache_override=args.cache_dir,
+        remotes_override=args.remotes_dir,
+        images=args.image,
+        include_images=args.include_images,
+        engine=args.engine,
+        fetch_missing=args.fetch_missing,
+        allow_missing=args.allow_missing,
+        retention=args.retention,
+        apply=args.apply,
+        json_output=args.json,
+    )
+    return _mutate(args, cfg, "cache export", callback, require_clean=False)
+
+
+def cmd_cache_verify(args: argparse.Namespace) -> int:
+    return verify_cache(args.archive, require_complete=args.require_complete, json_output=args.json)
+
+
+def cmd_cache_list(args: argparse.Namespace) -> int:
+    cfg = _optional_config(
+        args.config,
+        start=_root(args),
+        profiles=getattr(args, "profile", None),
+        groups=getattr(args, "group", None),
+    )
+    return list_caches(cfg, _root(args), args.cache_dir, json_output=args.json)
+
+
+def cmd_cache_import(args: argparse.Namespace) -> int:
+    cfg = _optional_config(
+        args.config,
+        start=_root(args),
+        profiles=getattr(args, "profile", None),
+        groups=getattr(args, "group", None),
+    )
+    callback = lambda: import_cache(
+        args.archive,
+        _root(args),
+        config=cfg,
+        remotes_override=args.remotes_dir,
+        config_output=args.config_output,
+        restore_config=not args.no_config,
+        load_images=args.load_images,
+        engine=args.engine,
+        overwrite=args.overwrite,
+        allow_incomplete=args.allow_incomplete,
+        apply=args.apply,
+        json_output=args.json,
+    )
+    if cfg is None:
+        return callback()
+    return _mutate(args, cfg, "cache import", callback, require_clean=False)
+
+
+def cmd_cache_bootstrap(args: argparse.Namespace) -> int:
+    return bootstrap_from_cache(
+        args.archive,
+        _root(args),
+        remotes_override=args.remotes_dir,
+        load_images=args.load_images,
+        engine=args.engine,
+        overwrite=args.overwrite,
+        allow_incomplete=args.allow_incomplete,
+        jobs=args.jobs or 1,
+        apply=args.apply,
+        json_output=args.json,
+    )
+
+
 def cmd_git(args: argparse.Namespace) -> int:
     cfg = _config(args)
     jobs = args.jobs or cfg.default_jobs
@@ -1169,6 +1245,19 @@ def build_parser() -> argparse.ArgumentParser:
     sp = local_sub.add_parser("verify-backup", help="Verify archive checksums, Git objects and refs."); sp.add_argument("archive"); sp.add_argument("--json", action="store_true"); sp.set_defaults(func=cmd_local_backup_verify)
     sp = local_sub.add_parser("backups", help="List local backup archives."); sp.add_argument("--backups-dir"); sp.add_argument("--json", action="store_true"); sp.set_defaults(func=cmd_local_backups)
     sp = local_sub.add_parser("restore", help="Restore config and local bare remotes from a verified archive."); sp.add_argument("archive"); sp.add_argument("--remotes-dir"); sp.add_argument("--config-output"); sp.add_argument("--no-config", action="store_true"); sp.add_argument("--restore-operations", action="store_true"); sp.add_argument("--overwrite", action="store_true"); sp.add_argument("--json", action="store_true"); sp.add_argument("--apply", action="store_true"); add_safety_flags(sp); sp.set_defaults(func=cmd_local_restore)
+
+    cache = sub.add_parser("cache", help="Export, verify and import air-gapped Git and container image caches.")
+    add_common(cache); cache_sub = cache.add_subparsers(dest="cache_action", required=True)
+    sp = cache_sub.add_parser("export", help="Create a verified offline cache from Git repositories and container images.")
+    sp.add_argument("--output"); sp.add_argument("--cache-dir"); sp.add_argument("--remotes-dir"); sp.add_argument("--image", action="append"); sp.add_argument("--include-images", action=argparse.BooleanOptionalAction, default=True); sp.add_argument("--engine", choices=["docker", "podman"]); sp.add_argument("--fetch-missing", action="store_true"); sp.add_argument("--allow-missing", action="store_true"); sp.add_argument("--retention", type=int); sp.add_argument("--json", action="store_true"); sp.add_argument("--apply", action="store_true"); add_safety_flags(sp); sp.set_defaults(func=cmd_cache_export)
+    sp = cache_sub.add_parser("verify", help="Verify checksums, Git bundles and cache completeness.")
+    sp.add_argument("archive"); sp.add_argument("--require-complete", action="store_true"); sp.add_argument("--json", action="store_true"); sp.set_defaults(func=cmd_cache_verify)
+    sp = cache_sub.add_parser("list", help="List offline cache archives.")
+    sp.add_argument("--cache-dir"); sp.add_argument("--json", action="store_true"); sp.set_defaults(func=cmd_cache_list)
+    sp = cache_sub.add_parser("import", help="Import Git bundles into local bare remotes and load image archives.")
+    sp.add_argument("archive"); sp.add_argument("--remotes-dir"); sp.add_argument("--config-output"); sp.add_argument("--no-config", action="store_true"); sp.add_argument("--load-images", action=argparse.BooleanOptionalAction, default=True); sp.add_argument("--engine", choices=["docker", "podman"]); sp.add_argument("--overwrite", action="store_true"); sp.add_argument("--allow-incomplete", action="store_true"); sp.add_argument("--json", action="store_true"); sp.add_argument("--apply", action="store_true"); add_safety_flags(sp); sp.set_defaults(func=cmd_cache_import)
+    sp = cache_sub.add_parser("bootstrap", help="Create a complete workspace from an offline cache without provider access.")
+    sp.add_argument("archive"); sp.add_argument("--remotes-dir"); sp.add_argument("--load-images", action=argparse.BooleanOptionalAction, default=True); sp.add_argument("--engine", choices=["docker", "podman"]); sp.add_argument("--overwrite", action="store_true"); sp.add_argument("--allow-incomplete", action="store_true"); sp.add_argument("--jobs", type=int); sp.add_argument("--json", action="store_true"); sp.add_argument("--apply", action="store_true"); add_safety_flags(sp); sp.set_defaults(func=cmd_cache_bootstrap)
 
     p = sub.add_parser("git", help="Run git operations in dependency order across root and submodules.")
     add_common(p); p.add_argument("git_action", choices=["status", "pull", "push"]); p.add_argument("--jobs", type=int); p.add_argument("--apply", action="store_true"); p.add_argument("--no-root", action="store_true"); add_safety_flags(p); p.set_defaults(func=cmd_git)

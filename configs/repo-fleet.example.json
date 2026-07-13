@@ -37,7 +37,8 @@
   "compose": {
     "file": "infra-compose/docker-compose.yml",
     "env_file": "infra-compose/.env.example",
-    "project_name": "infra-compose"
+    "project_name": "infra-compose",
+    "cache_images": []
   },
   "fingerprint": {
     "algorithm": "sha256",
@@ -120,7 +121,9 @@
     "default_jobs": 1,
     "backups_dir": ".repo-fleet/backups",
     "backup_retention": 5,
-    "backup_include_operations": false
+    "backup_include_operations": false,
+    "cache_dir": ".repo-fleet/cache",
+    "cache_retention": 3
   },
   "schema_version": "1.0.0",
   "profiles": {
