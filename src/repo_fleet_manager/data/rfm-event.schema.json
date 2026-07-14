@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mhassanzadeh/repo-fleet-manager/schemas/rfm-event.schema.json",
+  "title": "Repo Fleet Manager audit event",
+  "type": "object",
+  "required": [
+    "schema_version", "event_id", "run_id", "sequence", "timestamp", "type",
+    "level", "command", "argv", "root", "status", "exit_code", "duration_ms",
+    "message", "data"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "event_id": {"type": "string", "minLength": 1},
+    "run_id": {"type": "string", "pattern": "^[A-Za-z0-9._-]+$"},
+    "sequence": {"type": "integer", "minimum": 1},
+    "timestamp": {"type": "string", "format": "date-time"},
+    "type": {"type": "string", "minLength": 1},
+    "level": {"enum": ["debug", "info", "warning", "error", "critical"]},
+    "command": {"type": "string", "minLength": 1},
+    "argv": {"type": "array", "items": {"type": "string"}},
+    "root": {"type": "string", "minLength": 1},
+    "operation_id": {"type": ["string", "null"]},
+    "repo": {"type": ["string", "null"]},
+    "service": {"type": ["string", "null"]},
+    "status": {"type": ["string", "null"]},
+    "exit_code": {"type": ["integer", "null"]},
+    "duration_ms": {"type": ["integer", "null"], "minimum": 0},
+    "message": {"type": ["string", "null"]},
+    "data": {}
+  }
+}

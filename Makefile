@@ -28,9 +28,14 @@ WIZARD_OUTPUT ?= repo-fleet.json
 WIZARD_SCAN ?= .
 WIZARD_ANSWERS ?=
 WIZARD_SESSION ?= .repo-fleet/wizard/session.json
+OUTPUT_FORMAT ?= text
+LOG_DIR ?=
+RUN_ID ?=
+RETENTION_DAYS ?= 30
+OBSERVABILITY_ARGS = --format "$(OUTPUT_FORMAT)" $(if $(LOG_DIR),--log-dir "$(LOG_DIR)",)
 SELECTION_ARGS = $(if $(PROFILE),--profile "$(PROFILE)",) $(if $(GROUP),--group "$(GROUP)",)
 
-.PHONY: install install-cli install-editable install-completions install-all uninstall uninstall-completions doctor auth-status config-validate config-migrate graph safety-status ops-list test validate validate-docs completion-bash completion-fish local-plan local-localize local-localize-apply local-bootstrap local-bootstrap-apply local-remotes local-remotes-apply local-remotes-update publish-github publish-gitlab catalog-summary catalog-tree catalog-gaps catalog-docs catalog-check release-check release-artifacts build clean local-backup local-backup-apply local-backups local-backup-verify local-restore local-restore-apply config-render config-profiles config-groups init-project init-project-apply scaffold-templates scaffold-repository scaffold-repository-apply bootstrap-lock bootstrap-lock-apply bootstrap-verify cache-export cache-export-apply cache-list cache-verify cache-import cache-import-apply cache-bootstrap cache-bootstrap-apply config-wizard config-wizard-apply config-wizard-scan config-wizard-scan-apply config-wizard-answers config-wizard-reset runtime-status runtime-doctor runtime-wait runtime-up runtime-up-apply
+.PHONY: install install-cli install-editable install-completions install-all uninstall uninstall-completions doctor auth-status config-validate config-migrate graph safety-status ops-list test validate validate-docs completion-bash completion-fish local-plan local-localize local-localize-apply local-bootstrap local-bootstrap-apply local-remotes local-remotes-apply local-remotes-update publish-github publish-gitlab catalog-summary catalog-tree catalog-gaps catalog-docs catalog-check release-check release-artifacts build clean local-backup local-backup-apply local-backups local-backup-verify local-restore local-restore-apply config-render config-profiles config-groups init-project init-project-apply scaffold-templates scaffold-repository scaffold-repository-apply bootstrap-lock bootstrap-lock-apply bootstrap-verify cache-export cache-export-apply cache-list cache-verify cache-import cache-import-apply cache-bootstrap cache-bootstrap-apply config-wizard config-wizard-apply config-wizard-scan config-wizard-scan-apply config-wizard-answers config-wizard-reset runtime-status runtime-doctor runtime-wait runtime-up runtime-up-apply logs-list logs-show logs-verify logs-purge logs-purge-apply
 
 install: install-cli install-completions
 
@@ -240,6 +245,25 @@ config-wizard-answers:
 config-wizard-reset:
 	./scripts/rfm.sh config wizard --root "$(ROOT)" --session-file "$(WIZARD_SESSION)" --reset
 # RFM_CONFIG_WIZARD_TARGETS_END
+
+# RFM_OBSERVABILITY_TARGETS_BEGIN
+logs-list:
+	./scripts/rfm.sh logs --config "$(CONFIG)" --root "$(ROOT)" $(OBSERVABILITY_ARGS) list
+
+logs-show:
+	@test -n "$(RUN_ID)" || (echo "RUN_ID is required" >&2; exit 2)
+	./scripts/rfm.sh logs --config "$(CONFIG)" --root "$(ROOT)" $(OBSERVABILITY_ARGS) show "$(RUN_ID)"
+
+logs-verify:
+	@test -n "$(RUN_ID)" || (echo "RUN_ID is required" >&2; exit 2)
+	./scripts/rfm.sh logs --config "$(CONFIG)" --root "$(ROOT)" $(OBSERVABILITY_ARGS) verify "$(RUN_ID)"
+
+logs-purge:
+	./scripts/rfm.sh logs --config "$(CONFIG)" --root "$(ROOT)" $(OBSERVABILITY_ARGS) purge --retention-days "$(RETENTION_DAYS)"
+
+logs-purge-apply:
+	./scripts/rfm.sh logs --config "$(CONFIG)" --root "$(ROOT)" $(OBSERVABILITY_ARGS) purge --retention-days "$(RETENTION_DAYS)" --apply
+# RFM_OBSERVABILITY_TARGETS_END
 
 auth-status:
 	./scripts/rfm.sh auth --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) status

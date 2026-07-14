@@ -11,13 +11,13 @@ _rfm()
         prev="${COMP_WORDS[COMP_CWORD-1]}"
     fi
 
-    local commands="config init-project scaffold bootstrap doctor auth catalog graph safety repos submodules local cache git source runtime compose images ops docs completion"
-    local global_opts="--help --version --config --root --profile --group"
+    local commands="config init-project scaffold bootstrap doctor auth catalog graph safety repos submodules local cache git source runtime compose images ops logs docs completion"
+    local global_opts="--help --version --config --root --profile --group --format --log-dir --run-id --audit-log --no-audit-log"
 
     case "$prev" in
         --config|--output|--catalog-file|--config-output|--lock-file|--archive|--answers|--session-file)
             COMPREPLY=( $(compgen -f -- "$cur") ); return ;;
-        --root|--remotes-dir|--backups-dir|--cache-dir|--directory|--scan)
+        --root|--remotes-dir|--backups-dir|--cache-dir|--directory|--scan|--log-dir)
             COMPREPLY=( $(compgen -d -- "$cur") ); return ;;
         --provider)
             COMPREPLY=( $(compgen -W "github gitlab local" -- "$cur") ); return ;;
@@ -28,7 +28,7 @@ _rfm()
         --visibility)
             COMPREPLY=( $(compgen -W "private public" -- "$cur") ); return ;;
         --format)
-            COMPREPLY=( $(compgen -W "text json markdown dot" -- "$cur") ); return ;;
+            COMPREPLY=( $(compgen -W "text json jsonl markdown dot" -- "$cur") ); return ;;
         --view)
             COMPREPLY=( $(compgen -W "repositories summary tree gaps all" -- "$cur") ); return ;;
         --priority)
@@ -48,7 +48,7 @@ _rfm()
         token="${words[i]}"
         if (( skip_next )); then skip_next=0; continue; fi
         case "$token" in
-            --config|--root|--profile|--group|--provider|--namespace|--visibility|--format|--view|--priority|--status|--output|--catalog-file|--reason|--jobs|--remote-name|--to|--backups-dir|--config-output|--retention|--cache-dir|--image|--engine|--directory|--branch|--description|--owner|--path|--template|--kind|--tag|--depends-on|--lock-file|--answers|--session-file|--scan|--service|--timeout|--interval|--tail)
+            --config|--root|--profile|--group|--provider|--namespace|--visibility|--format|--view|--priority|--status|--output|--catalog-file|--reason|--jobs|--remote-name|--to|--backups-dir|--config-output|--retention|--cache-dir|--image|--engine|--directory|--branch|--description|--owner|--path|--template|--kind|--tag|--depends-on|--lock-file|--answers|--session-file|--scan|--service|--timeout|--interval|--tail|--log-dir|--run-id|--retention-days)
                 skip_next=1; continue ;;
             --*) continue ;;
         esac
@@ -60,7 +60,7 @@ _rfm()
         COMPREPLY=( $(compgen -W "$commands $global_opts" -- "$cur") ); return
     fi
 
-    local actions="" opts="--help --config --root --profile --group"
+    local actions="" opts="--help --config --root --profile --group --format --log-dir --run-id --audit-log --no-audit-log"
     case "$cmd" in
         config) actions="validate migrate render profiles groups wizard"; opts+=" --strict --json --to --no-backup --output --apply --force --reason --scan --quick --advanced --answers --non-interactive --resume --reset --session-file --show-diff" ;;
         init-project) opts="--help --directory --branch --provider --namespace --visibility --description --owner --git-init --no-git-init --apply --force" ;;
@@ -81,6 +81,7 @@ _rfm()
         compose) actions="ps up down build pull logs"; opts+=" --apply --force --reason" ;;
         images) actions="verify"; opts+=" --json" ;;
         ops) actions="list show resume rollback"; opts+=" --json --force --reason" ;;
+        logs) actions="list show verify purge"; opts+=" --json --retention-days --apply" ;;
         docs) actions="validate-links" ;;
         completion) actions="bash fish"; opts="--help" ;;
     esac

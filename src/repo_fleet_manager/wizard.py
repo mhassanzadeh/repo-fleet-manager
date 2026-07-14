@@ -374,6 +374,7 @@ def _base_config(scan: ScanResult | None, existing: dict[str, Any] | None = None
             "lock_file": ".repo-fleet/lock", "default_jobs": 2, "backups_dir": ".repo-fleet/backups",
             "backup_retention": 5, "backup_include_operations": False, "cache_dir": ".repo-fleet/cache", "cache_retention": 3,
         },
+        "observability": {"logs_dir": ".repo-fleet/logs", "audit_enabled": True, "retention_days": 30, "include_output": True},
         "fingerprint": {"algorithm": "sha256", "short_length": 16},
     }
     if scan and scan.compose_file:
@@ -400,6 +401,7 @@ def _advanced_defaults(config: dict[str, Any]) -> dict[str, Any]:
     result = copy.deepcopy(config)
     project = result["project"]
     default = project.get("default_provider", "local")
+    result.setdefault("observability", {"logs_dir": ".repo-fleet/logs", "audit_enabled": True, "retention_days": 30, "include_output": True})
     result.setdefault("profiles", {})
     result["profiles"].setdefault("developer", {"project": {"default_provider": "local"}, "local": {"default_jobs": 2}})
     result["profiles"].setdefault("ci", {"extends": "developer", "project": {"default_provider": default}, "local": {"default_jobs": 4}})
@@ -515,7 +517,7 @@ def _normalize_answers(answers: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(config, dict):
             raise WizardError("answers.config must be an object")
         return copy.deepcopy(config)
-    allowed_top = {"schema_version", "project", "providers", "repositories", "local", "compose", "runtime", "fingerprint", "profiles", "groups"}
+    allowed_top = {"schema_version", "project", "providers", "repositories", "local", "compose", "runtime", "observability", "fingerprint", "profiles", "groups"}
     if any(key in allowed_top for key in answers):
         return {key: copy.deepcopy(value) for key, value in answers.items() if key in allowed_top}
     return {}
@@ -528,6 +530,8 @@ def _validate_portable_paths(config: dict[str, Any]) -> None:
     local = config.get("local") or {}
     for key in ("remotes_dir", "operations_dir", "lock_file", "backups_dir", "cache_dir"):
         values.append((f"$.local.{key}", local.get(key)))
+    observability = config.get("observability") or {}
+    values.append(("$.observability.logs_dir", observability.get("logs_dir")))
     compose = config.get("compose") or {}
     for key in ("file", "env_file"):
         values.append((f"$.compose.{key}", compose.get(key)))

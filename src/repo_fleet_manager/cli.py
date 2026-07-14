@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import argparse
+import io
 import json
 import os
 import sys
+from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import asdict
 from pathlib import Path
 from importlib.resources import files
@@ -33,6 +35,10 @@ from .scaffold import (
     write_bootstrap_lock,
 )
 from .operations import SafetyError, backup_file, list_operation_files, load_operation, lock_path, mutation_context, operations_dir
+from .observability import (
+    AuditSession, RedactingTee, SUPPORTED_FORMATS, correlate_operation, list_logs,
+    purge_logs, redact, resolve_logs_dir, verify_log,
+)
 from .provider import auth_report, fork_repositories, mirror_repositories, reconcile_repositories, require_provider_auth
 from .graph import render_graph
 from .safety import assert_workspace_safe, workspace_safety_report
@@ -385,6 +391,7 @@ def _mutate(
         reason=reason,
         operation_id=operation_id,
     ) as journal:
+        correlate_operation(journal.id)
         code = int(callback())
         journal.complete(code)
         stream = sys.stderr if getattr(args, "json", False) else sys.stdout
@@ -405,6 +412,172 @@ def _provider_preflight(cfg, root: Path, provider_override: str | None, strict_s
         if provider and not provider.is_local:
             status = require_provider_auth(cfg, root, name, strict_scopes=strict_scopes)
             print(f"[AUTH] {name} driver={status.driver} host={status.host} user={status.active_user or '-'} scopes={'known' if status.scopes_known else 'unknown'}")
+
+
+def _extract_output_options(argv: list[str]) -> tuple[list[str], dict[str, object]]:
+    """Extract output/audit options from any argv position without breaking command-specific --format."""
+    cleaned: list[str] = []
+    options: dict[str, object] = {"format": None, "log_dir": None, "audit_log": None, "run_id": None}
+    command_positions = {name: argv.index(name) for name in ("catalog", "graph") if name in argv}
+    index = 0
+    while index < len(argv):
+        token = argv[index]
+        if token.startswith("--format="):
+            value = token.split("=", 1)[1]
+            command_specific = value in {"text", "json"} and any(index > position for position in command_positions.values())
+            if value in SUPPORTED_FORMATS and not command_specific:
+                options["format"] = value
+                index += 1
+                continue
+        if token == "--format" and index + 1 < len(argv) and argv[index + 1] in SUPPORTED_FORMATS:
+            value = argv[index + 1]
+            command_specific = value in {"text", "json"} and any(index > position for position in command_positions.values())
+            if not command_specific:
+                options["format"] = value
+                index += 2
+                continue
+        if token.startswith("--log-dir="):
+            options["log_dir"] = token.split("=", 1)[1]
+            index += 1
+            continue
+        if token == "--log-dir" and index + 1 < len(argv):
+            options["log_dir"] = argv[index + 1]
+            index += 2
+            continue
+        if token.startswith("--run-id="):
+            options["run_id"] = token.split("=", 1)[1]
+            index += 1
+            continue
+        if token == "--run-id" and index + 1 < len(argv):
+            options["run_id"] = argv[index + 1]
+            index += 2
+            continue
+        if token == "--audit-log":
+            options["audit_log"] = True
+            index += 1
+            continue
+        if token == "--no-audit-log":
+            options["audit_log"] = False
+            index += 1
+            continue
+        cleaned.append(token)
+        index += 1
+    return cleaned, options
+
+
+def _command_label(args: argparse.Namespace) -> str:
+    command = str(getattr(args, "command", "rfm") or "rfm")
+    action_names = (
+        "config_action", "scaffold_action", "bootstrap_action", "catalog_action", "repos_action",
+        "submodules_action", "local_action", "cache_action", "git_action", "source_action",
+        "runtime_action", "compose_action", "images_action", "ops_action", "logs_action", "docs_action",
+    )
+    for name in action_names:
+        value = getattr(args, name, None)
+        if value:
+            return f"{command} {value}"
+    if command == "completion":
+        return f"completion {getattr(args, 'shell', '')}".strip()
+    return command
+
+
+def _audit_root(args: argparse.Namespace) -> Path:
+    value = getattr(args, "wizard_root", None) or getattr(args, "root", None) or "."
+    return Path(str(value)).expanduser().resolve()
+
+
+def _audit_settings(args: argparse.Namespace, root: Path, options: dict[str, object]) -> tuple[Path, bool, int, bool, tuple[str, ...]]:
+    configured: dict[str, object] = {}
+    config_value = getattr(args, "wizard_config", None) or getattr(args, "config", None)
+    try:
+        if config_value:
+            candidate = Path(str(config_value)).expanduser()
+            if not candidate.is_absolute():
+                candidate = root / candidate
+            if candidate.exists():
+                raw = json.loads(candidate.read_text(encoding="utf-8"))
+                configured = dict(raw.get("observability") or {})
+        else:
+            candidate = find_config(start=root)
+            raw = json.loads(candidate.read_text(encoding="utf-8"))
+            configured = dict(raw.get("observability") or {})
+    except (FileNotFoundError, OSError, json.JSONDecodeError, TypeError, ValueError):
+        configured = {}
+    directory = resolve_logs_dir(root, str(configured.get("logs_dir") or "") or None, str(options.get("log_dir") or "") or None)
+    enabled = bool(configured.get("audit_enabled", True))
+    if options.get("audit_log") is not None:
+        enabled = bool(options["audit_log"])
+    retention = max(1, int(configured.get("retention_days") or 30))
+    include_output = bool(configured.get("include_output", True))
+    redact_keys = tuple(str(item) for item in (configured.get("redact_keys") or []))
+    return directory, enabled, retention, include_output, redact_keys
+
+
+def _logs_directory(args: argparse.Namespace) -> Path:
+    root = _root(args)
+    cfg = _optional_config(getattr(args, "config", None), start=root, profiles=getattr(args, "profile", None), groups=getattr(args, "group", None))
+    configured = cfg.observability.get("logs_dir") if cfg else None
+    return resolve_logs_dir(root, configured, getattr(args, "log_dir_override", None))
+
+
+def cmd_logs_list(args: argparse.Namespace) -> int:
+    rows = list_logs(_logs_directory(args))
+    if args.json:
+        print(json.dumps(rows, ensure_ascii=False, indent=2))
+    else:
+        if not rows:
+            print("No audit logs found.")
+        for row in rows:
+            print(f"{row['run_id']}  {str(row.get('status') or '-'):<10}  {str(row.get('command') or '-'):<28}  events={row['events']} exit={row.get('exit_code')}")
+    return 0
+
+
+def _resolve_log_path(args: argparse.Namespace) -> Path:
+    value = Path(args.run_id).expanduser()
+    if value.exists():
+        return value.resolve()
+    name = value.name
+    if not name.endswith(".jsonl"):
+        name += ".jsonl"
+    return (_logs_directory(args) / name).resolve()
+
+
+def cmd_logs_show(args: argparse.Namespace) -> int:
+    path = _resolve_log_path(args)
+    events = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    if args.json:
+        print(json.dumps(events, ensure_ascii=False, indent=2))
+    else:
+        for event in events:
+            detail = event.get("message") or ((event.get("data") or {}).get("payload") if isinstance(event.get("data"), dict) else None)
+            print(f"{event['timestamp']} {event['level']:<7} {event['type']:<22} {detail if detail is not None else ''}")
+    return 0
+
+
+def cmd_logs_verify(args: argparse.Namespace) -> int:
+    report = verify_log(_resolve_log_path(args))
+    if args.json:
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+    elif report["valid"]:
+        print(f"[OK] audit log valid: {report['path']} events={report['events']}")
+    else:
+        print(f"[FAIL] audit log invalid: {report['path']}")
+        for error in report["errors"]:
+            print(f" - {error}")
+    return 0 if report["valid"] else 2
+
+
+def cmd_logs_purge(args: argparse.Namespace) -> int:
+    removed = purge_logs(_logs_directory(args), args.retention_days, apply=args.apply)
+    payload = {"retention_days": args.retention_days, "matched": removed, "removed": removed if args.apply else [], "dry_run": not args.apply}
+    if args.json:
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+    else:
+        print(f"[{'OK' if args.apply else 'DRY-RUN'}] audit logs matched={len(removed)} retention_days={args.retention_days}")
+        for path in removed:
+            print(f" - {path}")
+    return 0
+
 
 def cmd_completion(args: argparse.Namespace) -> int:
     resource = files("repo_fleet_manager").joinpath(f"data/rfm.{args.shell}")
@@ -996,6 +1169,7 @@ def cmd_local_restore(args: argparse.Namespace) -> int:
         reason=args.reason,
         operation_id=os.environ.get("RFM_OPERATION_ID"),
     ) as journal:
+        correlate_operation(journal.id)
         code = int(callback())
         journal.complete(code)
         stream = sys.stderr if getattr(args, "json", False) else sys.stdout
@@ -1258,6 +1432,7 @@ def cmd_ops_rollback(args: argparse.Namespace) -> int:
     journal = load_operation(directory, args.operation_id)
     lock = lock_path(root, cfg.local.get("lock_file"))
     with mutation_context(root, f"ops rollback {args.operation_id}", list(args._argv), directory, lock, force=args.force, reason=args.reason) as rollback_journal:
+        correlate_operation(rollback_journal.id)
         failures, messages = journal.rollback(force=args.force)
         for message in messages:
             print(message)
@@ -1269,6 +1444,10 @@ def cmd_ops_rollback(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="rfm", description="Config-driven manager for large multi-repository/submodule projects.")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
+    parser.add_argument("--format", dest="global_format", choices=SUPPORTED_FORMATS, default="text", help="Unified output format; accepted before or after subcommands.")
+    parser.add_argument("--log-dir", dest="global_log_dir", help="Override audit log directory.")
+    parser.add_argument("--run-id", dest="global_run_id", help="Use a caller-supplied audit run identifier.")
+    parser.add_argument("--audit-log", dest="global_audit_log", action=argparse.BooleanOptionalAction, default=None, help="Enable or disable JSONL audit logging.")
     sub = parser.add_subparsers(dest="command", required=True)
 
     config = sub.add_parser("config", help="Validate and migrate repo-fleet configuration.")
@@ -1448,6 +1627,13 @@ def build_parser() -> argparse.ArgumentParser:
     sp = ops_sub.add_parser("resume"); sp.add_argument("operation_id"); add_safety_flags(sp); sp.set_defaults(func=cmd_ops_resume)
     sp = ops_sub.add_parser("rollback"); sp.add_argument("operation_id"); add_safety_flags(sp); sp.set_defaults(func=cmd_ops_rollback)
 
+    p = sub.add_parser("logs", help="Inspect and verify structured RFM audit logs.")
+    add_common(p); p.add_argument("--log-dir", dest="log_dir_override"); logs_sub = p.add_subparsers(dest="logs_action", required=True)
+    sp = logs_sub.add_parser("list", help="List audit runs."); sp.add_argument("--json", action="store_true"); sp.set_defaults(func=cmd_logs_list)
+    sp = logs_sub.add_parser("show", help="Show events for one run."); sp.add_argument("run_id"); sp.add_argument("--json", action="store_true"); sp.set_defaults(func=cmd_logs_show)
+    sp = logs_sub.add_parser("verify", help="Validate a JSONL audit log against the event schema."); sp.add_argument("run_id"); sp.add_argument("--json", action="store_true"); sp.set_defaults(func=cmd_logs_verify)
+    sp = logs_sub.add_parser("purge", help="Remove audit logs older than the retention period. Dry-run by default."); sp.add_argument("--retention-days", type=int, default=30); sp.add_argument("--json", action="store_true"); sp.add_argument("--apply", action="store_true"); sp.set_defaults(func=cmd_logs_purge)
+
     p = sub.add_parser("docs", help="Documentation utilities.")
     add_common(p); docs_sub = p.add_subparsers(dest="docs_action", required=True)
     sp = docs_sub.add_parser("validate-links"); sp.set_defaults(func=cmd_docs_validate)
@@ -1459,11 +1645,74 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
-    effective_argv = list(argv) if argv is not None else sys.argv[1:]
+    original_argv = list(argv) if argv is not None else sys.argv[1:]
+    effective_argv, output_options = _extract_output_options(original_argv)
     args = parser.parse_args(effective_argv)
-    args._argv = effective_argv
-    try:
-        return args.func(args)
-    except Exception as exc:  # noqa: BLE001
-        print(f"[ERROR] {exc}", file=sys.stderr)
-        return 1
+    args._argv = original_argv
+    if hasattr(args, "log_dir_override") and output_options.get("log_dir"):
+        args.log_dir_override = str(output_options["log_dir"])
+
+    requested_format = str(output_options.get("format") or "text")
+    legacy_json = bool(getattr(args, "json", False)) and output_options.get("format") is None
+    if requested_format in {"json", "jsonl"} and hasattr(args, "json"):
+        args.json = True
+    elif requested_format in {"json", "jsonl"} and hasattr(args, "format") and getattr(args, "format", None) in {None, "text"}:
+        args.format = "json"
+
+    root = _audit_root(args)
+    log_dir, audit_enabled, retention_days, include_output, redact_keys = _audit_settings(args, root, output_options)
+    # Programmatic main([...]) calls are side-effect free unless audit logging was explicitly requested.
+    if argv is not None and output_options.get("audit_log") is None:
+        audit_enabled = False
+    if getattr(args, "command", None) == "completion":
+        audit_enabled = False
+    if getattr(args, "command", None) == "logs" and output_options.get("audit_log") is None:
+        audit_enabled = False
+    purge_logs(log_dir, retention_days, apply=audit_enabled)
+
+    session = AuditSession(
+        command=_command_label(args),
+        argv=original_argv,
+        root=root,
+        log_dir=log_dir,
+        enabled=audit_enabled,
+        run_id=str(output_options.get("run_id") or "") or None,
+        include_output=include_output,
+        redact_keys=redact_keys,
+    )
+    stdout_buffer = io.StringIO()
+    stderr_buffer = io.StringIO()
+    code = 0
+    error_text: str | None = None
+
+    machine_envelope = requested_format in {"json", "jsonl"} and not legacy_json
+    with session:
+        if machine_envelope:
+            try:
+                with redirect_stdout(stdout_buffer), redirect_stderr(stderr_buffer):
+                    code = int(args.func(args))
+            except Exception as exc:  # noqa: BLE001
+                code = 1
+                error_text = str(exc)
+                print(f"[ERROR] {exc}", file=stderr_buffer)
+        else:
+            out_tee = RedactingTee(sys.stdout, stdout_buffer)
+            err_tee = RedactingTee(sys.stderr, stderr_buffer)
+            try:
+                with redirect_stdout(out_tee), redirect_stderr(err_tee):
+                    code = int(args.func(args))
+            except Exception as exc:  # noqa: BLE001
+                code = 1
+                error_text = str(exc)
+                print(f"[ERROR] {exc}", file=err_tee)
+        session.record_output(stdout_buffer.getvalue(), stderr_buffer.getvalue())
+        session.complete(code, error=error_text)
+
+    if machine_envelope:
+        if requested_format == "json":
+            print(json.dumps(session.envelope(code, stdout_buffer.getvalue(), stderr_buffer.getvalue()), ensure_ascii=False, indent=2))
+        else:
+            for event in session.events:
+                print(json.dumps(redact(event), ensure_ascii=False, separators=(",", ":")))
+    return code
+

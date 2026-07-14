@@ -33,6 +33,10 @@ class CompletionCommandTest(unittest.TestCase):
         self.assertIn("runtime", output)
         self.assertIn("--timeout", output)
         self.assertIn("--service", output)
+        self.assertIn("logs", output)
+        self.assertIn("jsonl", output)
+        self.assertIn("--audit-log", output)
+        self.assertIn("--run-id", output)
 
     def test_fish_completion_contains_nested_commands(self):
         output = self.run_completion("fish")
@@ -52,6 +56,10 @@ class CompletionCommandTest(unittest.TestCase):
         self.assertIn("session-file", output)
         self.assertIn("runtime", output)
         self.assertIn("interval", output)
+        self.assertIn("logs", output)
+        self.assertIn("jsonl", output)
+        self.assertIn("audit-log", output)
+        self.assertIn("run-id", output)
 
 
 if __name__ == "__main__":

@@ -120,5 +120,11 @@
     "algorithm": "sha256",
     "short_length": 16
   },
-  "schema_version": "1.0.0"
+  "schema_version": "1.0.0",
+  "observability": {
+    "logs_dir": ".repo-fleet/logs",
+    "audit_enabled": true,
+    "retention_days": 30,
+    "include_output": true
+  }
 }

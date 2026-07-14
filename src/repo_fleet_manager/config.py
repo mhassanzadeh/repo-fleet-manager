@@ -125,6 +125,7 @@ class ProjectConfig:
     repositories: list[Repository]
     compose: dict[str, Any]
     runtime: dict[str, Any]
+    observability: dict[str, Any]
     fingerprint: dict[str, Any]
     local: dict[str, Any]
     active_profiles: tuple[str, ...] = ()
@@ -252,6 +253,7 @@ def load_config(
         repositories=repositories,
         compose=resolved.get("compose", {}),
         runtime=resolved.get("runtime", {}),
+        observability=resolved.get("observability", {}),
         fingerprint=resolved.get("fingerprint", {}),
         local=local_cfg,
         active_profiles=active_profiles,

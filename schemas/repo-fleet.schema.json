@@ -1013,6 +1013,38 @@
                 }
               }
             }
+          },
+          "observability": {
+            "type": "object",
+            "additionalProperties": false,
+            "patternProperties": {
+              "^x-": {}
+            },
+            "properties": {
+              "logs_dir": {
+                "type": "string",
+                "minLength": 1
+              },
+              "audit_enabled": {
+                "type": "boolean"
+              },
+              "retention_days": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 3650
+              },
+              "include_output": {
+                "type": "boolean"
+              },
+              "redact_keys": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
           }
         }
       }
@@ -1233,6 +1265,38 @@
                 "type": "string"
               }
             }
+          }
+        }
+      }
+    },
+    "observability": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {}
+      },
+      "properties": {
+        "logs_dir": {
+          "type": "string",
+          "minLength": 1
+        },
+        "audit_enabled": {
+          "type": "boolean"
+        },
+        "retention_days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3650
+        },
+        "include_output": {
+          "type": "boolean"
+        },
+        "redact_keys": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
           }
         }
       }

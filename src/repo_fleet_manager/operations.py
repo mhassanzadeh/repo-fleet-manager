@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Iterator
 
 from .shell import run, shlex_join
+from .observability import redact_argv, redact_text
 
 _CURRENT_OPERATION: ContextVar["OperationJournal | None"] = ContextVar("rfm_current_operation", default=None)
 _ACTIVE_OPERATION: "OperationJournal | None" = None
@@ -126,7 +127,7 @@ class OperationJournal:
         self.id = operation_id or f"{time.strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:8]}"
         self.path = self.directory / f"{self.id}.json"
         self.backup_dir = self.directory / self.id / "backups"
-        attempt = {"started_at": utc_now(), "finished_at": None, "status": "running", "reason": reason}
+        attempt = {"started_at": utc_now(), "finished_at": None, "status": "running", "reason": redact_text(reason) if reason else None}
         if operation_id and self.path.exists():
             self.data = json.loads(self.path.read_text(encoding="utf-8"))
             for step in self.data.get("steps", []):
@@ -144,14 +145,14 @@ class OperationJournal:
             self.data = {
                 "schema_version": "1.0.0",
                 "id": self.id,
-                "command": command,
-                "argv": argv,
+                "command": redact_text(command) if command else None,
+                "argv": redact_argv(argv),
                 "root": str(self.root),
                 "status": "running",
                 "started_at": utc_now(),
                 "updated_at": utc_now(),
                 "finished_at": None,
-                "reason": reason,
+                "reason": redact_text(reason) if reason else None,
                 "resume_count": 0,
                 "attempts": [attempt],
                 "steps": [],
@@ -172,7 +173,7 @@ class OperationJournal:
             step = {
                 "id": len(self.data["steps"]) + 1,
                 "description": description,
-                "command": command,
+                "command": redact_argv(command) if command else None,
                 "cwd": str(cwd.resolve()) if cwd else None,
                 "status": "running",
                 "started_at": utc_now(),
@@ -190,7 +191,7 @@ class OperationJournal:
             step["code"] = code
             step["finished_at"] = utc_now()
             if detail:
-                step["detail"] = detail
+                step["detail"] = redact_text(detail)
             self.save()
 
     def add_rollback(self, action: dict[str, Any]) -> None:

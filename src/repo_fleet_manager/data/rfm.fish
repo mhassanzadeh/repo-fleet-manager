@@ -3,7 +3,7 @@ complete -c rfm -f
 complete -c rfm -s h -l help -d 'Show help'
 complete -c rfm -l version -d 'Show version'
 
-set -l rfm_commands config init-project scaffold bootstrap doctor auth catalog graph safety repos submodules local cache git source runtime compose images ops docs completion
+set -l rfm_commands config init-project scaffold bootstrap doctor auth catalog graph safety repos submodules local cache git source runtime compose images ops logs docs completion
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a config -d 'Validate and migrate configuration'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a init-project -d 'Create a portable parent project'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a scaffold -d 'Generate repositories from templates'
@@ -23,6 +23,7 @@ complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a runtime -d
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a compose -d 'Compose operations'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a images -d 'Image verification'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a ops -d 'Operation journals and rollback'
+complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a logs -d 'Structured audit logs'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a docs -d 'Documentation utilities'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a completion -d 'Generate shell completion'
 
@@ -42,6 +43,7 @@ complete -c rfm -n '__fish_seen_subcommand_from runtime; and not __fish_seen_sub
 complete -c rfm -n '__fish_seen_subcommand_from compose; and not __fish_seen_subcommand_from ps up down build pull logs' -a 'ps up down build pull logs'
 complete -c rfm -n '__fish_seen_subcommand_from images; and not __fish_seen_subcommand_from verify' -a verify
 complete -c rfm -n '__fish_seen_subcommand_from ops; and not __fish_seen_subcommand_from list show resume rollback' -a 'list show resume rollback'
+complete -c rfm -n '__fish_seen_subcommand_from logs; and not __fish_seen_subcommand_from list show verify purge' -a 'list show verify purge'
 complete -c rfm -n '__fish_seen_subcommand_from docs; and not __fish_seen_subcommand_from validate-links' -a validate-links
 complete -c rfm -n '__fish_seen_subcommand_from completion' -a 'bash fish'
 
@@ -49,10 +51,14 @@ complete -c rfm -l config -r -a '(__fish_complete_suffix .json)' -d 'Configurati
 complete -c rfm -l root -r -a '(__fish_complete_directories)' -d 'Workspace root'
 complete -c rfm -l profile -r -d 'Named configuration profile; repeatable'
 complete -c rfm -l group -r -d 'Named repository group; repeatable'
+complete -c rfm -l log-dir -r -a '(__fish_complete_directories)' -d 'Audit log directory'
+complete -c rfm -l run-id -r -d 'Audit run identifier'
+complete -c rfm -l audit-log -d 'Enable JSONL audit logging'
+complete -c rfm -l no-audit-log -d 'Disable JSONL audit logging'
 complete -c rfm -l provider -r -a 'github gitlab local' -d 'Provider'
 complete -c rfm -l namespace -r -d 'Provider namespace'
 complete -c rfm -l visibility -r -a 'private public'
-complete -c rfm -l format -r -a 'text json markdown dot'
+complete -c rfm -l format -r -a 'text json jsonl markdown dot'
 complete -c rfm -l view -r -a 'repositories summary tree gaps all'
 complete -c rfm -l priority -r -a 'P0 P1 P2 P3'
 complete -c rfm -l status -r -a 'implemented partial planned missing'
@@ -144,3 +150,9 @@ complete -c rfm -n '__fish_seen_subcommand_from wait up' -l interval -r -d 'Poll
 complete -c rfm -n '__fish_seen_subcommand_from doctor wait up' -l logs -d 'Include failing service logs'
 complete -c rfm -n '__fish_seen_subcommand_from up' -l no-logs -d 'Do not include logs on startup failure'
 complete -c rfm -n '__fish_seen_subcommand_from doctor wait up' -l tail -r -d 'Number of log lines'
+
+# Structured audit logs
+complete -c rfm -n '__fish_seen_subcommand_from logs' -l log-dir -r -a '(__fish_complete_directories)' -d 'Audit log directory'
+complete -c rfm -n '__fish_seen_subcommand_from purge' -l retention-days -r -d 'Delete logs older than this many days'
+complete -c rfm -n '__fish_seen_subcommand_from purge' -l apply -d 'Delete matched logs'
+complete -c rfm -n '__fish_seen_subcommand_from list show verify purge' -l json -d 'JSON output'

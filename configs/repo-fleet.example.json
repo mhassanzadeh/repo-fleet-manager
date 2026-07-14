@@ -220,5 +220,11 @@
         }
       }
     }
+  },
+  "observability": {
+    "logs_dir": ".repo-fleet/logs",
+    "audit_enabled": true,
+    "retention_days": 30,
+    "include_output": true
   }
 }

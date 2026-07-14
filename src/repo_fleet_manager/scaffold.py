@@ -202,6 +202,12 @@ def new_project_config(
             "cache_retention": 3,
             "default_jobs": 1,
         },
+        "observability": {
+            "logs_dir": ".repo-fleet/logs",
+            "audit_enabled": True,
+            "retention_days": 30,
+            "include_output": True,
+        },
         "fingerprint": {
             "algorithm": "sha256",
             "short_length": 16,
@@ -263,7 +269,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install Repo Fleet Manager
-        run: python -m pip install 'repo-fleet-manager @ git+https://github.com/mhassanzadeh/repo-fleet-manager.git@v0.12.0'
+        run: python -m pip install 'repo-fleet-manager @ git+https://github.com/mhassanzadeh/repo-fleet-manager.git@v0.13.0'
       - name: Validate fleet configuration and bootstrap contract
         run: |
           rfm config --config repo-fleet.json validate --strict
