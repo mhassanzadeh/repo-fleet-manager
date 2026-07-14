@@ -80,6 +80,76 @@ class RuntimeReport:
         }
 
 
+
+
+def _custom_runtime_plugin(config: ProjectConfig):
+    driver = str((config.runtime or {}).get("driver") or "compose").strip().lower()
+    if driver in {"compose", "auto", "docker", "podman"}:
+        return None
+    from .plugin_api import RuntimePluginV1
+    from .plugins import registry_for
+    plugin = registry_for(config).resolve("runtime", driver)
+    if plugin is None or not isinstance(plugin, RuntimePluginV1):
+        raise RuntimeErrorDetail(f"runtime driver {driver!r} requires an installed compatible plugin")
+    return driver, plugin
+
+
+def _plugin_runtime_report(
+    config: ProjectConfig,
+    root: Path,
+    operation: str,
+    selected: Iterable[str] | None,
+    *,
+    apply: bool = False,
+    options: dict[str, Any] | None = None,
+) -> RuntimeReport | None:
+    resolved = _custom_runtime_plugin(config)
+    if resolved is None:
+        return None
+    driver, plugin = resolved
+    from .plugin_api import RuntimeRequest
+    result = plugin.execute(RuntimeRequest(
+        operation=operation, root=root.resolve(), config=config.raw,
+        selected_services=tuple(selected or ()), apply=apply, options=options or {},
+    ))
+    data = dict(result.data or {})
+    statuses: list[ServiceStatus] = []
+    for raw in data.get("services") or []:
+        probe_raw = raw.get("probe") if isinstance(raw, dict) else None
+        probe = None
+        if isinstance(probe_raw, dict):
+            probe = ProbeResult(
+                probe_type=str(probe_raw.get("probe_type") or probe_raw.get("type") or "plugin"),
+                ok=bool(probe_raw.get("ok")), detail=str(probe_raw.get("detail") or ""),
+                latency_ms=int(probe_raw.get("latency_ms") or 0),
+            )
+        if not isinstance(raw, dict):
+            continue
+        statuses.append(ServiceStatus(
+            name=str(raw.get("name") or "unknown"), required=bool(raw.get("required", True)),
+            depends_on=tuple(str(item) for item in (raw.get("depends_on") or [])),
+            container_id=str(raw.get("container_id")) if raw.get("container_id") is not None else None,
+            state=str(raw.get("state") or "unknown"), running=bool(raw.get("running")),
+            ready=bool(raw.get("ready")), readiness_source=str(raw.get("readiness_source") or f"plugin:{plugin.name}"),
+            health=str(raw.get("health")) if raw.get("health") is not None else None,
+            exit_code=int(raw["exit_code"]) if raw.get("exit_code") is not None else None,
+            reason=str(raw.get("reason")) if raw.get("reason") else None, probe=probe,
+            remediation=str(raw.get("remediation")) if raw.get("remediation") else None,
+            logs=str(raw.get("logs")) if raw.get("logs") else None,
+        ))
+    errors = [str(item) for item in (data.get("errors") or [])]
+    errors.extend(str(item) for item in result.warnings)
+    if result.code and result.message:
+        errors.append(result.message)
+    ready = bool(data.get("ready", result.code == 0 and all(item.ready for item in statuses if item.required)))
+    return RuntimeReport(
+        ready=ready and result.code == 0, engine=str(data.get("engine") or f"plugin:{driver}"),
+        compose_bin=[str(item) for item in (data.get("compose_bin") or [])],
+        services=statuses, generated_at=str(data.get("generated_at") or datetime.now(timezone.utc).isoformat()),
+        errors=errors,
+    )
+
+
 def _runtime_config(config: ProjectConfig) -> dict[str, Any]:
     return config.runtime or {}
 
@@ -426,6 +496,9 @@ def runtime_status(
     *,
     runner: Callable[..., RunResult] = run,
 ) -> RuntimeReport:
+    plugin_report = _plugin_runtime_report(config, root, "status", selected)
+    if plugin_report is not None:
+        return plugin_report
     compose_bin = detect_compose_bin(config.compose.get("bin"))
     engine = _engine_name(config, compose_bin)
     services = discover_runtime_services(config, root, selected, runner)
@@ -455,6 +528,9 @@ def runtime_doctor(
     tail: int | None = None,
     runner: Callable[..., RunResult] = run,
 ) -> RuntimeReport:
+    plugin_report = _plugin_runtime_report(config, root, "doctor", selected, options={"include_logs": include_logs, "tail": tail})
+    if plugin_report is not None:
+        return plugin_report
     report = runtime_status(config, root, selected, runner=runner)
     log_tail = int(tail or _runtime_config(config).get("log_tail") or 80)
     for status in report.services:
@@ -478,6 +554,12 @@ def wait_runtime(
     sleep_fn: Callable[[float], None] = time.sleep,
     monotonic_fn: Callable[[], float] = time.monotonic,
 ) -> RuntimeReport:
+    plugin_report = _plugin_runtime_report(
+        config, root, "wait", selected,
+        options={"timeout_seconds": timeout_seconds, "interval_seconds": interval_seconds, "include_logs": include_logs, "tail": tail},
+    )
+    if plugin_report is not None:
+        return plugin_report
     runtime_cfg = _runtime_config(config)
     timeout = float(timeout_seconds if timeout_seconds is not None else runtime_cfg.get("timeout_seconds") or 120)
     interval = float(interval_seconds if interval_seconds is not None else runtime_cfg.get("interval_seconds") or 2)
@@ -506,6 +588,12 @@ def ordered_runtime_up(
     runner: Callable[..., RunResult] = run,
     interactive_runner: Callable[..., int] = run_interactive,
 ) -> RuntimeReport:
+    plugin_report = _plugin_runtime_report(
+        config, root, "up", selected, apply=apply,
+        options={"timeout_seconds": timeout_seconds, "interval_seconds": interval_seconds, "include_logs": include_logs, "tail": tail},
+    )
+    if plugin_report is not None:
+        return plugin_report
     compose_bin = detect_compose_bin(config.compose.get("bin"))
     engine = _engine_name(config, compose_bin)
     services = discover_runtime_services(config, root, selected, runner)

@@ -76,12 +76,7 @@
           },
           "driver": {
             "type": "string",
-            "enum": [
-              "github",
-              "gitlab",
-              "local",
-              "generic"
-            ]
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
           },
           "namespace": {
             "type": "string"
@@ -1380,6 +1375,43 @@
                 }
               }
             }
+          },
+          "plugins": {
+            "type": "object",
+            "additionalProperties": false,
+            "patternProperties": {
+              "^x-": {}
+            },
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "strict": {
+                "type": "boolean"
+              },
+              "allow": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "deny": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "settings": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object"
+                }
+              }
+            }
           }
         }
       }
@@ -1601,6 +1633,10 @@
               }
             }
           }
+        },
+        "driver": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
         }
       }
     },
@@ -1959,6 +1995,43 @@
               "type": "string",
               "minLength": 1
             }
+          }
+        }
+      }
+    },
+    "plugins": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {}
+      },
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "strict": {
+          "type": "boolean"
+        },
+        "allow": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "deny": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "settings": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object"
           }
         }
       }

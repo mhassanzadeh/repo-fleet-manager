@@ -219,7 +219,8 @@
           "timeout_seconds": 3
         }
       }
-    }
+    },
+    "driver": "compose"
   },
   "observability": {
     "logs_dir": ".repo-fleet/logs",
@@ -289,5 +290,12 @@
       }
     ],
     "exceptions": []
+  },
+  "plugins": {
+    "enabled": true,
+    "strict": false,
+    "allow": [],
+    "deny": [],
+    "settings": {}
   }
 }

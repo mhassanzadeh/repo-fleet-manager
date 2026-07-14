@@ -189,5 +189,12 @@
       }
     ],
     "exceptions": []
+  },
+  "plugins": {
+    "enabled": true,
+    "strict": false,
+    "allow": [],
+    "deny": [],
+    "settings": {}
   }
 }

@@ -46,10 +46,16 @@ POLICY_RULE ?=
 POLICY_REPOSITORY ?=
 POLICY_FAIL_ON ?= error
 POLICY_ARGS = $(if $(POLICY_RULE),--rule "$(POLICY_RULE)",) $(if $(POLICY_REPOSITORY),--repository "$(POLICY_REPOSITORY)",) --fail-on "$(POLICY_FAIL_ON)"
+PLUGIN_KIND ?=
+PLUGIN_NAME ?=
+ARTIFACT_SOURCE ?=
+ARTIFACT_URI ?=
+ARTIFACT_DESTINATION ?=
+PLUGIN_ARGS = $(if $(PLUGIN_KIND),--kind "$(PLUGIN_KIND)",)
 OBSERVABILITY_ARGS = --format "$(OUTPUT_FORMAT)" $(if $(LOG_DIR),--log-dir "$(LOG_DIR)",)
 SELECTION_ARGS = $(if $(PROFILE),--profile "$(PROFILE)",) $(if $(GROUP),--group "$(GROUP)",)
 
-.PHONY: install install-cli install-editable install-completions install-all uninstall uninstall-completions doctor auth-status config-validate config-migrate graph safety-status ops-list test validate validate-docs completion-bash completion-fish local-plan local-localize local-localize-apply local-bootstrap local-bootstrap-apply local-remotes local-remotes-apply local-remotes-update publish-github publish-gitlab catalog-summary catalog-tree catalog-gaps catalog-docs catalog-check release-check release-artifacts build clean local-backup local-backup-apply local-backups local-backup-verify local-restore local-restore-apply config-render config-profiles config-groups init-project init-project-apply scaffold-templates scaffold-repository scaffold-repository-apply bootstrap-lock bootstrap-lock-apply bootstrap-verify cache-export cache-export-apply cache-list cache-verify cache-import cache-import-apply cache-bootstrap cache-bootstrap-apply config-wizard config-wizard-apply config-wizard-scan config-wizard-scan-apply config-wizard-answers config-wizard-reset runtime-status runtime-doctor runtime-wait runtime-up runtime-up-apply logs-list logs-show logs-verify logs-purge logs-purge-apply supply-chain-resolve supply-chain-resolve-apply supply-chain-sbom supply-chain-sbom-apply supply-chain-scan supply-chain-scan-apply supply-chain-verify supply-chain-report supply-chain-collect supply-chain-collect-apply policy-check policy-enforce policy-explain policy-exceptions
+.PHONY: install install-cli install-editable install-completions install-all uninstall uninstall-completions doctor auth-status config-validate config-migrate config-render config-profiles config-groups graph safety-status ops-list test validate validate-docs completion-bash completion-fish local-plan local-localize local-localize-apply local-bootstrap local-bootstrap-apply local-remotes local-remotes-apply local-remotes-update local-backup local-backup-apply local-backups local-backup-verify local-restore local-restore-apply publish-github publish-gitlab catalog-summary catalog-tree catalog-gaps catalog-docs catalog-check release-check release-artifacts build clean init-project init-project-apply scaffold-templates scaffold-repository scaffold-repository-apply bootstrap-lock bootstrap-lock-apply bootstrap-verify cache-export cache-export-apply cache-list cache-verify cache-import cache-import-apply cache-bootstrap cache-bootstrap-apply config-wizard config-wizard-apply config-wizard-scan config-wizard-scan-apply config-wizard-answers config-wizard-reset runtime-status runtime-doctor runtime-wait runtime-up runtime-up-apply logs-list logs-show logs-verify logs-purge logs-purge-apply supply-chain-resolve supply-chain-resolve-apply supply-chain-sbom supply-chain-sbom-apply supply-chain-scan supply-chain-scan-apply supply-chain-verify supply-chain-report supply-chain-collect supply-chain-collect-apply policy-check policy-enforce policy-explain policy-exceptions plugins-list plugins-doctor plugins-show artifacts-list artifacts-put artifacts-put-apply artifacts-get artifacts-get-apply artifacts-delete artifacts-delete-apply
 
 install: install-cli install-completions
 
@@ -182,7 +188,6 @@ cache-bootstrap-apply:
 	@test -n "$(ARCHIVE)" || (echo "ARCHIVE is required" >&2; exit 2)
 	./scripts/rfm.sh cache --root "$(ROOT)" bootstrap "$(ARCHIVE)" $(if $(CACHE_ENGINE),--engine "$(CACHE_ENGINE)",) --apply
 
-# RFM_RUNTIME_TARGETS_BEGIN
 runtime-status:
 	./scripts/rfm.sh runtime --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) status $(if $(RUNTIME_SERVICE),--service "$(RUNTIME_SERVICE)",)
 
@@ -197,7 +202,6 @@ runtime-up:
 
 runtime-up-apply:
 	./scripts/rfm.sh runtime --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) up $(RUNTIME_ARGS) --apply
-# RFM_RUNTIME_TARGETS_END
 
 publish-github:
 	./scripts/rfm.sh repos --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) publish --provider github --namespace "$(NAMESPACE)"
@@ -239,7 +243,6 @@ config-profiles:
 config-groups:
 	./scripts/rfm.sh config --config "$(CONFIG)" groups
 
-# RFM_CONFIG_WIZARD_TARGETS_BEGIN
 config-wizard:
 	./scripts/rfm.sh config wizard --root "$(ROOT)" --output "$(WIZARD_OUTPUT)" --quick
 
@@ -258,7 +261,6 @@ config-wizard-answers:
 
 config-wizard-reset:
 	./scripts/rfm.sh config wizard --root "$(ROOT)" --session-file "$(WIZARD_SESSION)" --reset
-# RFM_CONFIG_WIZARD_TARGETS_END
 
 # RFM_SUPPLY_CHAIN_TARGETS_BEGIN
 supply-chain-resolve:
@@ -292,6 +294,7 @@ supply-chain-collect-apply:
 	./scripts/rfm.sh supply-chain --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) collect $(SUPPLY_ARGS) $(if $(SUPPLY_ENGINE),--engine "$(SUPPLY_ENGINE)",) --format "$(SUPPLY_FORMAT)" --fail-on "$(SUPPLY_FAIL_ON)" --apply
 # RFM_SUPPLY_CHAIN_TARGETS_END
 
+# RFM_OBSERVABILITY_TARGETS_BEGIN
 # RFM_POLICY_TARGETS_BEGIN
 policy-check:
 	./scripts/rfm.sh policy --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) check $(POLICY_ARGS)
@@ -307,7 +310,6 @@ policy-exceptions:
 	./scripts/rfm.sh policy --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) exceptions
 # RFM_POLICY_TARGETS_END
 
-# RFM_OBSERVABILITY_TARGETS_BEGIN
 logs-list:
 	./scripts/rfm.sh logs --config "$(CONFIG)" --root "$(ROOT)" $(OBSERVABILITY_ARGS) list
 
@@ -325,6 +327,51 @@ logs-purge:
 logs-purge-apply:
 	./scripts/rfm.sh logs --config "$(CONFIG)" --root "$(ROOT)" $(OBSERVABILITY_ARGS) purge --retention-days "$(RETENTION_DAYS)" --apply
 # RFM_OBSERVABILITY_TARGETS_END
+
+
+# RFM_PLUGIN_TARGETS_BEGIN
+plugins-list:
+	./scripts/rfm.sh $(OBSERVABILITY_ARGS) plugins --config "$(CONFIG)" --root "$(ROOT)" list $(PLUGIN_ARGS) --load
+
+plugins-doctor:
+	./scripts/rfm.sh $(OBSERVABILITY_ARGS) plugins --config "$(CONFIG)" --root "$(ROOT)" doctor
+
+plugins-show:
+	@test -n "$(PLUGIN_NAME)" || (echo "PLUGIN_NAME is required" >&2; exit 2)
+	./scripts/rfm.sh $(OBSERVABILITY_ARGS) plugins --config "$(CONFIG)" --root "$(ROOT)" show "$(PLUGIN_NAME)" $(PLUGIN_ARGS)
+
+artifacts-list:
+	@test -n "$(ARTIFACT_URI)" || (echo "ARTIFACT_URI is required" >&2; exit 2)
+	./scripts/rfm.sh $(OBSERVABILITY_ARGS) artifacts --config "$(CONFIG)" --root "$(ROOT)" list "$(ARTIFACT_URI)"
+
+artifacts-put:
+	@test -n "$(ARTIFACT_SOURCE)" || (echo "ARTIFACT_SOURCE is required" >&2; exit 2)
+	@test -n "$(ARTIFACT_URI)" || (echo "ARTIFACT_URI is required" >&2; exit 2)
+	./scripts/rfm.sh $(OBSERVABILITY_ARGS) artifacts --config "$(CONFIG)" --root "$(ROOT)" put "$(ARTIFACT_SOURCE)" "$(ARTIFACT_URI)"
+
+artifacts-put-apply:
+	@test -n "$(ARTIFACT_SOURCE)" || (echo "ARTIFACT_SOURCE is required" >&2; exit 2)
+	@test -n "$(ARTIFACT_URI)" || (echo "ARTIFACT_URI is required" >&2; exit 2)
+	./scripts/rfm.sh $(OBSERVABILITY_ARGS) artifacts --config "$(CONFIG)" --root "$(ROOT)" put "$(ARTIFACT_SOURCE)" "$(ARTIFACT_URI)" --apply
+
+artifacts-get:
+	@test -n "$(ARTIFACT_URI)" || (echo "ARTIFACT_URI is required" >&2; exit 2)
+	@test -n "$(ARTIFACT_DESTINATION)" || (echo "ARTIFACT_DESTINATION is required" >&2; exit 2)
+	./scripts/rfm.sh $(OBSERVABILITY_ARGS) artifacts --config "$(CONFIG)" --root "$(ROOT)" get "$(ARTIFACT_URI)" "$(ARTIFACT_DESTINATION)"
+
+artifacts-get-apply:
+	@test -n "$(ARTIFACT_URI)" || (echo "ARTIFACT_URI is required" >&2; exit 2)
+	@test -n "$(ARTIFACT_DESTINATION)" || (echo "ARTIFACT_DESTINATION is required" >&2; exit 2)
+	./scripts/rfm.sh $(OBSERVABILITY_ARGS) artifacts --config "$(CONFIG)" --root "$(ROOT)" get "$(ARTIFACT_URI)" "$(ARTIFACT_DESTINATION)" --apply
+
+artifacts-delete:
+	@test -n "$(ARTIFACT_URI)" || (echo "ARTIFACT_URI is required" >&2; exit 2)
+	./scripts/rfm.sh $(OBSERVABILITY_ARGS) artifacts --config "$(CONFIG)" --root "$(ROOT)" delete "$(ARTIFACT_URI)"
+
+artifacts-delete-apply:
+	@test -n "$(ARTIFACT_URI)" || (echo "ARTIFACT_URI is required" >&2; exit 2)
+	./scripts/rfm.sh $(OBSERVABILITY_ARGS) artifacts --config "$(CONFIG)" --root "$(ROOT)" delete "$(ARTIFACT_URI)" --apply
+# RFM_PLUGIN_TARGETS_END
 
 auth-status:
 	./scripts/rfm.sh auth --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) status

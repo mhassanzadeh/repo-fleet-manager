@@ -278,7 +278,23 @@ def render_json(catalog: dict[str, Any], root: Path, view: str, priority: str | 
     return json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
 
 
-def render_catalog(catalog: dict[str, Any], root: Path, view: str, output_format: str, priority: str | None = None, status: str | None = None) -> str:
+def render_catalog(catalog: dict[str, Any], root: Path, view: str, output_format: str, priority: str | None = None, status: str | None = None, plugin_config: Any | None = None) -> str:
+    normalized_format = output_format.strip().lower()
+    if normalized_format not in {"text", "json", "markdown"}:
+        from .plugin_api import CatalogExportRequest, CatalogExporterPluginV1
+        from .plugins import registry_for
+        registry = registry_for(plugin_config)
+        plugin = registry.resolve("catalog-exporter", normalized_format)
+        if plugin is None or not isinstance(plugin, CatalogExporterPluginV1):
+            raise ValueError(
+                f"unsupported catalog format: {output_format}; install a compatible catalog exporter plugin"
+            )
+        rendered = plugin.render(CatalogExportRequest(
+            root=root.resolve(), catalog=catalog, view=view, output_format=normalized_format,
+            priority=priority, status=status, options=dict(registry.setting(plugin.name)),
+        ))
+        return rendered.decode("utf-8") if isinstance(rendered, bytes) else str(rendered)
+    output_format = normalized_format
     if output_format == "json":
         return render_json(catalog, root, view, priority, status)
     if output_format == "markdown":

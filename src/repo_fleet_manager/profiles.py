@@ -114,7 +114,7 @@ def _apply_profile(data: dict[str, Any], overlay: Mapping[str, Any], name: str, 
     for key, value in overlay.items():
         if key in {"extends", "repositories"}:
             continue
-        if key not in {"project", "providers", "compose", "runtime", "observability", "supply_chain", "policy", "fingerprint", "local"}:
+        if key not in {"project", "providers", "compose", "runtime", "observability", "supply_chain", "policy", "plugins", "fingerprint", "local"}:
             raise ConfigResolutionError(f"profile {name!r} contains unsupported overlay section: {key}")
         result[key] = _deep_merge(result.get(key, {}), value)
         changes.append(f"profile {name}: merged {key}")

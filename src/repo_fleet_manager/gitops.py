@@ -11,6 +11,7 @@ from .shell import command_exists, run, run_interactive, shlex_join
 from .operations import backup_file, note_manual_rollback, track_created_path, track_git_remote
 from .graph import execute_levels
 from .localops import git_is_worktree, local_bare_path, path_from_file_url, remotes_dir
+from .provider import BUILTIN_PROVIDER_DRIVERS, execute_provider_plugin
 
 
 @dataclass(slots=True)
@@ -134,7 +135,11 @@ def audit(config: ProjectConfig, root: Path, provider_override: str | None = Non
                 branch = git_output(["branch", "--show-current"], full_path)
                 origin = git_output(["remote", "get-url", "origin"], full_path)
         gm_url = gitmodules.get(repo.path)
-        remote_state = remote_exists(provider.driver, provider.cli, provider.namespace, repo.repo, root, provider.host) if check_remote else None
+        if check_remote and provider.driver not in BUILTIN_PROVIDER_DRIVERS:
+            result = execute_provider_plugin(provider, "repository-get", root, config=config, repo=repo)
+            remote_state = "yes" if result is not None and result.code == 0 else "no-or-auth-failed"
+        else:
+            remote_state = remote_exists(provider.driver, provider.cli, provider.namespace, repo.repo, root, provider.host) if check_remote else None
         if gm_url != expected:
             issues.append("gitmodules-url-mismatch")
         if repo.path not in root_cfg and gitdir_type != "gitfile-submodule":
@@ -265,6 +270,17 @@ def create_repositories(config: ProjectConfig, root: Path, provider_override: st
                 code = run_interactive(["git", f"--git-dir={path}", "symbolic-ref", "HEAD", f"refs/heads/{repo.branch}"], cwd=root, dry_run=False, description=f"set default branch {repo.repo}")
             failed = failed or code != 0
             continue
+        if provider.driver not in BUILTIN_PROVIDER_DRIVERS:
+            result = execute_provider_plugin(
+                provider, "create", root, config=config, repo=repo, apply=apply,
+                options={"visibility": visibility, "description": desc},
+            )
+            if result is None:
+                raise RuntimeError(f"provider plugin unavailable: {provider.driver}")
+            if result.message:
+                print(result.message)
+            failed = failed or result.code != 0
+            continue
         view_cmd = provider_view_command(provider.driver, provider.cli, provider.namespace, repo.repo, provider.host)
         create_cmd = provider_create_command(provider.driver, provider.cli, provider.namespace, repo.repo, visibility, desc, provider.host)
         if not command_exists(provider.cli):
@@ -312,23 +328,36 @@ def publish_repositories(
             continue
 
         if create_remote:
-            view_cmd = provider_view_command(provider.driver, provider.cli, provider.namespace, repo.repo, provider.host)
-            create_cmd = provider_create_command(provider.driver, provider.cli, provider.namespace, repo.repo, visibility, desc, provider.host)
-            if not command_exists(provider.cli):
-                print(f"[WARN] CLI missing for {provider.name}: {provider.cli}")
-                print(f"[DRY-RUN] {shlex_join(create_cmd)}")
-                failed = failed or apply
-                continue
-            state = run(view_cmd, cwd=root)
-            if state.code == 0:
-                print(f"[SKIP] {provider.name}:{provider.namespace}/{repo.repo} exists")
-            else:
-                code = run_interactive(create_cmd, cwd=root, dry_run=not apply)
-                if code == 0 and apply:
-                    note_manual_rollback(f"delete provider repository {provider.namespace}/{repo.repo} manually if rollback is required")
-                failed = failed or code != 0
-                if code != 0:
+            if provider.driver not in BUILTIN_PROVIDER_DRIVERS:
+                result = execute_provider_plugin(
+                    provider, "create", root, config=config, repo=repo, apply=apply,
+                    options={"visibility": visibility, "description": desc, "publish": True},
+                )
+                if result is None:
+                    raise RuntimeError(f"provider plugin unavailable: {provider.driver}")
+                if result.message:
+                    print(result.message)
+                if result.code != 0:
+                    failed = True
                     continue
+            else:
+                view_cmd = provider_view_command(provider.driver, provider.cli, provider.namespace, repo.repo, provider.host)
+                create_cmd = provider_create_command(provider.driver, provider.cli, provider.namespace, repo.repo, visibility, desc, provider.host)
+                if not command_exists(provider.cli):
+                    print(f"[WARN] CLI missing for {provider.name}: {provider.cli}")
+                    print(f"[DRY-RUN] {shlex_join(create_cmd)}")
+                    failed = failed or apply
+                    continue
+                state = run(view_cmd, cwd=root)
+                if state.code == 0:
+                    print(f"[SKIP] {provider.name}:{provider.namespace}/{repo.repo} exists")
+                else:
+                    code = run_interactive(create_cmd, cwd=root, dry_run=not apply)
+                    if code == 0 and apply:
+                        note_manual_rollback(f"delete provider repository {provider.namespace}/{repo.repo} manually if rollback is required")
+                    failed = failed or code != 0
+                    if code != 0:
+                        continue
 
         # Mirror mode can publish directly from the local bare mirror when it exists.
         local_remote = local_bare_path(repo, remotes_dir(config, root))

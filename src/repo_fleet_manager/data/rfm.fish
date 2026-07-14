@@ -3,7 +3,7 @@ complete -c rfm -f
 complete -c rfm -s h -l help -d 'Show help'
 complete -c rfm -l version -d 'Show version'
 
-set -l rfm_commands config init-project scaffold bootstrap doctor auth catalog graph safety repos submodules local cache git source runtime compose images supply-chain policy ops logs docs completion
+set -l rfm_commands config init-project scaffold bootstrap doctor auth catalog graph safety repos submodules local cache git source runtime compose images supply-chain policy plugins artifacts ops logs docs completion
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a config -d 'Validate and migrate configuration'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a init-project -d 'Create a portable parent project'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a scaffold -d 'Generate repositories from templates'
@@ -24,6 +24,8 @@ complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a compose -d
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a images -d 'Image verification'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a supply-chain -d 'Image provenance, SBOM and signature verification'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a policy -d 'Policy-as-code governance and CI gates'
+complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a plugins -d 'Installed plugin discovery and diagnostics'
+complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a artifacts -d 'Artifact storage backends'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a ops -d 'Operation journals and rollback'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a logs -d 'Structured audit logs'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a docs -d 'Documentation utilities'
@@ -46,6 +48,8 @@ complete -c rfm -n '__fish_seen_subcommand_from compose; and not __fish_seen_sub
 complete -c rfm -n '__fish_seen_subcommand_from images; and not __fish_seen_subcommand_from verify' -a verify
 complete -c rfm -n '__fish_seen_subcommand_from supply-chain; and not __fish_seen_subcommand_from resolve sbom scan verify report collect' -a 'resolve sbom scan verify report collect'
 complete -c rfm -n '__fish_seen_subcommand_from policy; and not __fish_seen_subcommand_from check enforce explain exceptions input' -a 'check enforce explain exceptions input'
+complete -c rfm -n '__fish_seen_subcommand_from plugins; and not __fish_seen_subcommand_from list show doctor' -a 'list show doctor'
+complete -c rfm -n '__fish_seen_subcommand_from artifacts; and not __fish_seen_subcommand_from put get list delete' -a 'put get list delete'
 complete -c rfm -n '__fish_seen_subcommand_from ops; and not __fish_seen_subcommand_from list show resume rollback' -a 'list show resume rollback'
 complete -c rfm -n '__fish_seen_subcommand_from logs; and not __fish_seen_subcommand_from list show verify purge' -a 'list show verify purge'
 complete -c rfm -n '__fish_seen_subcommand_from docs; and not __fish_seen_subcommand_from validate-links' -a validate-links
@@ -182,3 +186,10 @@ complete -c rfm -n '__fish_seen_subcommand_from check enforce' -l rule -r -d 'Po
 complete -c rfm -n '__fish_seen_subcommand_from check enforce' -l repository -r -d 'Repository selector; repeatable'
 complete -c rfm -n '__fish_seen_subcommand_from check enforce' -l fail-on -r -a 'info warning error' -d 'Policy severity threshold'
 complete -c rfm -n '__fish_seen_subcommand_from exceptions' -l active-only -d 'Show active exceptions only'
+
+# Plugin API and artifact backends
+complete -c rfm -n '__fish_seen_subcommand_from list show' -l kind -r -a 'provider runtime catalog-exporter artifact-backend' -d 'Plugin kind'
+complete -c rfm -n '__fish_seen_subcommand_from list' -l load -d 'Load and validate plugins'
+complete -c rfm -n '__fish_seen_subcommand_from plugins' -l json -d 'JSON output'
+complete -c rfm -n '__fish_seen_subcommand_from put get' -l overwrite -d 'Replace existing artifact'
+complete -c rfm -n '__fish_seen_subcommand_from put get delete' -l apply -d 'Apply artifact mutation'

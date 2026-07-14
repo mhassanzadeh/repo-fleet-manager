@@ -35,6 +35,47 @@ class AuthStatus:
     detail: str
 
 
+
+
+BUILTIN_PROVIDER_DRIVERS = {"github", "gitlab", "local", "generic"}
+
+
+def _provider_plugin(provider: Provider, config: ProjectConfig | None = None):
+    if provider.driver in BUILTIN_PROVIDER_DRIVERS:
+        return None
+    from .plugin_api import ProviderPluginV1
+    from .plugins import registry_for
+    registry = registry_for(config)
+    plugin = registry.resolve("provider", provider.driver)
+    if plugin is None or not isinstance(plugin, ProviderPluginV1):
+        raise RuntimeError(f"provider driver {provider.driver!r} requires an installed compatible plugin")
+    return registry, plugin
+
+
+def execute_provider_plugin(
+    provider: Provider,
+    operation: str,
+    root: Path,
+    *,
+    config: ProjectConfig | None = None,
+    repo: Repository | None = None,
+    apply: bool = False,
+    options: dict | None = None,
+):
+    resolved = _provider_plugin(provider, config)
+    if resolved is None:
+        return None
+    registry, plugin = resolved
+    from .plugin_api import ProviderRequest
+    merged_options = dict(registry.setting(plugin.name))
+    merged_options.update(options or {})
+    return plugin.execute(ProviderRequest(
+        operation=operation, root=root.resolve(), provider=asdict(provider),
+        repository=asdict(repo) if repo is not None else None,
+        project=dict(config.project) if config is not None else {}, apply=apply, options=merged_options,
+    ))
+
+
 def provider_host(provider: Provider) -> str:
     if provider.host:
         return provider.host
@@ -42,7 +83,7 @@ def provider_host(provider: Provider) -> str:
         return "github.com"
     if provider.driver == "gitlab":
         return "gitlab.com"
-    return "local"
+    return provider.driver or "local"
 
 
 def source_identifier(value: str) -> str:
@@ -107,7 +148,22 @@ def _gitlab_scopes(cli: str, host: str, root: Path) -> tuple[list[str], bool]:
     return sorted({str(item) for item in payload["scopes"]}), True
 
 
-def auth_status(provider: Provider, root: Path) -> AuthStatus:
+def auth_status(provider: Provider, root: Path, config: ProjectConfig | None = None) -> AuthStatus:
+    custom = execute_provider_plugin(provider, "auth-status", root, config=config)
+    if custom is not None:
+        data = dict(custom.data or {})
+        return AuthStatus(
+            provider=provider.name, driver=provider.driver, cli=str(data.get("cli") or provider.cli),
+            host=str(data.get("host") or provider_host(provider)), profile=provider.profile, expected_user=provider.user,
+            cli_installed=bool(data.get("cli_installed", True)), authenticated=bool(data.get("authenticated", custom.code == 0)),
+            active_user=str(data.get("active_user")) if data.get("active_user") else None,
+            token_environment=[str(item) for item in (data.get("token_environment") or [])],
+            required_scopes=[str(item) for item in (data.get("required_scopes") or provider.required_scopes)],
+            scopes=[str(item) for item in (data.get("scopes") or [])], scopes_known=bool(data.get("scopes_known", False)),
+            missing_scopes=[str(item) for item in (data.get("missing_scopes") or [])],
+            non_interactive=bool(data.get("non_interactive", os.environ.get("CI") or os.environ.get("RFM_NON_INTERACTIVE"))),
+            capabilities=dict(data.get("capabilities") or {}), detail=str(data.get("detail") or custom.message or "plugin auth status"),
+        )
     host = provider_host(provider)
     env_names = _token_environment(provider)
     installed = command_exists(provider.cli)
@@ -185,13 +241,13 @@ def auth_report(config: ProjectConfig, root: Path, provider_name: str | None = N
         providers = [config.providers[provider_name]]
     else:
         providers = list(config.providers.values())
-    return [asdict(auth_status(provider, root)) for provider in providers]
+    return [asdict(auth_status(provider, root, config)) for provider in providers]
 
 
 def require_provider_auth(config: ProjectConfig, root: Path, provider_name: str, strict_scopes: bool = False) -> AuthStatus:
     if provider_name not in config.providers:
         raise KeyError(f"unknown provider: {provider_name}")
-    status = auth_status(config.providers[provider_name], root)
+    status = auth_status(config.providers[provider_name], root, config)
     if status.driver == "local":
         return status
     problems: list[str] = []
@@ -233,7 +289,13 @@ def fork_command(provider: Provider, upstream: str, destination_repo: str, activ
     raise ValueError(f"native fork is not supported for provider driver: {provider.driver}")
 
 
-def provider_repo_payload(provider: Provider, repo: Repository, root: Path) -> dict | None:
+def provider_repo_payload(provider: Provider, repo: Repository, root: Path, config: ProjectConfig | None = None) -> dict | None:
+    custom = execute_provider_plugin(provider, "repository-get", root, config=config, repo=repo)
+    if custom is not None:
+        if custom.code != 0:
+            return None
+        payload = custom.data.get("repository") if isinstance(custom.data, dict) else None
+        return dict(payload) if isinstance(payload, dict) else dict(custom.data) if isinstance(custom.data, dict) else None
     full = f"{provider.namespace}/{repo.repo}"
     if provider.driver == "github":
         cmd = [provider.cli, "api", f"repos/{full}"]
@@ -278,31 +340,44 @@ def fork_repositories(
             print(f"[WARN] {repo.path}: fork mode requires fork_from/upstream_url")
             failed = True
             continue
-        status = auth_status(provider, root)
-        cmd = fork_command(provider, upstream, repo.repo, active_user=status.active_user)
         print(f"[FORK] {source_identifier(upstream)} -> {provider.namespace}/{repo.repo}")
-        if not command_exists(provider.cli):
-            print(f"[WARN] CLI missing: {provider.cli}")
-            print(f"[DRY-RUN] {shlex_join(cmd)}")
-            failed = failed or apply
-            continue
-        existing = provider_repo_payload(provider, repo, root)
-        if existing:
-            print(f"[SKIP] provider repository already exists: {provider.namespace}/{repo.repo}")
-        else:
-            code = run_interactive(cmd, cwd=root, dry_run=not apply, description=f"fork {repo.repo} on {provider.name}")
-            if code != 0:
+        if provider.driver not in BUILTIN_PROVIDER_DRIVERS:
+            result = execute_provider_plugin(
+                provider, "fork", root, config=config, repo=repo, apply=apply,
+                options={"upstream": upstream, "remote_name": remote_name},
+            )
+            if result is None:
+                raise RuntimeError(f"provider plugin unavailable: {provider.driver}")
+            if result.message:
+                print(result.message)
+            if result.code != 0:
                 failed = True
                 continue
-            if apply:
-                note_manual_rollback(f"delete provider fork {provider.namespace}/{repo.repo} manually if rollback is required")
-                # GitLab fork creation is asynchronous. Poll briefly so subsequent remote setup is less racy.
-                if provider.driver == "gitlab":
-                    for _ in range(10):
-                        payload = provider_repo_payload(provider, repo, root)
-                        if payload and payload.get("import_status") in {None, "none", "finished"}:
-                            break
-                        time.sleep(1)
+        else:
+            status = auth_status(provider, root, config)
+            cmd = fork_command(provider, upstream, repo.repo, active_user=status.active_user)
+            if not command_exists(provider.cli):
+                print(f"[WARN] CLI missing: {provider.cli}")
+                print(f"[DRY-RUN] {shlex_join(cmd)}")
+                failed = failed or apply
+                continue
+            existing = provider_repo_payload(provider, repo, root, config)
+            if existing:
+                print(f"[SKIP] provider repository already exists: {provider.namespace}/{repo.repo}")
+            else:
+                code = run_interactive(cmd, cwd=root, dry_run=not apply, description=f"fork {repo.repo} on {provider.name}")
+                if code != 0:
+                    failed = True
+                    continue
+                if apply:
+                    note_manual_rollback(f"delete provider fork {provider.namespace}/{repo.repo} manually if rollback is required")
+                    # GitLab fork creation is asynchronous. Poll briefly so subsequent remote setup is less racy.
+                    if provider.driver == "gitlab":
+                        for _ in range(10):
+                            payload = provider_repo_payload(provider, repo, root, config)
+                            if payload and payload.get("import_status") in {None, "none", "finished"}:
+                                break
+                            time.sleep(1)
         worktree = root if repo.is_root else root / repo.path
         if worktree.exists() and run(["git", "rev-parse", "--is-inside-work-tree"], cwd=worktree).code == 0:
             expected = provider.expected_url(repo.repo, root=root)
@@ -404,7 +479,16 @@ def reconcile_repositories(
     rows: list[dict] = []
     for repo in config.repositories:
         provider = config.provider_for(repo, provider_override, namespace)
-        payload = provider_repo_payload(provider, repo, root) if command_exists(provider.cli) else None
+        if provider.driver not in BUILTIN_PROVIDER_DRIVERS:
+            result = execute_provider_plugin(provider, "reconcile", root, config=config, repo=repo, apply=apply)
+            if result is None:
+                raise RuntimeError(f"provider plugin unavailable: {provider.driver}")
+            row = dict(result.data or {})
+            row.setdefault("repo", repo.repo); row.setdefault("path", repo.path); row.setdefault("provider", provider.name)
+            row.setdefault("driver", provider.driver); row.setdefault("destination", f"{provider.namespace}/{repo.repo}")
+            row.setdefault("issues", [] if result.code == 0 else [result.message or "plugin-reconcile-failed"]); rows.append(row)
+            continue
+        payload = provider_repo_payload(provider, repo, root, config) if command_exists(provider.cli) else None
         upstream = source_identifier(repo.upstream) if repo.upstream else None
         row = {
             "repo": repo.repo,

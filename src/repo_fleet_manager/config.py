@@ -128,6 +128,7 @@ class ProjectConfig:
     observability: dict[str, Any]
     supply_chain: dict[str, Any]
     policy: dict[str, Any]
+    plugins: dict[str, Any]
     fingerprint: dict[str, Any]
     local: dict[str, Any]
     active_profiles: tuple[str, ...] = ()
@@ -258,6 +259,7 @@ def load_config(
         observability=resolved.get("observability", {}),
         supply_chain=resolved.get("supply_chain", {}),
         policy=resolved.get("policy", {}),
+        plugins=resolved.get("plugins", {}),
         fingerprint=resolved.get("fingerprint", {}),
         local=local_cfg,
         active_profiles=active_profiles,

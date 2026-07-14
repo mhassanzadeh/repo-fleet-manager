@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rfm-example-plugin"
+version = "0.1.0"
+description = "Reference Repo Fleet Manager v1 plugin implementations."
+requires-python = ">=3.11"
+dependencies = ["repo-fleet-manager>=0.16,<0.17"]
+
+[project.entry-points."repo_fleet_manager.providers"]
+example-forge = "rfm_example_plugin:ExampleProvider"
+
+[project.entry-points."repo_fleet_manager.runtimes"]
+example-runtime = "rfm_example_plugin:ExampleRuntime"
+
+[project.entry-points."repo_fleet_manager.catalog_exporters"]
+example-csv = "rfm_example_plugin:ExampleCatalogExporter"
+
+[project.entry-points."repo_fleet_manager.artifact_backends"]
+example-store = "rfm_example_plugin:ExampleArtifactBackend"
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -215,6 +215,13 @@ def new_project_config(
             "rules": [],
             "exceptions": [],
         },
+        "plugins": {
+            "enabled": True,
+            "strict": False,
+            "allow": [],
+            "deny": [],
+            "settings": {},
+        },
         "fingerprint": {
             "algorithm": "sha256",
             "short_length": 16,

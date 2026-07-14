@@ -13,6 +13,7 @@ from importlib.resources import files
 from . import __version__
 from .compose import run_compose
 from .backup import create_backup, list_backups, restore_backup, verify_backup
+from .artifacts import delete_artifact, get_artifact, list_artifacts, put_artifact
 from .cache import bootstrap_from_cache, export_cache, import_cache, list_caches, verify_cache
 from .config import find_config, load_config, load_raw_config
 from .docs import validate_links
@@ -44,6 +45,7 @@ from .observability import (
     purge_logs, redact, resolve_logs_dir, verify_log,
 )
 from .provider import auth_report, fork_repositories, mirror_repositories, reconcile_repositories, require_provider_auth
+from .plugins import PluginError, PluginLoadError, print_plugin_records, registry_for
 from .policy import (
     SEVERITIES as POLICY_SEVERITIES, PolicyError, PolicyEnforcementError, evaluate_policy, explain_rule,
     list_policy_exceptions, policy_input, print_policy_report, enforce_operation_policy,
@@ -588,6 +590,80 @@ def cmd_logs_purge(args: argparse.Namespace) -> int:
     return 0
 
 
+
+
+def _plugin_config(args: argparse.Namespace):
+    return _optional_config(
+        getattr(args, "config", None), _root(args),
+        profiles=getattr(args, "profile", None), groups=getattr(args, "group", None),
+    )
+
+
+def cmd_plugins_list(args: argparse.Namespace) -> int:
+    cfg = _plugin_config(args)
+    records = registry_for(cfg).records(load=bool(args.load), kind=args.kind)
+    print_plugin_records(records, json_output=args.json)
+    return 0
+
+
+def cmd_plugins_show(args: argparse.Namespace) -> int:
+    cfg = _plugin_config(args)
+    records = registry_for(cfg).records(load=True, kind=args.kind)
+    matches = [item for item in records if item.name == args.name or args.name.lower() in item.aliases]
+    if not matches:
+        raise PluginError(f"plugin not found: {args.name}")
+    payload = [item.as_dict() for item in matches]
+    if args.json:
+        print(json.dumps(payload[0] if len(payload) == 1 else payload, ensure_ascii=False, indent=2))
+    else:
+        print_plugin_records(matches)
+        for item in matches:
+            if item.capabilities:
+                print(json.dumps(item.capabilities, ensure_ascii=False, indent=2))
+    return 0
+
+
+def cmd_plugins_doctor(args: argparse.Namespace) -> int:
+    cfg = _plugin_config(args)
+    registry = registry_for(cfg)
+    report = registry.doctor()
+    if args.json:
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+    else:
+        print(f"Plugin API: {report['api_version']} enabled={report['enabled']} strict={report['strict']}")
+        print_plugin_records(registry.records(load=True))
+        print(f"[{'OK' if report['healthy'] else 'FAIL'}] plugin health")
+    return 0 if report["healthy"] else 2
+
+
+def cmd_artifacts_put(args: argparse.Namespace) -> int:
+    cfg = _plugin_config(args)
+    callback = lambda: put_artifact(cfg, _root(args), args.source, args.uri, overwrite=args.overwrite, apply=args.apply, json_output=args.json)
+    if not args.apply or cfg is None:
+        return callback()
+    return _mutate(args, cfg, "artifacts put", callback, require_clean=False)
+
+
+def cmd_artifacts_get(args: argparse.Namespace) -> int:
+    cfg = _plugin_config(args)
+    callback = lambda: get_artifact(cfg, _root(args), args.uri, args.destination, overwrite=args.overwrite, apply=args.apply, json_output=args.json)
+    if not args.apply or cfg is None:
+        return callback()
+    return _mutate(args, cfg, "artifacts get", callback, require_clean=False)
+
+
+def cmd_artifacts_list(args: argparse.Namespace) -> int:
+    return list_artifacts(_plugin_config(args), _root(args), args.uri, json_output=args.json)
+
+
+def cmd_artifacts_delete(args: argparse.Namespace) -> int:
+    cfg = _plugin_config(args)
+    callback = lambda: delete_artifact(cfg, _root(args), args.uri, apply=args.apply, json_output=args.json)
+    if not args.apply or cfg is None:
+        return callback()
+    return _mutate(args, cfg, "artifacts delete", callback, require_clean=False)
+
+
 def cmd_completion(args: argparse.Namespace) -> int:
     resource = files("repo_fleet_manager").joinpath(f"data/rfm.{args.shell}")
     print(resource.read_text(encoding="utf-8").rstrip())
@@ -936,6 +1012,14 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             print(f"   required_scopes={row['required_scopes']} detected_scopes={row['scopes'] if row['scopes_known'] else 'unknown'}")
             if not row["authenticated"] or (args.strict_auth and row["required_scopes"] and not row["scopes_known"]):
                 failed = True
+    plugin_report = registry_for(cfg).doctor()
+    print("\nPlugins:")
+    print(f" - API:           {plugin_report['api_version']}")
+    print(f" - enabled:       {plugin_report['enabled']}")
+    print(f" - installed:     {plugin_report['plugin_count']}")
+    print(f" - health:        {'OK' if plugin_report['healthy'] else 'FAIL'}")
+    if cfg.plugins.get("strict") and not plugin_report["healthy"]:
+        failed = True
     return 1 if failed else 0
 
 
@@ -972,7 +1056,12 @@ def cmd_catalog(args: argparse.Namespace) -> int:
     if args.view == "repositories":
         cfg = _config(args)
         rows = [asdict(repo) for repo in cfg.repositories]
-        if output_format == "json":
+        if output_format not in {"text", "json", "markdown"}:
+            content = render_catalog(
+                {"project": cfg.project, "repositories": rows, "domains": [], "gaps": [], "catalog_version": __version__},
+                root, "repositories", output_format, priority=args.priority, status=args.status, plugin_config=cfg,
+            )
+        elif output_format == "json":
             content = json.dumps(rows, indent=2, ensure_ascii=False) + "\n"
         elif output_format == "markdown":
             lines = [
@@ -990,7 +1079,8 @@ def cmd_catalog(args: argparse.Namespace) -> int:
             content = "\n".join(lines) + "\n"
     else:
         catalog = load_service_catalog(root, args.catalog_file)
-        content = render_catalog(catalog, root, args.view, output_format, priority=args.priority, status=args.status)
+        plugin_cfg = _optional_config(args.config, root, profiles=getattr(args, "profile", None), groups=getattr(args, "group", None))
+        content = render_catalog(catalog, root, args.view, output_format, priority=args.priority, status=args.status, plugin_config=plugin_cfg)
     if args.output:
         destination = Path(args.output).expanduser()
         if not destination.is_absolute():
@@ -1717,7 +1807,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("catalog", help="Inspect repositories or the RFM capability/service catalog.")
     add_common(p); p.add_argument("--view", choices=["repositories", "summary", "tree", "gaps", "all"], default="repositories")
-    p.add_argument("--format", choices=["text", "json", "markdown"], default="text"); p.add_argument("--json", action="store_true")
+    p.add_argument("--format", default="text", help="text, json, markdown, or a plugin-provided format"); p.add_argument("--json", action="store_true")
     p.add_argument("--output"); p.add_argument("--catalog-file"); p.add_argument("--priority", choices=["P0", "P1", "P2", "P3"])
     p.add_argument("--status", choices=["implemented", "partial", "planned", "missing"]); p.add_argument("--check-evidence", action="store_true"); p.set_defaults(func=cmd_catalog)
 
@@ -1834,6 +1924,27 @@ def build_parser() -> argparse.ArgumentParser:
     sp = logs_sub.add_parser("show", help="Show events for one run."); sp.add_argument("run_id"); sp.add_argument("--json", action="store_true"); sp.set_defaults(func=cmd_logs_show)
     sp = logs_sub.add_parser("verify", help="Validate a JSONL audit log against the event schema."); sp.add_argument("run_id"); sp.add_argument("--json", action="store_true"); sp.set_defaults(func=cmd_logs_verify)
     sp = logs_sub.add_parser("purge", help="Remove audit logs older than the retention period. Dry-run by default."); sp.add_argument("--retention-days", type=int, default=30); sp.add_argument("--json", action="store_true"); sp.add_argument("--apply", action="store_true"); sp.set_defaults(func=cmd_logs_purge)
+
+
+    plugins = sub.add_parser("plugins", help="Discover, inspect and diagnose installed RFM plugins.")
+    add_common(plugins); plugins_sub = plugins.add_subparsers(dest="plugins_action", required=True)
+    sp = plugins_sub.add_parser("list", help="List built-in and installed plugin entry points.")
+    sp.add_argument("--kind", choices=["provider", "runtime", "catalog-exporter", "artifact-backend"]); sp.add_argument("--load", action="store_true", help="Import plugins and validate their API contract."); sp.add_argument("--json", action="store_true"); sp.set_defaults(func=cmd_plugins_list)
+    sp = plugins_sub.add_parser("show", help="Load and display one plugin by name or alias.")
+    sp.add_argument("name"); sp.add_argument("--kind", choices=["provider", "runtime", "catalog-exporter", "artifact-backend"]); sp.add_argument("--json", action="store_true"); sp.set_defaults(func=cmd_plugins_show)
+    sp = plugins_sub.add_parser("doctor", help="Load all enabled plugins and report compatibility or isolation failures.")
+    sp.add_argument("--json", action="store_true"); sp.set_defaults(func=cmd_plugins_doctor)
+
+    artifacts = sub.add_parser("artifacts", help="Store and retrieve artifacts through file:// or plugin URI backends.")
+    add_common(artifacts); artifacts_sub = artifacts.add_subparsers(dest="artifacts_action", required=True)
+    sp = artifacts_sub.add_parser("put", help="Upload or copy a local artifact to a backend URI.")
+    sp.add_argument("source"); sp.add_argument("uri"); sp.add_argument("--overwrite", action="store_true"); sp.add_argument("--json", action="store_true"); sp.add_argument("--apply", action="store_true"); add_safety_flags(sp); sp.set_defaults(func=cmd_artifacts_put)
+    sp = artifacts_sub.add_parser("get", help="Download or copy an artifact URI to a local destination.")
+    sp.add_argument("uri"); sp.add_argument("destination"); sp.add_argument("--overwrite", action="store_true"); sp.add_argument("--json", action="store_true"); sp.add_argument("--apply", action="store_true"); add_safety_flags(sp); sp.set_defaults(func=cmd_artifacts_get)
+    sp = artifacts_sub.add_parser("list", help="List artifacts below a URI or local path.")
+    sp.add_argument("uri"); sp.add_argument("--json", action="store_true"); sp.set_defaults(func=cmd_artifacts_list)
+    sp = artifacts_sub.add_parser("delete", help="Delete an artifact. Dry-run by default.")
+    sp.add_argument("uri"); sp.add_argument("--json", action="store_true"); sp.add_argument("--apply", action="store_true"); add_safety_flags(sp); sp.set_defaults(func=cmd_artifacts_delete)
 
     p = sub.add_parser("docs", help="Documentation utilities.")
     add_common(p); docs_sub = p.add_subparsers(dest="docs_action", required=True)

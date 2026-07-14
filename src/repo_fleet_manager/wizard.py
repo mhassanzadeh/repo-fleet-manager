@@ -386,6 +386,7 @@ def _base_config(scan: ScanResult | None, existing: dict[str, Any] | None = None
             "enabled": False, "mode": "check", "fail_on": "error",
             "rules": [], "exceptions": [],
         },
+        "plugins": {"enabled": True, "strict": False, "allow": [], "deny": [], "settings": {}},
         "fingerprint": {"algorithm": "sha256", "short_length": 16},
     }
     if scan and scan.compose_file:
@@ -420,6 +421,7 @@ def _advanced_defaults(config: dict[str, Any]) -> dict[str, Any]:
         "require_scan": False, "require_signature": False, "require_attestation": False,
     })
     result.setdefault("policy", {"enabled": False, "mode": "check", "fail_on": "error", "rules": [], "exceptions": []})
+    result.setdefault("plugins", {"enabled": True, "strict": False, "allow": [], "deny": [], "settings": {}})
     result.setdefault("profiles", {})
     result["profiles"].setdefault("developer", {"project": {"default_provider": "local"}, "local": {"default_jobs": 2}})
     result["profiles"].setdefault("ci", {"extends": "developer", "project": {"default_provider": default}, "local": {"default_jobs": 4}})
@@ -535,7 +537,7 @@ def _normalize_answers(answers: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(config, dict):
             raise WizardError("answers.config must be an object")
         return copy.deepcopy(config)
-    allowed_top = {"schema_version", "project", "providers", "repositories", "local", "compose", "runtime", "observability", "supply_chain", "policy", "fingerprint", "profiles", "groups"}
+    allowed_top = {"schema_version", "project", "providers", "repositories", "local", "compose", "runtime", "observability", "supply_chain", "policy", "plugins", "fingerprint", "profiles", "groups"}
     if any(key in allowed_top for key in answers):
         return {key: copy.deepcopy(value) for key, value in answers.items() if key in allowed_top}
     return {}

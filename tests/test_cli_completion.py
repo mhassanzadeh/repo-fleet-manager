@@ -41,6 +41,10 @@ class CompletionCommandTest(unittest.TestCase):
         self.assertIn("--require-attestation", output)
         self.assertIn("policy", output)
         self.assertIn("active-only", output)
+        self.assertIn("plugins", output)
+        self.assertIn("artifact-backend", output)
+        self.assertIn("artifacts", output)
+        self.assertIn("overwrite", output)
 
     def test_fish_completion_contains_nested_commands(self):
         output = self.run_completion("fish")
@@ -68,6 +72,9 @@ class CompletionCommandTest(unittest.TestCase):
         self.assertIn("require-attestation", output)
         self.assertIn("policy", output)
         self.assertIn("active-only", output)
+        self.assertIn("plugins", output)
+        self.assertIn("catalog-exporter", output)
+        self.assertIn("artifacts", output)
 
 
 if __name__ == "__main__":

@@ -12,7 +12,7 @@ body:
     attributes:
       label: RFM version
       description: Output of `rfm --version`
-      placeholder: rfm 0.15.0
+      placeholder: rfm 0.16.0
     validations:
       required: true
   - type: dropdown

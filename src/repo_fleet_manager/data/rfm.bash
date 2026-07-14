@@ -11,7 +11,7 @@ _rfm()
         prev="${COMP_WORDS[COMP_CWORD-1]}"
     fi
 
-    local commands="config init-project scaffold bootstrap doctor auth catalog graph safety repos submodules local cache git source runtime compose images supply-chain policy ops logs docs completion"
+    local commands="config init-project scaffold bootstrap doctor auth catalog graph safety repos submodules local cache git source runtime compose images supply-chain policy plugins artifacts ops logs docs completion"
     local global_opts="--help --version --config --root --profile --group --format --log-dir --run-id --audit-log --no-audit-log"
 
     case "$prev" in
@@ -24,7 +24,7 @@ _rfm()
         --template)
             COMPREPLY=( $(compgen -W "generic python-cli python-service node-service" -- "$cur") ); return ;;
         --kind)
-            COMPREPLY=( $(compgen -W "module service tooling library" -- "$cur") ); return ;;
+            COMPREPLY=( $(compgen -W "module service tooling library provider runtime catalog-exporter artifact-backend" -- "$cur") ); return ;;
         --visibility)
             COMPREPLY=( $(compgen -W "private public" -- "$cur") ); return ;;
         --format)
@@ -84,6 +84,8 @@ _rfm()
         images) actions="verify"; opts+=" --json" ;;
         supply-chain) actions="resolve sbom scan verify report collect"; opts+=" --service --engine --output-dir --format --fail-on --allow-mutable --require-signature --no-require-signature --require-attestation --no-require-attestation --key --certificate-identity --certificate-oidc-issuer --attestation-type --json --apply --force --reason" ;;
         policy) actions="check enforce explain exceptions input"; opts+=" --rule --repository --fail-on --active-only --json" ;;
+        plugins) actions="list show doctor"; opts+=" --kind --load --json" ;;
+        artifacts) actions="put get list delete"; opts+=" --overwrite --json --apply --force --reason" ;;
         ops) actions="list show resume rollback"; opts+=" --json --force --reason" ;;
         logs) actions="list show verify purge"; opts+=" --json --retention-days --apply" ;;
         docs) actions="validate-links" ;;
