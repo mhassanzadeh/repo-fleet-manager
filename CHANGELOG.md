@@ -6,22 +6,39 @@ The format follows Keep a Changelog and the project uses Semantic Versioning whi
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-07-14
+
+### Added
+
+- Stable Plugin API v1 for providers, runtime drivers, catalog exporters and artifact backends.
+- Lazy Python entry-point discovery with API compatibility checks, allow/deny controls and failure isolation.
+- `rfm plugins list`, `show` and `doctor` diagnostics.
+- `rfm artifacts put`, `get`, `list` and `delete` with built-in `file://` storage and plugin URI schemes.
+- Reference plugin package implementing all four extension contracts.
+
+### Security
+
+- Duplicate aliases and built-in selector conflicts are rejected deterministically.
+- External plugins can be disabled globally with `RFM_DISABLE_PLUGINS`.
+- Strict plugin health can block `rfm doctor` while ordinary plugin failures remain isolated.
+
+### Compatibility
+
+- Built-in GitHub, GitLab, local and Compose workflows remain unchanged.
+- Plugin packages depend only on `repo_fleet_manager.plugin_api` and declare API version `1.x`.
+
 ## [0.15.0] - 2026-07-14
 
 ### Added
 
-- Built-in Policy-as-Code rules for repository visibility, branches, providers, remote hosts, clean worktrees and signed HEAD commits.
-- Supply-chain registry and provenance requirement policies.
-- `rfm policy check`, `enforce`, `explain`, `exceptions` and `input` commands.
-- Expiring, approved exceptions with reason, ticket, repository and action scoping.
-- Optional OPA/Rego evaluation using the same normalized policy input.
-- Automatic policy guard before mutation operations when `policy.mode` is `enforce`.
+- Built-in Policy-as-Code rules with advisory and enforcement modes.
+- Time-bounded exceptions, operation guards and optional OPA/Rego evaluation.
+- `rfm policy check`, `enforce`, `explain`, `exceptions` and `input`.
 
 ### Security
 
-- Policy decisions and applied exceptions are emitted into the structured audit log.
-- Rego policy paths must remain inside the workspace.
-- CI can block non-compliant repository or supply-chain state with exit code `2`.
+- Policy gates execute before protected mutation workflows.
+- Exceptions require reason, approver and expiry metadata.
 
 ## [0.14.0] - 2026-07-14
 
@@ -188,7 +205,8 @@ The format follows Keep a Changelog and the project uses Semantic Versioning whi
 - Workspace locking, safety guards, operation journal, resume and rollback.
 - Dependency graph and controlled parallel execution.
 
-[Unreleased]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.15.0...HEAD
+[Unreleased]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.16.0...HEAD
+[0.16.0]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.12.0...v0.13.0

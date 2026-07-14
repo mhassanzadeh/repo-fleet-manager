@@ -1,6 +1,6 @@
 # Repo Fleet Manager logical gap analysis
 
-> Catalog version `0.15.0` · 18 prioritized gaps
+> Catalog version `0.16.0` · 18 prioritized gaps
 
 ## P0
 
@@ -311,7 +311,7 @@ Acceptance criteria:
 
 ### GAP-016 — Stable plugin API for providers and workflows
 
-**Category:** `extensibility` · **Current state:** `missing`
+**Category:** `extensibility` · **Current state:** `implemented`
 
 Hard-coding every provider, runtime and artifact backend in the core will make RFM difficult to extend and test.
 

@@ -1,6 +1,6 @@
 # Repo Fleet Manager service catalog
 
-> Catalog version `0.15.0` · schema `1.0` · lifecycle `beta`
+> Catalog version `0.16.0` · schema `1.0` · lifecycle `beta`
 
 Config-driven orchestration for large Git repository fleets, submodules, local development, providers, Compose runtimes and source/image integrity.
 
@@ -9,12 +9,12 @@ Config-driven orchestration for large Git repository fleets, submodules, local d
 | Metric | Value |
 |---|---:|
 | Domains | 11 |
-| Capabilities | 58 |
-| Implemented | 52 |
+| Capabilities | 59 |
+| Implemented | 54 |
 | Partial | 3 |
 | Planned | 1 |
-| Missing | 2 |
-| Logical completion | 92.5% |
+| Missing | 1 |
+| Logical completion | 94.3% |
 | Open gaps | 18 |
 
 The completion percentage is a planning indicator: implemented capabilities count as 100%, partial as 50%, and planned as 15%. It is not a production-readiness certification.
@@ -141,7 +141,8 @@ Capability inventory, gap analysis, templates and external developer portal inte
 | `catalog.capability-manifest` — Machine-readable RFM capability catalog | ✓ implemented | beta | `rfm catalog --view tree`<br>`rfm catalog --view gaps`<br>`catalog/rfm-service-catalog.json`<br>`src/repo_fleet_manager/service_catalog.py` |
 | `catalog.markdown-export` — Markdown and JSON catalog export | ✓ implemented | beta | `rfm catalog --view all --format markdown --output docs/generated/rfm-service-catalog.md`<br>`src/repo_fleet_manager/service_catalog.py`<br>`docs/generated/rfm-service-catalog.md` |
 | `catalog.backstage` — Backstage catalog-info.yaml export | → planned | not-started | — |
-| `extension.plugins` — Plugin/provider extension API | × missing | not-started | — |
+| `extension.plugins` — Stable provider, runtime, catalog and artifact Plugin API | ✓ implemented | beta | `rfm plugins list --load`<br>`rfm plugins doctor`<br>`rfm catalog --format PLUGIN_FORMAT`<br>`rfm artifacts put SOURCE URI --apply`<br>`src/repo_fleet_manager/plugin_api.py`<br>`src/repo_fleet_manager/plugins.py`<br>`src/repo_fleet_manager/artifacts.py`<br>`schemas/rfm-plugin-report.schema.json`<br>`tests/test_plugins.py`<br>`docs/21-stable-plugin-api.md` |
+| `extension.artifact-backends` — URI-based artifact storage backends | ✓ implemented | beta | `rfm artifacts put SOURCE URI --apply`<br>`rfm artifacts get URI DEST --apply`<br>`rfm artifacts list URI`<br>`rfm artifacts delete URI --apply`<br>`src/repo_fleet_manager/artifacts.py`<br>`src/repo_fleet_manager/plugin_api.py`<br>`tests/test_plugins.py`<br>`docs/21-stable-plugin-api.md` |
 | `extension.templates` — Repository and service scaffolding templates | ✓ implemented | beta | `rfm scaffold templates`<br>`rfm scaffold repository NAME --path PATH --template TEMPLATE --apply`<br>`src/repo_fleet_manager/scaffold.py`<br>`tests/test_scaffold_bootstrap.py`<br>`docs/14-project-scaffolding-and-bootstrap-lock.md` |
 
 ### Quality, testing and release
@@ -467,7 +468,7 @@ Acceptance criteria:
 
 #### GAP-016 — Stable plugin API for providers and workflows
 
-**Category:** `extensibility` · **Current state:** `missing`
+**Category:** `extensibility` · **Current state:** `implemented`
 
 Hard-coding every provider, runtime and artifact backend in the core will make RFM difficult to extend and test.
 

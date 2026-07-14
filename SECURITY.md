@@ -31,6 +31,9 @@ RFM journals local operations to support inspection and recovery. Journals can c
 
 نسخه `0.14.0` digest ثابت registry، SBOM و reportهای vulnerability را در `.repo-fleet/supply-chain` نگهداری می‌کند. این artifactها ممکن است نام packageها و topology سرویس‌ها را افشا کنند و باید مانند audit logها محافظت شوند. کلید خصوصی Cosign نباید در config یا repository ذخیره شود؛ فقط public key، KMS URI یا keyless certificate identity/issuer در policy ثبت می‌شود.
 
-## Policy exception security
 
-Policy exceptionها کنترل امنیتی را به‌صورت موقت کاهش می‌دهند و باید مانند تغییر production بازبینی شوند. هر exception باید scope محدود، دلیل قابل ممیزی، تأییدکننده، ticket و تاریخ انقضا داشته باشد. exception منقضی‌شده هیچ violationی را suppress نمی‌کند. استفاده از `rule_id: "*"` بدون scope دقیق repository یا action توصیه نمی‌شود. فایل‌های Rego باید داخل workspace باشند و از همان فرایند code review سایر کدهای امنیتی عبور کنند.
+## Plugin trust model
+
+Pluginهای RFM داخل process اصلی و با همان دسترسی filesystem، network و credentialهای کاربر اجرا می‌شوند؛ Plugin API sandbox امنیتی نیست. فقط packageهای امضاشده یا بررسی‌شده از منبع قابل اعتماد نصب شوند و version dependency آن‌ها pin شود. `rfm plugins doctor` فقط compatibility و سلامت بارگذاری را بررسی می‌کند و جایگزین code review یا supply-chain verification package نیست.
+
+Secretها نباید در `plugins.settings` قرار گیرند. برای توقف فوری extensionهای خارجی از `RFM_DISABLE_PLUGINS=1` استفاده کنید. Alias conflict، API ناسازگار و import failure ایزوله و گزارش می‌شوند، اما کد import‌شده همچنان کد قابل اجرا و مورد اعتماد محسوب می‌شود.

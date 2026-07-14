@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "catalog_version": "0.15.0",
+  "catalog_version": "0.16.0",
   "project": {
     "name": "Repo Fleet Manager",
     "short_name": "RFM",
@@ -859,13 +859,43 @@
         },
         {
           "id": "extension.plugins",
-          "name": "Plugin/provider extension API",
-          "status": "missing",
-          "maturity": "not-started",
-          "commands": [],
-          "components": [],
+          "name": "Stable provider, runtime, catalog and artifact Plugin API",
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm plugins list --load",
+            "rfm plugins doctor",
+            "rfm catalog --format PLUGIN_FORMAT",
+            "rfm artifacts put SOURCE URI --apply"
+          ],
+          "components": [
+            "src/repo_fleet_manager/plugin_api.py",
+            "src/repo_fleet_manager/plugins.py",
+            "src/repo_fleet_manager/artifacts.py",
+            "schemas/rfm-plugin-report.schema.json",
+            "tests/test_plugins.py",
+            "docs/21-stable-plugin-api.md"
+          ],
           "gap_refs": [
             "GAP-016"
+          ]
+        },
+        {
+          "id": "extension.artifact-backends",
+          "name": "URI-based artifact storage backends",
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm artifacts put SOURCE URI --apply",
+            "rfm artifacts get URI DEST --apply",
+            "rfm artifacts list URI",
+            "rfm artifacts delete URI --apply"
+          ],
+          "components": [
+            "src/repo_fleet_manager/artifacts.py",
+            "src/repo_fleet_manager/plugin_api.py",
+            "tests/test_plugins.py",
+            "docs/21-stable-plugin-api.md"
           ]
         },
         {
@@ -1273,7 +1303,7 @@
       "title": "Stable plugin API for providers and workflows",
       "priority": "P2",
       "category": "extensibility",
-      "status": "missing",
+      "status": "implemented",
       "rationale": "Hard-coding every provider, runtime and artifact backend in the core will make RFM difficult to extend and test.",
       "recommended_scope": [
         "Define provider/runtime/catalog interfaces",
@@ -1284,7 +1314,8 @@
         "A provider can be added without editing cli.py",
         "Plugin failures are isolated and reported",
         "Version compatibility is checked"
-      ]
+      ],
+      "resolved_in": "0.16.0"
     },
     {
       "id": "GAP-017",

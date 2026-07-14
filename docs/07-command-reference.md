@@ -563,3 +563,21 @@ rfm policy --config repo-fleet.json --root . input
 ```
 
 `check` is advisory and returns zero after a valid evaluation. `enforce` returns `2` for unexcepted violations at or above the threshold. The normalized policy input and report format are documented in [Policy-as-Code governance](20-policy-as-code.md).
+
+
+<!-- RFM_PLUGIN_COMMANDS_BEGIN -->
+## Plugin and artifact commands
+
+```bash
+rfm plugins list [--kind provider|runtime|catalog-exporter|artifact-backend] [--load] [--json]
+rfm plugins show NAME [--kind KIND] [--json]
+rfm plugins doctor [--json]
+
+rfm artifacts put SOURCE URI [--overwrite] [--apply]
+rfm artifacts get URI DESTINATION [--overwrite] [--apply]
+rfm artifacts list URI [--json]
+rfm artifacts delete URI [--apply]
+```
+
+`plugins doctor` compatibility، conflict و import failure را گزارش می‌کند. Artifact mutationها dry-run هستند و `--apply` لازم دارند. راهنمای کامل در [Stable Plugin API](21-stable-plugin-api.md) است.
+<!-- RFM_PLUGIN_COMMANDS_END -->

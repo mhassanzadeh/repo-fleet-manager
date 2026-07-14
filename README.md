@@ -41,7 +41,8 @@ Repo Fleet Manager یک ابزار واحد و config-driven برای مدیری
 - runtime status/doctor/wait و startup ترتیبی Compose بر اساس healthcheck، probe و dependency graph
 - خروجی یکپارچه text/JSON/JSONL و audit log پالایش‌شده با correlation به operation journal
 - provenance زنجیره تأمین شامل digest ثابت، SBOM، vulnerability scan و Cosign verification
-- Policy-as-Code برای repository governance، supply-chain trust، operation guard و exceptionهای زمان‌دار
+- Plugin API نسخه‌دار برای provider، runtime، catalog exporter و artifact backend
+- مدیریت artifact با `file://` یا URI scheme ارائه‌شده توسط plugin
 - ویزارد تعاملی و قابل‌اسکریپت برای scan، ساخت و ویرایش امن `repo-fleet.json`
 
 ## شروع سریع
@@ -65,11 +66,6 @@ rfm catalog --root . --view gaps --priority P0
 ```bash
 make install-editable
 make install-completions
-make init-project PROJECT_NAME=banking-platform PROJECT_DIR=./banking-platform
-make scaffold-templates
-make scaffold-repository CONFIG=repo-fleet.json ROOT=. REPO_NAME=customer-api REPO_PATH=services/customer-api TEMPLATE=python-service REPO_KIND=service
-make bootstrap-lock-apply CONFIG=repo-fleet.json ROOT=.
-make bootstrap-verify CONFIG=repo-fleet.json ROOT=.
 ```
 
 یا بدون نصب پکیج:
@@ -110,14 +106,14 @@ rfm config wizard --scan . --advanced --output repo-fleet.json --non-interactive
 برای نصب ایزوله آخرین نسخه مستقیم از GitHub:
 
 ```bash
-pipx install git+https://github.com/mhassanzadeh/repo-fleet-manager.git@v0.15.0
+pipx install git+https://github.com/mhassanzadeh/repo-fleet-manager.git@v0.16.0
 rfm --version
 ```
 
 یا Wheel را از GitHub Release دانلود و نصب کنید:
 
 ```bash
-python3 -m pip install ./repo_fleet_manager-0.15.0-py3-none-any.whl
+python3 -m pip install ./repo_fleet_manager-0.16.0-py3-none-any.whl
 rfm --version
 ```
 
@@ -223,7 +219,7 @@ rfm bootstrap --config repo-fleet.json --root . verify
 
 جزئیات کامل در [راهنمای scaffolding و bootstrap lock](docs/14-project-scaffolding-and-bootstrap-lock.md) آمده است.
 
-<!-- RFM_RUNTIME_READINESS_BEGIN -->
+
 ## Runtime health و readiness
 
 وضعیت running و ready را جداگانه بررسی کنید:
@@ -236,7 +232,6 @@ rfm runtime --config repo-fleet.json up --apply
 ```
 
 `runtime up` سرویس‌ها را بر اساس dependency level راه‌اندازی می‌کند و تا آماده‌شدن هر level صبر می‌کند. جزئیات probeهای HTTP/TCP/command در [راهنمای Runtime health و readiness](docs/17-runtime-health-readiness.md) آمده است.
-<!-- RFM_RUNTIME_READINESS_END -->
 
 ## خروجی ساخت‌یافته و Audit Logging
 
@@ -264,20 +259,26 @@ rfm supply-chain --config repo-fleet.json verify
 
 فرمان `collect --apply` مراحل resolve، SBOM و scan را یکجا اجرا می‌کند. verification فقط روی reference ثابت `image@sha256:...` انجام می‌شود و جزئیات در [راهنمای Supply-chain provenance](docs/19-supply-chain-provenance.md) آمده است.
 
-<!-- RFM_POLICY_AS_CODE_BEGIN -->
-## Policy-as-Code
+<!-- RFM_PLUGIN_API_BEGIN -->
+## Plugin API و Artifact backends
 
-قواعد governance را ابتدا در حالت advisory بررسی و سپس در CI یا عملیات واقعی enforce کنید:
+Pluginهای نصب‌شده را بررسی کنید:
 
 ```bash
-rfm policy --config repo-fleet.json --root . check
-rfm policy --config repo-fleet.json --root . enforce
-rfm policy --config repo-fleet.json explain RULE_ID
-rfm policy --config repo-fleet.json exceptions
+rfm plugins list --load
+rfm plugins doctor
 ```
 
-Ruleهای built-in می‌توانند visibility، branch، provider، remote host، clean tree، signed HEAD، registry و الزامات provenance را کنترل کنند. در `policy.mode: enforce`، عملیات mutation پیش از تغییر workspace یا provider بررسی می‌شوند. exceptionها باید دلیل، تأییدکننده و تاریخ انقضا داشته باشند. OPA/Rego نیز به‌صورت اختیاری پشتیبانی می‌شود. جزئیات در [راهنمای Policy-as-Code](docs/20-policy-as-code.md) آمده است.
-<!-- RFM_POLICY_AS_CODE_END -->
+Catalog format، provider، runtime و artifact backend جدید بدون تغییر core قابل نصب‌اند:
+
+```bash
+rfm catalog --view all --format csv --output catalog.csv
+rfm artifacts put ./dist/app.whl file://./releases/app.whl --apply
+rfm artifacts list file://./releases/
+```
+
+نمونه package کامل در [`examples/rfm-example-plugin`](examples/rfm-example-plugin/README.md) و قرارداد توسعه در [Stable Plugin API](docs/21-stable-plugin-api.md) قرار دارد.
+<!-- RFM_PLUGIN_API_END -->
 
 ## جریان‌های کاری پرکاربرد
 
@@ -386,6 +387,11 @@ make install              # نصب rfm و completionها در user scope
 make install-cli          # فقط نصب ابزار rfm
 make install-editable     # نصب editable برای توسعه
 make install-completions  # نصب completionهای Bash و Fish
+make init-project PROJECT_NAME=banking-platform PROJECT_DIR=./banking-platform
+make scaffold-templates
+make scaffold-repository CONFIG=repo-fleet.json ROOT=. REPO_NAME=customer-api REPO_PATH=services/customer-api TEMPLATE=python-service REPO_KIND=service
+make bootstrap-lock-apply CONFIG=repo-fleet.json ROOT=.
+make bootstrap-verify CONFIG=repo-fleet.json ROOT=.
 make uninstall            # حذف پکیج Python
 make uninstall-completions
 make config-validate CONFIG=repo-fleet.json
@@ -431,7 +437,7 @@ CI روی هر دو شاخه `master` و `main` اجرا می‌شود. tagها�
 
 ```bash
 make validate
-python scripts/check_release_version.py 0.15.0
+python scripts/check_release_version.py 0.16.0
 make release-artifacts
 ```
 
@@ -476,7 +482,8 @@ repo-fleet-manager/
 - [Runtime health، readiness و startup ترتیبی](docs/17-runtime-health-readiness.md)
 - [خروجی ساخت‌یافته و Audit Logging](docs/18-structured-output-and-audit-logging.md)
 - [Supply-chain provenance، SBOM و image trust](docs/19-supply-chain-provenance.md)
-- [Policy-as-Code و exceptionهای governance](docs/20-policy-as-code.md)
+- [Policy as Code](docs/20-policy-as-code.md)
+- [Stable Plugin API](docs/21-stable-plugin-api.md)
 - [خروجی کامل service catalog](docs/generated/rfm-service-catalog.md)
 - [gap analysis منطقی](reports/gap-analysis.md)
 - [گزارش بررسی اسکریپت‌های ارسالی](reports/script-audit.md)
@@ -503,4 +510,4 @@ rfm config --config repo-fleet.json validate --strict
 
 ## Git commit guide
 
-تغییرات و روش انتشار نسخه جاری در [`PATCH_NOTES_v0.15.0.md`](PATCH_NOTES_v0.15.0.md)، [`GIT_COMMIT_GUIDE_v0.15.0.md`](GIT_COMMIT_GUIDE_v0.15.0.md) و [`CHANGELOG.md`](CHANGELOG.md) قرار دارد.
+تغییرات و روش انتشار نسخه جاری در [`PATCH_NOTES_v0.16.0.md`](PATCH_NOTES_v0.16.0.md)، [`GIT_COMMIT_GUIDE_v0.16.0.md`](GIT_COMMIT_GUIDE_v0.16.0.md) و [`CHANGELOG.md`](CHANGELOG.md) قرار دارد.

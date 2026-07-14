@@ -366,3 +366,28 @@ The optional `policy` section defines built-in governance rules, expiring except
 ```
 
 See [Policy-as-Code governance](20-policy-as-code.md) for rule types, mutation enforcement and Rego integration.
+
+
+<!-- RFM_PLUGIN_CONFIG_BEGIN -->
+## Plugin configuration
+
+بخش اختیاری `plugins` کنترل کشف extensionهای نصب‌شده را انجام می‌دهد:
+
+```json
+{
+  "plugins": {
+    "enabled": true,
+    "strict": false,
+    "allow": [],
+    "deny": [],
+    "settings": {
+      "example-forge": {
+        "region": "internal"
+      }
+    }
+  }
+}
+```
+
+Provider سفارشی با `providers.<name>.driver` و runtime سفارشی با `runtime.driver` انتخاب می‌شوند. Catalog exporter بر اساس `--format` و artifact backend بر اساس URI scheme resolve می‌شود. `plugins.settings` فقط برای تنظیمات غیرحساس است. جزئیات قرارداد در [Stable Plugin API](21-stable-plugin-api.md) آمده است.
+<!-- RFM_PLUGIN_CONFIG_END -->

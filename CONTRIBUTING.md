@@ -45,3 +45,8 @@ Keep code/tests and documentation in separate commits when that improves reviewa
 ## Pull requests
 
 Describe the operational problem, configuration impact, rollback behavior and validation commands. Never include tokens, credentials, private repository URLs or unredacted authentication output.
+
+
+## Plugin compatibility
+
+Public plugin contracts live only in `repo_fleet_manager.plugin_api`. Do not require plugin authors to import internal CLI/provider/runtime modules. Changes to a v1 dataclass or abstract method must remain backward compatible throughout the `0.16.x` line; breaking changes require a new Plugin API major. Add contract, entry-point discovery, conflict and failure-isolation tests for every loader change.
