@@ -484,3 +484,14 @@ rfm cache --root TARGET bootstrap FILE.rfm-cache.tar.gz \
 ```
 
 Root و submoduleها را فقط از local bare remoteهای import‌شده materialize می‌کند و provider access ندارد.
+
+## `runtime status|doctor|wait|up`
+
+```bash
+rfm runtime --config repo-fleet.json status [--service NAME] [--json]
+rfm runtime --config repo-fleet.json doctor [--service NAME] [--logs] [--tail N] [--json]
+rfm runtime --config repo-fleet.json wait [--service NAME] [--timeout SECONDS] [--interval SECONDS] [--logs] [--json]
+rfm runtime --config repo-fleet.json up [--service NAME] [--timeout SECONDS] [--interval SECONDS] [--apply]
+```
+
+`status` تفاوت container state و readiness را نشان می‌دهد. `doctor` برای serviceهای ناموفق remediation و log می‌دهد. `wait` تا آماده‌شدن serviceهای required صبر می‌کند. `up` dependency levelها را ترتیبی start کرده و پس از readiness هر level به مرحله بعد می‌رود. `up` بدون `--apply` فقط plan را چاپ می‌کند.

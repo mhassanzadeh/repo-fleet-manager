@@ -1,6 +1,6 @@
 # Repo Fleet Manager service catalog
 
-> Catalog version `0.11.0` · schema `1.0` · lifecycle `beta`
+> Catalog version `0.12.0` · schema `1.0` · lifecycle `beta`
 
 Config-driven orchestration for large Git repository fleets, submodules, local development, providers, Compose runtimes and source/image integrity.
 
@@ -10,11 +10,11 @@ Config-driven orchestration for large Git repository fleets, submodules, local d
 |---|---:|
 | Domains | 11 |
 | Capabilities | 58 |
-| Implemented | 45 |
+| Implemented | 46 |
 | Partial | 6 |
 | Planned | 1 |
-| Missing | 6 |
-| Logical completion | 83.0% |
+| Missing | 5 |
+| Logical completion | 84.7% |
 | Open gaps | 18 |
 
 The completion percentage is a planning indicator: implemented capabilities count as 100%, partial as 50%, and planned as 15%. It is not a production-readiness certification.
@@ -106,7 +106,7 @@ Run local services and compare source state with built container image metadata.
 | `runtime.source-fingerprint` — Deterministic source fingerprint metadata | ✓ implemented | beta | `rfm source fingerprint --write`<br>`src/repo_fleet_manager/fingerprint.py`<br>`docs/04-source-fingerprint-and-images.md` |
 | `runtime.image-label-verify` — Verify image labels against source fingerprints | ~ partial | alpha | `rfm images verify`<br>`src/repo_fleet_manager/images.py` |
 | `runtime.registry-provenance` — Registry digest, SBOM and signature verification | × missing | not-started | — |
-| `runtime.health` — Service health/readiness orchestration | × missing | not-started | — |
+| `runtime.health` — Service health/readiness orchestration | ✓ implemented | beta | `rfm runtime status`<br>`rfm runtime doctor --logs`<br>`rfm runtime wait`<br>`rfm runtime up --apply`<br>`src/repo_fleet_manager/runtime.py`<br>`src/repo_fleet_manager/cli.py`<br>`tests/test_runtime_readiness.py`<br>`docs/17-runtime-health-readiness.md` |
 
 ### Reliability and safety
 
@@ -391,7 +391,7 @@ Acceptance criteria:
 
 #### GAP-013 — Service health, readiness and ordered runtime startup
 
-**Category:** `runtime` · **Current state:** `missing`
+**Category:** `runtime` · **Current state:** `implemented`
 
 Compose up returning successfully does not mean the development platform is usable. Dependencies need readiness checks and actionable diagnostics.
 

@@ -290,3 +290,31 @@ rfm config wizard --scan . --advanced --output repo-fleet.json --non-interactive
 ```
 
 ویزارد خروجی را پیش از نوشتن با همین schema اعتبارسنجی می‌کند. مسیرهای تولیدشده نسبی‌اند، answerهای secret-like رد می‌شوند و ویرایش config موجود به‌طور پیش‌فرض backup می‌سازد. شرح کامل در [Configuration Wizard](16-configuration-wizard.md) آمده است.
+
+## Runtime health and readiness
+
+بخش اختیاری `runtime` زمان انتظار، فاصله polling، تعداد خطوط log و probeهای هر Compose service را تعیین می‌کند. probeها از نوع `http`، `tcp` یا `command` هستند و serviceها می‌توانند dependency و remediation اختصاصی داشته باشند.
+
+```json
+{
+  "runtime": {
+    "timeout_seconds": 120,
+    "interval_seconds": 2,
+    "log_tail": 80,
+    "default_running_is_ready": true,
+    "services": {
+      "api": {
+        "required": true,
+        "depends_on": ["database"],
+        "probe": {
+          "type": "http",
+          "url": "http://127.0.0.1:8080/healthz",
+          "expected_status": [200, 204]
+        }
+      }
+    }
+  }
+}
+```
+
+جزئیات resolution، startup ترتیبی و exit codeها در [Runtime health and readiness](17-runtime-health-readiness.md) آمده است.

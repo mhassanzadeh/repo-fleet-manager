@@ -1,6 +1,6 @@
 # Repo Fleet Manager logical gap analysis
 
-> Catalog version `0.11.0` · 18 prioritized gaps
+> Catalog version `0.12.0` · 18 prioritized gaps
 
 ## P0
 
@@ -235,7 +235,7 @@ Acceptance criteria:
 
 ### GAP-013 — Service health, readiness and ordered runtime startup
 
-**Category:** `runtime` · **Current state:** `missing`
+**Category:** `runtime` · **Current state:** `implemented`
 
 Compose up returning successfully does not mean the development platform is usable. Dependencies need readiness checks and actionable diagnostics.
 

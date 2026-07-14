@@ -147,3 +147,7 @@ make config-wizard-scan-apply WIZARD_SCAN=. WIZARD_OUTPUT=repo-fleet.json
 make config-wizard-answers WIZARD_ANSWERS=answers.json
 make config-wizard-reset
 ```
+
+## Runtime defaults from Compose scan
+
+وقتی scan یک Compose file و serviceهای آن را تشخیص دهد، ویزارد بخش `runtime.services` را با serviceهای required تولید می‌کند. healthcheckهای Compose در زمان اجرا خوانده می‌شوند و کاربر می‌تواند بعداً برای هر service یک HTTP/TCP/command probe یا remediation اختصاصی اضافه کند.

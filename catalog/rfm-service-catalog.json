@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "catalog_version": "0.11.0",
+  "catalog_version": "0.12.0",
   "project": {
     "name": "Repo Fleet Manager",
     "short_name": "RFM",
@@ -616,12 +616,19 @@
         {
           "id": "runtime.health",
           "name": "Service health/readiness orchestration",
-          "status": "missing",
-          "maturity": "not-started",
-          "commands": [],
-          "components": [],
-          "gap_refs": [
-            "GAP-013"
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm runtime status",
+            "rfm runtime doctor --logs",
+            "rfm runtime wait",
+            "rfm runtime up --apply"
+          ],
+          "components": [
+            "src/repo_fleet_manager/runtime.py",
+            "src/repo_fleet_manager/cli.py",
+            "tests/test_runtime_readiness.py",
+            "docs/17-runtime-health-readiness.md"
           ]
         }
       ]
@@ -1176,7 +1183,7 @@
       "title": "Service health, readiness and ordered runtime startup",
       "priority": "P1",
       "category": "runtime",
-      "status": "missing",
+      "status": "implemented",
       "rationale": "Compose up returning successfully does not mean the development platform is usable. Dependencies need readiness checks and actionable diagnostics.",
       "recommended_scope": [
         "Read Compose health checks",
@@ -1188,7 +1195,8 @@
         "Bootstrap waits for required services",
         "Failures show logs and remediation",
         "Status distinguishes running from ready"
-      ]
+      ],
+      "resolved_in": "0.12.0"
     },
     {
       "id": "GAP-014",
