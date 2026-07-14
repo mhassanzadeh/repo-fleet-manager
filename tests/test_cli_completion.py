@@ -39,6 +39,8 @@ class CompletionCommandTest(unittest.TestCase):
         self.assertIn("--run-id", output)
         self.assertIn("supply-chain", output)
         self.assertIn("--require-attestation", output)
+        self.assertIn("policy", output)
+        self.assertIn("active-only", output)
 
     def test_fish_completion_contains_nested_commands(self):
         output = self.run_completion("fish")
@@ -64,6 +66,8 @@ class CompletionCommandTest(unittest.TestCase):
         self.assertIn("run-id", output)
         self.assertIn("supply-chain", output)
         self.assertIn("require-attestation", output)
+        self.assertIn("policy", output)
+        self.assertIn("active-only", output)
 
 
 if __name__ == "__main__":

@@ -140,5 +140,54 @@
     "require_signature": false,
     "require_attestation": false,
     "cosign": {}
+  },
+  "policy": {
+    "enabled": true,
+    "mode": "check",
+    "fail_on": "error",
+    "rules": [
+      {
+        "id": "approved-repository-visibility",
+        "type": "repository.visibility",
+        "severity": "error",
+        "parameters": {
+          "allowed": [
+            "private",
+            "internal"
+          ]
+        },
+        "description": "Repositories must not be public unless explicitly excepted."
+      },
+      {
+        "id": "approved-image-registries",
+        "type": "supply-chain.registry",
+        "severity": "error",
+        "parameters": {
+          "allowed_registries": [
+            "docker.io",
+            "ghcr.io",
+            "quay.io",
+            "registry.example.com"
+          ]
+        }
+      },
+      {
+        "id": "destructive-operation-reason",
+        "type": "operation.guard",
+        "severity": "error",
+        "parameters": {
+          "actions": [
+            "repos publish",
+            "repos mirror",
+            "compose down",
+            "local restore",
+            "cache import",
+            "cache bootstrap"
+          ],
+          "require_reason": true
+        }
+      }
+    ],
+    "exceptions": []
   }
 }

@@ -11,7 +11,7 @@ _rfm()
         prev="${COMP_WORDS[COMP_CWORD-1]}"
     fi
 
-    local commands="config init-project scaffold bootstrap doctor auth catalog graph safety repos submodules local cache git source runtime compose images supply-chain ops logs docs completion"
+    local commands="config init-project scaffold bootstrap doctor auth catalog graph safety repos submodules local cache git source runtime compose images supply-chain policy ops logs docs completion"
     local global_opts="--help --version --config --root --profile --group --format --log-dir --run-id --audit-log --no-audit-log"
 
     case "$prev" in
@@ -36,7 +36,7 @@ _rfm()
         --status)
             COMPREPLY=( $(compgen -W "implemented partial planned missing" -- "$cur") ); return ;;
         --fail-on)
-            COMPREPLY=( $(compgen -W "unknown negligible low medium high critical" -- "$cur") ); return ;;
+            COMPREPLY=( $(compgen -W "info warning error unknown negligible low medium high critical" -- "$cur") ); return ;;
         --only)
             COMPREPLY=( $(compgen -W "all new upstream existing" -- "$cur") ); return ;;
         --to)
@@ -83,6 +83,7 @@ _rfm()
         compose) actions="ps up down build pull logs"; opts+=" --apply --force --reason" ;;
         images) actions="verify"; opts+=" --json" ;;
         supply-chain) actions="resolve sbom scan verify report collect"; opts+=" --service --engine --output-dir --format --fail-on --allow-mutable --require-signature --no-require-signature --require-attestation --no-require-attestation --key --certificate-identity --certificate-oidc-issuer --attestation-type --json --apply --force --reason" ;;
+        policy) actions="check enforce explain exceptions input"; opts+=" --rule --repository --fail-on --active-only --json" ;;
         ops) actions="list show resume rollback"; opts+=" --json --force --reason" ;;
         logs) actions="list show verify purge"; opts+=" --json --retention-days --apply" ;;
         docs) actions="validate-links" ;;

@@ -3,7 +3,7 @@ complete -c rfm -f
 complete -c rfm -s h -l help -d 'Show help'
 complete -c rfm -l version -d 'Show version'
 
-set -l rfm_commands config init-project scaffold bootstrap doctor auth catalog graph safety repos submodules local cache git source runtime compose images supply-chain ops logs docs completion
+set -l rfm_commands config init-project scaffold bootstrap doctor auth catalog graph safety repos submodules local cache git source runtime compose images supply-chain policy ops logs docs completion
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a config -d 'Validate and migrate configuration'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a init-project -d 'Create a portable parent project'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a scaffold -d 'Generate repositories from templates'
@@ -23,6 +23,7 @@ complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a runtime -d
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a compose -d 'Compose operations'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a images -d 'Image verification'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a supply-chain -d 'Image provenance, SBOM and signature verification'
+complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a policy -d 'Policy-as-code governance and CI gates'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a ops -d 'Operation journals and rollback'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a logs -d 'Structured audit logs'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a docs -d 'Documentation utilities'
@@ -44,6 +45,7 @@ complete -c rfm -n '__fish_seen_subcommand_from runtime; and not __fish_seen_sub
 complete -c rfm -n '__fish_seen_subcommand_from compose; and not __fish_seen_subcommand_from ps up down build pull logs' -a 'ps up down build pull logs'
 complete -c rfm -n '__fish_seen_subcommand_from images; and not __fish_seen_subcommand_from verify' -a verify
 complete -c rfm -n '__fish_seen_subcommand_from supply-chain; and not __fish_seen_subcommand_from resolve sbom scan verify report collect' -a 'resolve sbom scan verify report collect'
+complete -c rfm -n '__fish_seen_subcommand_from policy; and not __fish_seen_subcommand_from check enforce explain exceptions input' -a 'check enforce explain exceptions input'
 complete -c rfm -n '__fish_seen_subcommand_from ops; and not __fish_seen_subcommand_from list show resume rollback' -a 'list show resume rollback'
 complete -c rfm -n '__fish_seen_subcommand_from logs; and not __fish_seen_subcommand_from list show verify purge' -a 'list show verify purge'
 complete -c rfm -n '__fish_seen_subcommand_from docs; and not __fish_seen_subcommand_from validate-links' -a validate-links
@@ -174,3 +176,9 @@ complete -c rfm -n '__fish_seen_subcommand_from verify' -l key -r -F -d 'Cosign 
 complete -c rfm -n '__fish_seen_subcommand_from verify' -l certificate-identity -r -d 'Expected signing identity'
 complete -c rfm -n '__fish_seen_subcommand_from verify' -l certificate-oidc-issuer -r -d 'Expected OIDC issuer'
 complete -c rfm -n '__fish_seen_subcommand_from verify' -l attestation-type -r -d 'Cosign attestation type'
+
+# Policy-as-code
+complete -c rfm -n '__fish_seen_subcommand_from check enforce' -l rule -r -d 'Policy rule ID; repeatable'
+complete -c rfm -n '__fish_seen_subcommand_from check enforce' -l repository -r -d 'Repository selector; repeatable'
+complete -c rfm -n '__fish_seen_subcommand_from check enforce' -l fail-on -r -a 'info warning error' -d 'Policy severity threshold'
+complete -c rfm -n '__fish_seen_subcommand_from exceptions' -l active-only -d 'Show active exceptions only'

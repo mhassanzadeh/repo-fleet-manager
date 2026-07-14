@@ -130,6 +130,33 @@ class ProfilesAndGroupsTests(unittest.TestCase):
             with self.assertRaises(ConfigResolutionError):
                 load_config(path, profiles=["missing"])
 
+    def test_policy_profile_overlay_is_schema_valid_and_resolved(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            path = self.write_config(Path(td))
+            data = json.loads(path.read_text(encoding="utf-8"))
+            data["policy"] = {"enabled": False, "mode": "check", "fail_on": "error", "rules": [], "exceptions": []}
+            data["profiles"]["ci"]["policy"] = {
+                "enabled": True,
+                "mode": "enforce",
+                "fail_on": "warning",
+                "rules": [
+                    {
+                        "id": "ci-clean",
+                        "type": "repository.clean",
+                        "severity": "warning",
+                        "parameters": {},
+                    }
+                ],
+            }
+            path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+            issues = validate_config_data(data)
+            self.assertEqual([], [item for item in issues if item.level == "error"])
+            cfg = load_config(path, profiles=["ci"])
+            self.assertTrue(cfg.policy["enabled"])
+            self.assertEqual(cfg.policy["mode"], "enforce")
+            self.assertEqual(cfg.policy["fail_on"], "warning")
+            self.assertEqual(cfg.policy["rules"][0]["id"], "ci-clean")
+
     def test_profile_cycle_is_reported_by_validation(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             path = self.write_config(Path(td), cycle=True)

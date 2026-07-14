@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mhassanzadeh/repo-fleet-manager/schemas/rfm-policy-report.schema.json",
+  "title": "RFM Policy Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "project",
+    "mode",
+    "fail_on",
+    "generated_at",
+    "ok",
+    "blocking_count",
+    "noncompliant_count",
+    "violation_count",
+    "evaluated_rules",
+    "violations",
+    "applied_exceptions",
+    "expired_exceptions"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "project": {
+      "type": "string"
+    },
+    "mode": {
+      "enum": [
+        "check",
+        "enforce"
+      ]
+    },
+    "fail_on": {
+      "enum": [
+        "info",
+        "warning",
+        "error"
+      ]
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "operation": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "ok": {
+      "type": "boolean"
+    },
+    "blocking_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "noncompliant_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "violation_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "evaluated_rules": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "violations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "rule_id",
+          "rule_type",
+          "severity",
+          "subject",
+          "message",
+          "blocking"
+        ],
+        "properties": {
+          "rule_id": {
+            "type": "string"
+          },
+          "rule_type": {
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "info",
+              "warning",
+              "error"
+            ]
+          },
+          "subject": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "remediation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "repository": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "action": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "data": {
+            "type": "object"
+          },
+          "exception_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "exception_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "blocking": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "applied_exceptions": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "expired_exceptions": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  }
+}

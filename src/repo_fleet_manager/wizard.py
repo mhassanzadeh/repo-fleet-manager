@@ -382,6 +382,10 @@ def _base_config(scan: ScanResult | None, existing: dict[str, Any] | None = None
             "require_source_label": True, "require_sbom": True, "require_scan": False,
             "require_signature": False, "require_attestation": False,
         },
+        "policy": {
+            "enabled": False, "mode": "check", "fail_on": "error",
+            "rules": [], "exceptions": [],
+        },
         "fingerprint": {"algorithm": "sha256", "short_length": 16},
     }
     if scan and scan.compose_file:
@@ -415,6 +419,7 @@ def _advanced_defaults(config: dict[str, Any]) -> dict[str, Any]:
         "require_immutable_digest": True, "require_source_label": True, "require_sbom": True,
         "require_scan": False, "require_signature": False, "require_attestation": False,
     })
+    result.setdefault("policy", {"enabled": False, "mode": "check", "fail_on": "error", "rules": [], "exceptions": []})
     result.setdefault("profiles", {})
     result["profiles"].setdefault("developer", {"project": {"default_provider": "local"}, "local": {"default_jobs": 2}})
     result["profiles"].setdefault("ci", {"extends": "developer", "project": {"default_provider": default}, "local": {"default_jobs": 4}})
@@ -530,7 +535,7 @@ def _normalize_answers(answers: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(config, dict):
             raise WizardError("answers.config must be an object")
         return copy.deepcopy(config)
-    allowed_top = {"schema_version", "project", "providers", "repositories", "local", "compose", "runtime", "observability", "supply_chain", "fingerprint", "profiles", "groups"}
+    allowed_top = {"schema_version", "project", "providers", "repositories", "local", "compose", "runtime", "observability", "supply_chain", "policy", "fingerprint", "profiles", "groups"}
     if any(key in allowed_top for key in answers):
         return {key: copy.deepcopy(value) for key, value in answers.items() if key in allowed_top}
     return {}
@@ -547,6 +552,10 @@ def _validate_portable_paths(config: dict[str, Any]) -> None:
     values.append(("$.observability.logs_dir", observability.get("logs_dir")))
     supply_chain = config.get("supply_chain") or {}
     values.append(("$.supply_chain.output_dir", supply_chain.get("output_dir")))
+    policy = config.get("policy") or {}
+    rego = policy.get("rego") or {}
+    if isinstance(rego, dict):
+        values.append(("$.policy.rego.policy_path", rego.get("policy_path")))
     cosign = supply_chain.get("cosign") or {}
     for key in ("key", "attestation_policy"):
         value = cosign.get(key)

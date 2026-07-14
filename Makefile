@@ -42,10 +42,14 @@ SUPPLY_CERTIFICATE_IDENTITY ?=
 SUPPLY_CERTIFICATE_OIDC_ISSUER ?=
 SUPPLY_ATTESTATION_TYPE ?=
 SUPPLY_ARGS = $(if $(SUPPLY_SERVICE),--service "$(SUPPLY_SERVICE)",) $(if $(SUPPLY_OUTPUT_DIR),--output-dir "$(SUPPLY_OUTPUT_DIR)",)
+POLICY_RULE ?=
+POLICY_REPOSITORY ?=
+POLICY_FAIL_ON ?= error
+POLICY_ARGS = $(if $(POLICY_RULE),--rule "$(POLICY_RULE)",) $(if $(POLICY_REPOSITORY),--repository "$(POLICY_REPOSITORY)",) --fail-on "$(POLICY_FAIL_ON)"
 OBSERVABILITY_ARGS = --format "$(OUTPUT_FORMAT)" $(if $(LOG_DIR),--log-dir "$(LOG_DIR)",)
 SELECTION_ARGS = $(if $(PROFILE),--profile "$(PROFILE)",) $(if $(GROUP),--group "$(GROUP)",)
 
-.PHONY: install install-cli install-editable install-completions install-all uninstall uninstall-completions doctor auth-status config-validate config-migrate graph safety-status ops-list test validate validate-docs completion-bash completion-fish local-plan local-localize local-localize-apply local-bootstrap local-bootstrap-apply local-remotes local-remotes-apply local-remotes-update publish-github publish-gitlab catalog-summary catalog-tree catalog-gaps catalog-docs catalog-check release-check release-artifacts build clean local-backup local-backup-apply local-backups local-backup-verify local-restore local-restore-apply config-render config-profiles config-groups init-project init-project-apply scaffold-templates scaffold-repository scaffold-repository-apply bootstrap-lock bootstrap-lock-apply bootstrap-verify cache-export cache-export-apply cache-list cache-verify cache-import cache-import-apply cache-bootstrap cache-bootstrap-apply config-wizard config-wizard-apply config-wizard-scan config-wizard-scan-apply config-wizard-answers config-wizard-reset runtime-status runtime-doctor runtime-wait runtime-up runtime-up-apply logs-list logs-show logs-verify logs-purge logs-purge-apply supply-chain-resolve supply-chain-resolve-apply supply-chain-sbom supply-chain-sbom-apply supply-chain-scan supply-chain-scan-apply supply-chain-verify supply-chain-report supply-chain-collect supply-chain-collect-apply
+.PHONY: install install-cli install-editable install-completions install-all uninstall uninstall-completions doctor auth-status config-validate config-migrate graph safety-status ops-list test validate validate-docs completion-bash completion-fish local-plan local-localize local-localize-apply local-bootstrap local-bootstrap-apply local-remotes local-remotes-apply local-remotes-update publish-github publish-gitlab catalog-summary catalog-tree catalog-gaps catalog-docs catalog-check release-check release-artifacts build clean local-backup local-backup-apply local-backups local-backup-verify local-restore local-restore-apply config-render config-profiles config-groups init-project init-project-apply scaffold-templates scaffold-repository scaffold-repository-apply bootstrap-lock bootstrap-lock-apply bootstrap-verify cache-export cache-export-apply cache-list cache-verify cache-import cache-import-apply cache-bootstrap cache-bootstrap-apply config-wizard config-wizard-apply config-wizard-scan config-wizard-scan-apply config-wizard-answers config-wizard-reset runtime-status runtime-doctor runtime-wait runtime-up runtime-up-apply logs-list logs-show logs-verify logs-purge logs-purge-apply supply-chain-resolve supply-chain-resolve-apply supply-chain-sbom supply-chain-sbom-apply supply-chain-scan supply-chain-scan-apply supply-chain-verify supply-chain-report supply-chain-collect supply-chain-collect-apply policy-check policy-enforce policy-explain policy-exceptions
 
 install: install-cli install-completions
 
@@ -287,6 +291,21 @@ supply-chain-collect:
 supply-chain-collect-apply:
 	./scripts/rfm.sh supply-chain --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) collect $(SUPPLY_ARGS) $(if $(SUPPLY_ENGINE),--engine "$(SUPPLY_ENGINE)",) --format "$(SUPPLY_FORMAT)" --fail-on "$(SUPPLY_FAIL_ON)" --apply
 # RFM_SUPPLY_CHAIN_TARGETS_END
+
+# RFM_POLICY_TARGETS_BEGIN
+policy-check:
+	./scripts/rfm.sh policy --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) check $(POLICY_ARGS)
+
+policy-enforce:
+	./scripts/rfm.sh policy --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) enforce $(POLICY_ARGS)
+
+policy-explain:
+	@test -n "$(POLICY_RULE)" || (echo "POLICY_RULE is required" >&2; exit 2)
+	./scripts/rfm.sh policy --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) explain "$(POLICY_RULE)"
+
+policy-exceptions:
+	./scripts/rfm.sh policy --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) exceptions
+# RFM_POLICY_TARGETS_END
 
 # RFM_OBSERVABILITY_TARGETS_BEGIN
 logs-list:

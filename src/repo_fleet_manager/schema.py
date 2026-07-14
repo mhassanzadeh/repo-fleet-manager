@@ -313,6 +313,48 @@ def _supply_chain_issues(data: dict[str, Any]) -> list[ValidationIssue]:
             ))
     return issues
 
+
+def _policy_issues(data: dict[str, Any]) -> list[ValidationIssue]:
+    issues: list[ValidationIssue] = []
+    policy = data.get("policy") or {}
+    if not isinstance(policy, dict):
+        return issues
+    rules = policy.get("rules") or []
+    rule_ids: set[str] = set()
+    for index, rule in enumerate(rules):
+        if not isinstance(rule, dict):
+            continue
+        rule_id = str(rule.get("id") or "")
+        if rule_id in rule_ids:
+            issues.append(ValidationIssue(f"$.policy.rules[{index}].id", f"duplicate policy rule id: {rule_id}", "duplicate-policy-rule"))
+        rule_ids.add(rule_id)
+    exception_ids: set[str] = set()
+    for index, item in enumerate(policy.get("exceptions") or []):
+        if not isinstance(item, dict):
+            continue
+        exception_id = str(item.get("id") or "")
+        if exception_id in exception_ids:
+            issues.append(ValidationIssue(f"$.policy.exceptions[{index}].id", f"duplicate policy exception id: {exception_id}", "duplicate-policy-exception"))
+        exception_ids.add(exception_id)
+        rule_id = str(item.get("rule_id") or "")
+        if rule_id not in rule_ids and rule_id != "*":
+            issues.append(ValidationIssue(f"$.policy.exceptions[{index}].rule_id", f"unknown policy rule: {rule_id}", "unknown-policy-rule"))
+        expires = str(item.get("expires_at") or "")
+        if expires:
+            try:
+                from datetime import datetime
+                datetime.fromisoformat(expires.replace("Z", "+00:00"))
+            except ValueError:
+                issues.append(ValidationIssue(f"$.policy.exceptions[{index}].expires_at", "invalid ISO-8601 date-time", "invalid-policy-expiry"))
+    rego = policy.get("rego") or {}
+    if isinstance(rego, dict) and rego.get("enabled") and not rego.get("policy_path"):
+        issues.append(ValidationIssue("$.policy.rego.policy_path", "policy_path is required when Rego is enabled", "missing-rego-policy"))
+    if isinstance(rego, dict) and rego.get("policy_path"):
+        pure = PurePosixPath(str(rego.get("policy_path")).replace("\\", "/"))
+        if pure.is_absolute() or ".." in pure.parts:
+            issues.append(ValidationIssue("$.policy.rego.policy_path", "Rego policy path must be relative and cannot escape the workspace", "unsafe-policy-path"))
+    return issues
+
 def semantic_issues(data: dict[str, Any]) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
     providers = data.get("providers") or {}
@@ -366,6 +408,7 @@ def semantic_issues(data: dict[str, Any]) -> list[ValidationIssue]:
     issues.extend(_profile_and_group_issues(data))
     issues.extend(_runtime_issues(data))
     issues.extend(_supply_chain_issues(data))
+    issues.extend(_policy_issues(data))
     issues.extend(_walk_sensitive(data))
     return issues
 

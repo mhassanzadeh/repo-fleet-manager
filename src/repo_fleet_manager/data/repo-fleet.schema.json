@@ -1173,6 +1173,213 @@
                 }
               }
             }
+          },
+          "policy": {
+            "type": "object",
+            "additionalProperties": false,
+            "patternProperties": {
+              "^x-": {}
+            },
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "check",
+                  "enforce"
+                ]
+              },
+              "fail_on": {
+                "type": "string",
+                "enum": [
+                  "info",
+                  "warning",
+                  "error"
+                ]
+              },
+              "rules": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    "^x-": {}
+                  },
+                  "required": [
+                    "id",
+                    "type"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "repository.visibility",
+                        "repository.branch",
+                        "repository.provider",
+                        "repository.remote-host",
+                        "repository.clean",
+                        "repository.signed-head",
+                        "supply-chain.registry",
+                        "supply-chain.requirements",
+                        "operation.guard"
+                      ]
+                    },
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "severity": {
+                      "type": "string",
+                      "enum": [
+                        "info",
+                        "warning",
+                        "error"
+                      ]
+                    },
+                    "description": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "remediation": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "selectors": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "patternProperties": {
+                        "^x-": {}
+                      },
+                      "properties": {
+                        "repositories": {
+                          "type": "array",
+                          "uniqueItems": true,
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        "tags": {
+                          "type": "array",
+                          "uniqueItems": true,
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        "kinds": {
+                          "type": "array",
+                          "uniqueItems": true,
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        "providers": {
+                          "type": "array",
+                          "uniqueItems": true,
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        }
+                      }
+                    },
+                    "parameters": {
+                      "type": "object"
+                    }
+                  }
+                }
+              },
+              "exceptions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    "^x-": {}
+                  },
+                  "required": [
+                    "id",
+                    "rule_id",
+                    "reason",
+                    "approved_by",
+                    "expires_at"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+                    },
+                    "rule_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "reason": {
+                      "type": "string",
+                      "minLength": 5
+                    },
+                    "approved_by": {
+                      "type": "string",
+                      "minLength": 2
+                    },
+                    "expires_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "repositories": {
+                      "type": "array",
+                      "uniqueItems": true,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "actions": {
+                      "type": "array",
+                      "uniqueItems": true,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "ticket": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              },
+              "rego": {
+                "type": "object",
+                "additionalProperties": false,
+                "patternProperties": {
+                  "^x-": {}
+                },
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "policy_path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "query": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "executable": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1544,6 +1751,213 @@
               "require_attestation": {
                 "type": "boolean"
               }
+            }
+          }
+        }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {}
+      },
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "check",
+            "enforce"
+          ]
+        },
+        "fail_on": {
+          "type": "string",
+          "enum": [
+            "info",
+            "warning",
+            "error"
+          ]
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "patternProperties": {
+              "^x-": {}
+            },
+            "required": [
+              "id",
+              "type"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "repository.visibility",
+                  "repository.branch",
+                  "repository.provider",
+                  "repository.remote-host",
+                  "repository.clean",
+                  "repository.signed-head",
+                  "supply-chain.registry",
+                  "supply-chain.requirements",
+                  "operation.guard"
+                ]
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "severity": {
+                "type": "string",
+                "enum": [
+                  "info",
+                  "warning",
+                  "error"
+                ]
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1
+              },
+              "remediation": {
+                "type": "string",
+                "minLength": 1
+              },
+              "selectors": {
+                "type": "object",
+                "additionalProperties": false,
+                "patternProperties": {
+                  "^x-": {}
+                },
+                "properties": {
+                  "repositories": {
+                    "type": "array",
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "tags": {
+                    "type": "array",
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "kinds": {
+                    "type": "array",
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "providers": {
+                    "type": "array",
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              },
+              "parameters": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "exceptions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "patternProperties": {
+              "^x-": {}
+            },
+            "required": [
+              "id",
+              "rule_id",
+              "reason",
+              "approved_by",
+              "expires_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+              },
+              "rule_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 5
+              },
+              "approved_by": {
+                "type": "string",
+                "minLength": 2
+              },
+              "expires_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "repositories": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "actions": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "ticket": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "rego": {
+          "type": "object",
+          "additionalProperties": false,
+          "patternProperties": {
+            "^x-": {}
+          },
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "policy_path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "query": {
+              "type": "string",
+              "minLength": 1
+            },
+            "executable": {
+              "type": "string",
+              "minLength": 1
             }
           }
         }

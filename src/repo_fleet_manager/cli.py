@@ -44,6 +44,10 @@ from .observability import (
     purge_logs, redact, resolve_logs_dir, verify_log,
 )
 from .provider import auth_report, fork_repositories, mirror_repositories, reconcile_repositories, require_provider_auth
+from .policy import (
+    SEVERITIES as POLICY_SEVERITIES, PolicyError, PolicyEnforcementError, evaluate_policy, explain_rule,
+    list_policy_exceptions, policy_input, print_policy_report, enforce_operation_policy,
+)
 from .graph import render_graph
 from .safety import assert_workspace_safe, workspace_safety_report
 
@@ -380,6 +384,7 @@ def _mutate(
     root = _root(args)
     force = bool(getattr(args, "force", False))
     reason = getattr(args, "reason", None)
+    enforce_operation_policy(cfg, root, label, reason=reason, force=force)
     if require_clean or reject_diverged:
         assert_workspace_safe(cfg, root, label, force=force, reason=reason, require_clean=require_clean, reject_diverged=reject_diverged)
     op_dir = operations_dir(root, cfg.local.get("operations_dir"))
@@ -474,7 +479,7 @@ def _command_label(args: argparse.Namespace) -> str:
     action_names = (
         "config_action", "scaffold_action", "bootstrap_action", "catalog_action", "repos_action",
         "submodules_action", "local_action", "cache_action", "git_action", "source_action",
-        "runtime_action", "compose_action", "images_action", "supply_chain_action", "ops_action", "logs_action", "docs_action",
+        "runtime_action", "compose_action", "images_action", "supply_chain_action", "policy_action", "ops_action", "logs_action", "docs_action",
     )
     for name in action_names:
         value = getattr(args, name, None)
@@ -893,6 +898,11 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         if signature_required:
             supply_required.append("cosign")
     required.extend(command for command in supply_required if command not in required)
+    rego = (cfg.policy or {}).get("rego") or {}
+    if isinstance(rego, dict) and rego.get("enabled"):
+        executable = str(rego.get("executable") or "opa")
+        if executable not in required:
+            required.append(executable)
     print(f"Repo Fleet Manager {__version__}")
     print(f"config: {cfg.path}")
     print(f"schema: {cfg.schema_version}")
@@ -1471,6 +1481,62 @@ def cmd_supply_chain_collect(args: argparse.Namespace) -> int:
     return _mutate(args, cfg, "supply-chain collect", callback, require_clean=False)
 
 
+def cmd_policy_check(args: argparse.Namespace) -> int:
+    cfg = _config(args)
+    report = evaluate_policy(
+        cfg, _root(args), mode="check", fail_on=args.fail_on,
+        selected_rules=args.rule, selected_repositories=args.repository,
+    )
+    print_policy_report(report, json_output=args.json)
+    return 0
+
+
+def cmd_policy_enforce(args: argparse.Namespace) -> int:
+    cfg = _config(args)
+    report = evaluate_policy(
+        cfg, _root(args), mode="enforce", fail_on=args.fail_on,
+        selected_rules=args.rule, selected_repositories=args.repository,
+    )
+    return print_policy_report(report, json_output=args.json)
+
+
+def cmd_policy_explain(args: argparse.Namespace) -> int:
+    payload = explain_rule(_config(args), args.rule_id)
+    if args.json:
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+    else:
+        rule = payload["rule"]
+        print(f"Policy rule: {rule.get('id')}")
+        print(f"type:        {rule.get('type')}")
+        print(f"severity:    {rule.get('severity', 'error')}")
+        print(f"enabled:     {rule.get('enabled', True)}")
+        print(f"description: {payload.get('description') or '-'}")
+        print(f"remediation: {rule.get('remediation') or payload.get('default_remediation') or '-'}")
+        print(f"parameters:  {json.dumps(rule.get('parameters') or {}, ensure_ascii=False)}")
+        for item in payload.get("exceptions") or []:
+            print(f"exception:   {item['id']} active={item['active']} expires={item['expires_at']} approved_by={item['approved_by']}")
+    return 0
+
+
+def cmd_policy_exceptions(args: argparse.Namespace) -> int:
+    rows = list_policy_exceptions(_config(args))
+    if args.active_only:
+        rows = [row for row in rows if row["active"]]
+    if args.json:
+        print(json.dumps(rows, ensure_ascii=False, indent=2))
+    else:
+        for row in rows:
+            state = "ACTIVE" if row["active"] else "EXPIRED"
+            print(f"{row['id']}  {state:<7}  rule={row['rule_id']} expires={row['expires_at']} approved_by={row['approved_by']} reason={row['reason']}")
+    return 0
+
+
+def cmd_policy_input(args: argparse.Namespace) -> int:
+    payload = policy_input(_config(args), _root(args))
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
+    return 0
+
+
 def cmd_docs_validate(args: argparse.Namespace) -> int:
     return validate_links(_root(args))
 
@@ -1738,6 +1804,19 @@ def build_parser() -> argparse.ArgumentParser:
     sp = supply_sub.add_parser("collect", help="Resolve, generate SBOMs and scan in one workflow.")
     sp.add_argument("--service", action="append"); sp.add_argument("--engine", choices=["auto", "docker", "podman"]); sp.add_argument("--format", dest="sbom_format", choices=["cyclonedx-json", "spdx-json"]); sp.add_argument("--fail-on", choices=list(SEVERITIES)); sp.add_argument("--output-dir"); sp.add_argument("--allow-mutable", action="store_true"); sp.add_argument("--json", action="store_true"); sp.add_argument("--apply", action="store_true"); add_safety_flags(sp); sp.set_defaults(func=cmd_supply_chain_collect)
 
+    policy = sub.add_parser("policy", help="Evaluate and enforce repository, operation and supply-chain governance rules.")
+    add_common(policy); policy_sub = policy.add_subparsers(dest="policy_action", required=True)
+    sp = policy_sub.add_parser("check", help="Evaluate policy without blocking the command.")
+    sp.add_argument("--rule", action="append", help="Limit evaluation to a rule ID; repeatable."); sp.add_argument("--repository", action="append", help="Limit results to a repository; repeatable."); sp.add_argument("--fail-on", choices=list(POLICY_SEVERITIES)); sp.add_argument("--json", action="store_true"); sp.set_defaults(func=cmd_policy_check)
+    sp = policy_sub.add_parser("enforce", help="Return exit code 2 when blocking policy violations exist.")
+    sp.add_argument("--rule", action="append"); sp.add_argument("--repository", action="append"); sp.add_argument("--fail-on", choices=list(POLICY_SEVERITIES)); sp.add_argument("--json", action="store_true"); sp.set_defaults(func=cmd_policy_enforce)
+    sp = policy_sub.add_parser("explain", help="Explain one rule and its matching exceptions.")
+    sp.add_argument("rule_id"); sp.add_argument("--json", action="store_true"); sp.set_defaults(func=cmd_policy_explain)
+    sp = policy_sub.add_parser("exceptions", help="List active and expired policy exceptions.")
+    sp.add_argument("--active-only", action="store_true"); sp.add_argument("--json", action="store_true"); sp.set_defaults(func=cmd_policy_exceptions)
+    sp = policy_sub.add_parser("input", help="Render the normalized policy input used by built-in rules and Rego.")
+    sp.set_defaults(func=cmd_policy_input)
+
     p = sub.add_parser("images", help="Verify built image labels against source fingerprints.")
     add_common(p); img_sub = p.add_subparsers(dest="images_action", required=True)
     sp = img_sub.add_parser("verify"); sp.add_argument("--json", action="store_true"); sp.set_defaults(func=cmd_images_verify)
@@ -1813,6 +1892,10 @@ def main(argv: list[str] | None = None) -> int:
             try:
                 with redirect_stdout(stdout_buffer), redirect_stderr(stderr_buffer):
                     code = int(args.func(args))
+            except PolicyEnforcementError as exc:
+                code = 2
+                error_text = str(exc)
+                print(f"[POLICY] {exc}", file=stderr_buffer)
             except Exception as exc:  # noqa: BLE001
                 code = 1
                 error_text = str(exc)
@@ -1823,6 +1906,10 @@ def main(argv: list[str] | None = None) -> int:
             try:
                 with redirect_stdout(out_tee), redirect_stderr(err_tee):
                     code = int(args.func(args))
+            except PolicyEnforcementError as exc:
+                code = 2
+                error_text = str(exc)
+                print(f"[POLICY] {exc}", file=err_tee)
             except Exception as exc:  # noqa: BLE001
                 code = 1
                 error_text = str(exc)
