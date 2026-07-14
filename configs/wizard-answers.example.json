@@ -42,6 +42,26 @@
       "backup_include_operations": false,
       "cache_dir": ".repo-fleet/cache",
       "cache_retention": 3
+    },
+    "runtime": {
+      "timeout_seconds": 120,
+      "interval_seconds": 2,
+      "log_tail": 80,
+      "default_running_is_ready": true,
+      "services": {
+        "api": {
+          "required": true,
+          "depends_on": [],
+          "probe": {
+            "type": "http",
+            "url": "http://127.0.0.1:8080/healthz",
+            "expected_status": [
+              200,
+              204
+            ]
+          }
+        }
+      }
     }
   }
 }

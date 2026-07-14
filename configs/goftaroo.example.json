@@ -373,5 +373,199 @@
     "cache_dir": ".repo-fleet/cache",
     "cache_retention": 3
   },
-  "schema_version": "1.0.0"
+  "schema_version": "1.0.0",
+  "runtime": {
+    "timeout_seconds": 120,
+    "interval_seconds": 2,
+    "log_tail": 80,
+    "default_running_is_ready": true,
+    "services": {
+      "api-gateway": {
+        "required": true,
+        "depends_on": [],
+        "probe": {
+          "type": "http",
+          "url": "http://localhost:8080/healthz",
+          "expected_status": [
+            200,
+            204
+          ],
+          "timeout_seconds": 3
+        }
+      },
+      "identity-service": {
+        "required": true,
+        "depends_on": [],
+        "probe": {
+          "type": "http",
+          "url": "http://localhost:8081/healthz",
+          "expected_status": [
+            200,
+            204
+          ],
+          "timeout_seconds": 3
+        }
+      },
+      "tenant-service": {
+        "required": true,
+        "depends_on": [],
+        "probe": {
+          "type": "http",
+          "url": "http://localhost:8082/healthz",
+          "expected_status": [
+            200,
+            204
+          ],
+          "timeout_seconds": 3
+        }
+      },
+      "device-registry-service": {
+        "required": true,
+        "depends_on": [],
+        "probe": {
+          "type": "http",
+          "url": "http://localhost:8083/healthz",
+          "expected_status": [
+            200,
+            204
+          ],
+          "timeout_seconds": 3
+        }
+      },
+      "subscription-service": {
+        "required": true,
+        "depends_on": [],
+        "probe": {
+          "type": "http",
+          "url": "http://localhost:8091/healthz",
+          "expected_status": [
+            200,
+            204
+          ],
+          "timeout_seconds": 3
+        }
+      },
+      "billing-service": {
+        "required": true,
+        "depends_on": [],
+        "probe": {
+          "type": "http",
+          "url": "http://localhost:8090/healthz",
+          "expected_status": [
+            200,
+            204
+          ],
+          "timeout_seconds": 3
+        }
+      },
+      "usage-metering-service": {
+        "required": true,
+        "depends_on": [],
+        "probe": {
+          "type": "http",
+          "url": "http://localhost:8084/healthz",
+          "expected_status": [
+            200,
+            204
+          ],
+          "timeout_seconds": 3
+        }
+      },
+      "voice-session-service": {
+        "required": true,
+        "depends_on": [],
+        "probe": {
+          "type": "http",
+          "url": "http://localhost:8085/healthz",
+          "expected_status": [
+            200,
+            204
+          ],
+          "timeout_seconds": 3
+        }
+      },
+      "conversation-service": {
+        "required": true,
+        "depends_on": [],
+        "probe": {
+          "type": "http",
+          "url": "http://localhost:8086/healthz",
+          "expected_status": [
+            200,
+            204
+          ],
+          "timeout_seconds": 3
+        }
+      },
+      "speech-provider-service": {
+        "required": true,
+        "depends_on": [],
+        "probe": {
+          "type": "http",
+          "url": "http://localhost:8087/healthz",
+          "expected_status": [
+            200,
+            204
+          ],
+          "timeout_seconds": 3
+        }
+      },
+      "llm-gateway-service": {
+        "required": true,
+        "depends_on": [],
+        "probe": {
+          "type": "http",
+          "url": "http://localhost:8088/healthz",
+          "expected_status": [
+            200,
+            204
+          ],
+          "timeout_seconds": 3
+        }
+      },
+      "agent-orchestrator-service": {
+        "required": true,
+        "depends_on": [],
+        "probe": {
+          "type": "http",
+          "url": "http://localhost:8089/healthz",
+          "expected_status": [
+            200,
+            204
+          ],
+          "timeout_seconds": 3
+        }
+      },
+      "skill-registry-service": {
+        "required": true,
+        "depends_on": [],
+        "probe": {
+          "type": "http",
+          "url": "http://localhost:8093/healthz",
+          "expected_status": [
+            200,
+            204
+          ],
+          "timeout_seconds": 3
+        }
+      },
+      "notification-service": {
+        "required": true,
+        "depends_on": [],
+        "probe": {
+          "type": "http",
+          "url": "http://localhost:8092/healthz",
+          "expected_status": [
+            200,
+            204
+          ],
+          "timeout_seconds": 3
+        }
+      },
+      "audit-export-worker-service": {
+        "required": true,
+        "depends_on": []
+      }
+    }
+  }
 }

@@ -3,7 +3,7 @@ complete -c rfm -f
 complete -c rfm -s h -l help -d 'Show help'
 complete -c rfm -l version -d 'Show version'
 
-set -l rfm_commands config init-project scaffold bootstrap doctor auth catalog graph safety repos submodules local cache git source compose images ops docs completion
+set -l rfm_commands config init-project scaffold bootstrap doctor auth catalog graph safety repos submodules local cache git source runtime compose images ops docs completion
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a config -d 'Validate and migrate configuration'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a init-project -d 'Create a portable parent project'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a scaffold -d 'Generate repositories from templates'
@@ -19,6 +19,7 @@ complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a local -d '
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a cache -d 'Offline source and image cache'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a git -d 'Fleet-wide Git operations'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a source -d 'Source fingerprint operations'
+complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a runtime -d 'Runtime health and readiness'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a compose -d 'Compose operations'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a images -d 'Image verification'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a ops -d 'Operation journals and rollback'
@@ -37,6 +38,7 @@ complete -c rfm -n '__fish_seen_subcommand_from local; and not __fish_seen_subco
 complete -c rfm -n '__fish_seen_subcommand_from cache; and not __fish_seen_subcommand_from export verify list import bootstrap' -a 'export verify list import bootstrap'
 complete -c rfm -n '__fish_seen_subcommand_from git; and not __fish_seen_subcommand_from status pull push' -a 'status pull push'
 complete -c rfm -n '__fish_seen_subcommand_from source; and not __fish_seen_subcommand_from fingerprint' -a fingerprint
+complete -c rfm -n '__fish_seen_subcommand_from runtime; and not __fish_seen_subcommand_from status doctor wait up' -a 'status doctor wait up'
 complete -c rfm -n '__fish_seen_subcommand_from compose; and not __fish_seen_subcommand_from ps up down build pull logs' -a 'ps up down build pull logs'
 complete -c rfm -n '__fish_seen_subcommand_from images; and not __fish_seen_subcommand_from verify' -a verify
 complete -c rfm -n '__fish_seen_subcommand_from ops; and not __fish_seen_subcommand_from list show resume rollback' -a 'list show resume rollback'
@@ -134,3 +136,11 @@ complete -c rfm -n '__fish_seen_subcommand_from wizard' -l show-diff -d 'Show un
 complete -c rfm -n '__fish_seen_subcommand_from wizard' -l no-backup -d 'Do not create backup while editing'
 complete -c rfm -n '__fish_seen_subcommand_from wizard' -l apply -d 'Write validated configuration'
 complete -c rfm -n '__fish_seen_subcommand_from wizard' -l json -d 'Print machine-readable result'
+
+# Runtime readiness
+complete -c rfm -n '__fish_seen_subcommand_from runtime' -l service -r -d 'Compose service; repeatable'
+complete -c rfm -n '__fish_seen_subcommand_from wait up' -l timeout -r -d 'Readiness timeout in seconds'
+complete -c rfm -n '__fish_seen_subcommand_from wait up' -l interval -r -d 'Polling interval in seconds'
+complete -c rfm -n '__fish_seen_subcommand_from doctor wait up' -l logs -d 'Include failing service logs'
+complete -c rfm -n '__fish_seen_subcommand_from up' -l no-logs -d 'Do not include logs on startup failure'
+complete -c rfm -n '__fish_seen_subcommand_from doctor wait up' -l tail -r -d 'Number of log lines'

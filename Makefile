@@ -19,13 +19,18 @@ REPO_PATH ?=
 REPO_KIND ?= module
 TEMPLATE ?= generic
 LOCK_FILE ?= repo-fleet.lock.json
+RUNTIME_SERVICE ?=
+RUNTIME_TIMEOUT ?=
+RUNTIME_INTERVAL ?=
+RUNTIME_TAIL ?=
+RUNTIME_ARGS = $(if $(RUNTIME_SERVICE),--service "$(RUNTIME_SERVICE)",) $(if $(RUNTIME_TIMEOUT),--timeout "$(RUNTIME_TIMEOUT)",) $(if $(RUNTIME_INTERVAL),--interval "$(RUNTIME_INTERVAL)",) $(if $(RUNTIME_TAIL),--tail "$(RUNTIME_TAIL)",)
 WIZARD_OUTPUT ?= repo-fleet.json
 WIZARD_SCAN ?= .
 WIZARD_ANSWERS ?=
 WIZARD_SESSION ?= .repo-fleet/wizard/session.json
 SELECTION_ARGS = $(if $(PROFILE),--profile "$(PROFILE)",) $(if $(GROUP),--group "$(GROUP)",)
 
-.PHONY: install install-cli install-editable install-completions install-all uninstall uninstall-completions doctor auth-status config-validate config-migrate graph safety-status ops-list test validate validate-docs completion-bash completion-fish local-plan local-localize local-localize-apply local-bootstrap local-bootstrap-apply local-remotes local-remotes-apply local-remotes-update publish-github publish-gitlab catalog-summary catalog-tree catalog-gaps catalog-docs catalog-check release-check release-artifacts build clean local-backup local-backup-apply local-backups local-backup-verify local-restore local-restore-apply config-render config-profiles config-groups init-project init-project-apply scaffold-templates scaffold-repository scaffold-repository-apply bootstrap-lock bootstrap-lock-apply bootstrap-verify cache-export cache-export-apply cache-list cache-verify cache-import cache-import-apply cache-bootstrap cache-bootstrap-apply config-wizard config-wizard-apply config-wizard-scan config-wizard-scan-apply config-wizard-answers config-wizard-reset
+.PHONY: install install-cli install-editable install-completions install-all uninstall uninstall-completions doctor auth-status config-validate config-migrate graph safety-status ops-list test validate validate-docs completion-bash completion-fish local-plan local-localize local-localize-apply local-bootstrap local-bootstrap-apply local-remotes local-remotes-apply local-remotes-update publish-github publish-gitlab catalog-summary catalog-tree catalog-gaps catalog-docs catalog-check release-check release-artifacts build clean local-backup local-backup-apply local-backups local-backup-verify local-restore local-restore-apply config-render config-profiles config-groups init-project init-project-apply scaffold-templates scaffold-repository scaffold-repository-apply bootstrap-lock bootstrap-lock-apply bootstrap-verify cache-export cache-export-apply cache-list cache-verify cache-import cache-import-apply cache-bootstrap cache-bootstrap-apply config-wizard config-wizard-apply config-wizard-scan config-wizard-scan-apply config-wizard-answers config-wizard-reset runtime-status runtime-doctor runtime-wait runtime-up runtime-up-apply
 
 install: install-cli install-completions
 
@@ -157,6 +162,23 @@ cache-bootstrap:
 cache-bootstrap-apply:
 	@test -n "$(ARCHIVE)" || (echo "ARCHIVE is required" >&2; exit 2)
 	./scripts/rfm.sh cache --root "$(ROOT)" bootstrap "$(ARCHIVE)" $(if $(CACHE_ENGINE),--engine "$(CACHE_ENGINE)",) --apply
+
+# RFM_RUNTIME_TARGETS_BEGIN
+runtime-status:
+	./scripts/rfm.sh runtime --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) status $(if $(RUNTIME_SERVICE),--service "$(RUNTIME_SERVICE)",)
+
+runtime-doctor:
+	./scripts/rfm.sh runtime --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) doctor $(if $(RUNTIME_SERVICE),--service "$(RUNTIME_SERVICE)",) $(if $(RUNTIME_TAIL),--tail "$(RUNTIME_TAIL)",) --logs
+
+runtime-wait:
+	./scripts/rfm.sh runtime --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) wait $(RUNTIME_ARGS) --logs
+
+runtime-up:
+	./scripts/rfm.sh runtime --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) up $(RUNTIME_ARGS)
+
+runtime-up-apply:
+	./scripts/rfm.sh runtime --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) up $(RUNTIME_ARGS) --apply
+# RFM_RUNTIME_TARGETS_END
 
 publish-github:
 	./scripts/rfm.sh repos --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) publish --provider github --namespace "$(NAMESPACE)"

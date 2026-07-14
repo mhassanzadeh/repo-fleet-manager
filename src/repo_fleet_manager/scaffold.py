@@ -263,7 +263,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install Repo Fleet Manager
-        run: python -m pip install 'repo-fleet-manager @ git+https://github.com/mhassanzadeh/repo-fleet-manager.git@v0.11.0'
+        run: python -m pip install 'repo-fleet-manager @ git+https://github.com/mhassanzadeh/repo-fleet-manager.git@v0.12.0'
       - name: Validate fleet configuration and bootstrap contract
         run: |
           rfm config --config repo-fleet.json validate --strict

@@ -45,6 +45,8 @@ class ConfigWizardTests(unittest.TestCase):
             self.assertEqual(scan.env_file, "infra-compose/.env.example")
             self.assertIn("postgres:16", scan.cache_images)
             generated = run_wizard(output=root / "repo-fleet.json", scan_path=root, non_interactive=True).config
+            self.assertIn("db", generated["runtime"]["services"])
+            self.assertIn("api", generated["runtime"]["services"])
             self.assertNotIn(str(root), json.dumps(generated))
 
     def test_non_interactive_scan_writes_strict_valid_config(self) -> None:

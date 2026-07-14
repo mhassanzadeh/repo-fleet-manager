@@ -30,6 +30,9 @@ class CompletionCommandTest(unittest.TestCase):
         self.assertIn("allow-incomplete", output)
         self.assertIn("wizard", output)
         self.assertIn("--non-interactive", output)
+        self.assertIn("runtime", output)
+        self.assertIn("--timeout", output)
+        self.assertIn("--service", output)
 
     def test_fish_completion_contains_nested_commands(self):
         output = self.run_completion("fish")
@@ -47,6 +50,8 @@ class CompletionCommandTest(unittest.TestCase):
         self.assertIn("require-complete", output)
         self.assertIn("wizard", output)
         self.assertIn("session-file", output)
+        self.assertIn("runtime", output)
+        self.assertIn("interval", output)
 
 
 if __name__ == "__main__":

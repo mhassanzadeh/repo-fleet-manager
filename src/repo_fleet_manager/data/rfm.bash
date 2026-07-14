@@ -11,7 +11,7 @@ _rfm()
         prev="${COMP_WORDS[COMP_CWORD-1]}"
     fi
 
-    local commands="config init-project scaffold bootstrap doctor auth catalog graph safety repos submodules local cache git source compose images ops docs completion"
+    local commands="config init-project scaffold bootstrap doctor auth catalog graph safety repos submodules local cache git source runtime compose images ops docs completion"
     local global_opts="--help --version --config --root --profile --group"
 
     case "$prev" in
@@ -48,7 +48,7 @@ _rfm()
         token="${words[i]}"
         if (( skip_next )); then skip_next=0; continue; fi
         case "$token" in
-            --config|--root|--profile|--group|--provider|--namespace|--visibility|--format|--view|--priority|--status|--output|--catalog-file|--reason|--jobs|--remote-name|--to|--backups-dir|--config-output|--retention|--cache-dir|--image|--engine|--directory|--branch|--description|--owner|--path|--template|--kind|--tag|--depends-on|--lock-file|--answers|--session-file|--scan)
+            --config|--root|--profile|--group|--provider|--namespace|--visibility|--format|--view|--priority|--status|--output|--catalog-file|--reason|--jobs|--remote-name|--to|--backups-dir|--config-output|--retention|--cache-dir|--image|--engine|--directory|--branch|--description|--owner|--path|--template|--kind|--tag|--depends-on|--lock-file|--answers|--session-file|--scan|--service|--timeout|--interval|--tail)
                 skip_next=1; continue ;;
             --*) continue ;;
         esac
@@ -77,6 +77,7 @@ _rfm()
         cache) actions="export verify list import bootstrap"; opts+=" --output --cache-dir --remotes-dir --image --include-images --no-include-images --engine --fetch-missing --allow-missing --retention --require-complete --config-output --no-config --load-images --no-load-images --overwrite --allow-incomplete --jobs --json --apply --force --reason" ;;
         git) actions="status pull push"; opts+=" --jobs --apply --no-root --force --reason" ;;
         source) actions="fingerprint"; opts+=" --write --force --reason" ;;
+        runtime) actions="status doctor wait up"; opts+=" --service --timeout --interval --logs --no-logs --tail --json --apply --force --reason" ;;
         compose) actions="ps up down build pull logs"; opts+=" --apply --force --reason" ;;
         images) actions="verify"; opts+=" --json" ;;
         ops) actions="list show resume rollback"; opts+=" --json --force --reason" ;;

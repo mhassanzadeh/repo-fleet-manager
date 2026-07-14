@@ -230,6 +230,62 @@ def _profile_and_group_issues(data: dict[str, Any]) -> list[ValidationIssue]:
                 ))
     return issues
 
+
+
+def _runtime_issues(data: dict[str, Any]) -> list[ValidationIssue]:
+    issues: list[ValidationIssue] = []
+    runtime = data.get("runtime") or {}
+    services = runtime.get("services") or {} if isinstance(runtime, dict) else {}
+    if not isinstance(services, dict):
+        return issues
+    graph: dict[str, list[str]] = {}
+    for name, raw in services.items():
+        dependencies = [str(item) for item in (raw.get("depends_on") or [])] if isinstance(raw, dict) else []
+        graph[str(name)] = dependencies
+        for dependency in dependencies:
+            if dependency == name:
+                issues.append(ValidationIssue(
+                    f"$.runtime.services.{name}.depends_on",
+                    "runtime service cannot depend on itself",
+                    "runtime-self-dependency",
+                ))
+            elif dependency not in services:
+                issues.append(ValidationIssue(
+                    f"$.runtime.services.{name}.depends_on",
+                    f"unknown runtime service dependency: {dependency}",
+                    "unknown-runtime-dependency",
+                ))
+
+    state: dict[str, int] = {}
+    stack: list[str] = []
+    def visit(name: str) -> None:
+        marker = state.get(name, 0)
+        if marker == 2:
+            return
+        if marker == 1:
+            try:
+                start = stack.index(name)
+                cycle = stack[start:] + [name]
+            except ValueError:
+                cycle = stack + [name]
+            issues.append(ValidationIssue(
+                "$.runtime.services",
+                "runtime dependency cycle: " + " -> ".join(cycle),
+                "runtime-dependency-cycle",
+            ))
+            return
+        state[name] = 1
+        stack.append(name)
+        for dependency in graph.get(name, []):
+            if dependency in graph:
+                visit(dependency)
+        stack.pop()
+        state[name] = 2
+    for name in graph:
+        visit(name)
+    return issues
+
+
 def semantic_issues(data: dict[str, Any]) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
     providers = data.get("providers") or {}
@@ -281,6 +337,7 @@ def semantic_issues(data: dict[str, Any]) -> list[ValidationIssue]:
 
     issues.extend(_dependency_issues(repositories))
     issues.extend(_profile_and_group_issues(data))
+    issues.extend(_runtime_issues(data))
     issues.extend(_walk_sensitive(data))
     return issues
 

@@ -18,6 +18,7 @@ from .fingerprint import build_metadata, write_compose_override, write_metadata
 from .gitops import audit, create_repositories, git_foreach, print_audit_report, publish_repositories, sync_submodules
 from .localops import bootstrap_local, clone_local_repositories, create_local_remotes, init_local_worktrees, localize, print_local_plan
 from .images import verify_images
+from .runtime import ordered_runtime_up, runtime_doctor, runtime_status, wait_runtime
 from .shell import command_exists
 from .service_catalog import load_service_catalog, render_catalog, summary as catalog_summary
 from .wizard import DEFAULT_CONFIG_FILE, DEFAULT_SESSION_FILE, load_answers, reset_session, run_wizard, scan_summary
@@ -1115,6 +1116,75 @@ def cmd_compose(args: argparse.Namespace) -> int:
     return _mutate(args, cfg, f"compose {args.compose_action}", callback)
 
 
+def _print_runtime_report(report, *, json_output: bool = False) -> int:
+    if json_output:
+        print(json.dumps(report.to_dict(), ensure_ascii=False, indent=2))
+        return 0 if report.ready else 2
+    overall = "READY" if report.ready else "NOT READY"
+    print(f"Runtime: {overall}  engine={report.engine} compose={' '.join(report.compose_bin)}")
+    if not report.services:
+        print(" - no Compose services were discovered")
+    for item in report.services:
+        mark = "READY" if item.ready else ("RUNNING" if item.running else "FAIL")
+        required = "required" if item.required else "optional"
+        health = item.health or "-"
+        deps = ",".join(item.depends_on) or "-"
+        print(
+            f" - [{mark:<7}] {item.name:<24} state={item.state:<10} health={health:<10} "
+            f"source={item.readiness_source:<18} {required} depends_on={deps}"
+        )
+        if item.probe:
+            print(f"     probe={item.probe.probe_type} ok={item.probe.ok} latency={item.probe.latency_ms}ms detail={item.probe.detail}")
+        if item.reason:
+            print(f"     reason: {item.reason}")
+        if item.remediation:
+            print(f"     remediation: {item.remediation}")
+        if item.logs:
+            print("     logs:")
+            for line in item.logs.splitlines():
+                print(f"       {line}")
+    for error in report.errors:
+        print(f"[ERROR] {error}")
+    return 0 if report.ready else 2
+
+
+def cmd_runtime_status(args: argparse.Namespace) -> int:
+    cfg = _config(args)
+    report = runtime_status(cfg, _root(args), args.service)
+    return _print_runtime_report(report, json_output=args.json)
+
+
+def cmd_runtime_doctor(args: argparse.Namespace) -> int:
+    cfg = _config(args)
+    report = runtime_doctor(
+        cfg, _root(args), args.service, include_logs=args.logs, tail=args.tail
+    )
+    return _print_runtime_report(report, json_output=args.json)
+
+
+def cmd_runtime_wait(args: argparse.Namespace) -> int:
+    cfg = _config(args)
+    report = wait_runtime(
+        cfg, _root(args), args.service, timeout_seconds=args.timeout, interval_seconds=args.interval,
+        include_logs=args.logs, tail=args.tail,
+    )
+    return _print_runtime_report(report, json_output=args.json)
+
+
+def cmd_runtime_up(args: argparse.Namespace) -> int:
+    cfg = _config(args)
+    def execute() -> int:
+        report = ordered_runtime_up(
+            cfg, _root(args), args.service, apply=args.apply, timeout_seconds=args.timeout,
+            interval_seconds=args.interval, include_logs=args.logs, tail=args.tail,
+        )
+        if not args.apply:
+            _print_runtime_report(report, json_output=args.json)
+            return 0
+        return _print_runtime_report(report, json_output=args.json)
+    return _mutate(args, cfg, "runtime up", execute)
+
+
 def cmd_images_verify(args: argparse.Namespace) -> int:
     cfg = _config(args)
     return verify_images(cfg, _root(args), args.json)
@@ -1352,6 +1422,17 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("source", help="Source/image metadata operations.")
     add_common(p); source_sub = p.add_subparsers(dest="source_action", required=True)
     sp = source_sub.add_parser("fingerprint"); sp.add_argument("--write", action="store_true"); add_safety_flags(sp); sp.set_defaults(func=cmd_source_fingerprint)
+
+    runtime = sub.add_parser("runtime", help="Inspect service health, wait for readiness and start Compose services in dependency order.")
+    add_common(runtime); runtime_sub = runtime.add_subparsers(dest="runtime_action", required=True)
+    sp = runtime_sub.add_parser("status", help="Show container state and readiness separately.")
+    sp.add_argument("--service", action="append", help="Limit to a Compose service; repeatable."); sp.add_argument("--json", action="store_true"); sp.set_defaults(func=cmd_runtime_status)
+    sp = runtime_sub.add_parser("doctor", help="Diagnose services that are running, unhealthy or not ready.")
+    sp.add_argument("--service", action="append"); sp.add_argument("--logs", action="store_true"); sp.add_argument("--tail", type=int); sp.add_argument("--json", action="store_true"); sp.set_defaults(func=cmd_runtime_doctor)
+    sp = runtime_sub.add_parser("wait", help="Wait until all required services pass readiness checks.")
+    sp.add_argument("--service", action="append"); sp.add_argument("--timeout", type=float); sp.add_argument("--interval", type=float); sp.add_argument("--logs", action="store_true"); sp.add_argument("--tail", type=int); sp.add_argument("--json", action="store_true"); sp.set_defaults(func=cmd_runtime_wait)
+    sp = runtime_sub.add_parser("up", help="Start services level by level and wait for each dependency level.")
+    sp.add_argument("--service", action="append"); sp.add_argument("--timeout", type=float); sp.add_argument("--interval", type=float); sp.add_argument("--logs", action=argparse.BooleanOptionalAction, default=True); sp.add_argument("--tail", type=int); sp.add_argument("--json", action="store_true"); sp.add_argument("--apply", action="store_true"); add_safety_flags(sp); sp.set_defaults(func=cmd_runtime_up)
 
     p = sub.add_parser("compose", help="Run compose operations with generated source metadata.")
     add_common(p); p.add_argument("compose_action", choices=["ps", "up", "down", "build", "pull", "logs"]); p.add_argument("--apply", action="store_true"); add_safety_flags(p); p.add_argument("extra", nargs=argparse.REMAINDER); p.set_defaults(func=cmd_compose)

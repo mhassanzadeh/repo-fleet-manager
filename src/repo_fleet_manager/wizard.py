@@ -385,6 +385,14 @@ def _base_config(scan: ScanResult | None, existing: dict[str, Any] | None = None
         }
         if scan.env_file:
             result["compose"]["env_file"] = scan.env_file
+        if scan.compose_services:
+            result["runtime"] = {
+                "timeout_seconds": 120,
+                "interval_seconds": 2,
+                "log_tail": 80,
+                "default_running_is_ready": True,
+                "services": {name: {"required": True, "depends_on": []} for name in scan.compose_services},
+            }
     return result
 
 
@@ -489,6 +497,15 @@ def _interactive_overrides(config: dict[str, Any], scan: ScanResult | None, sess
             config["local"]["default_jobs"] = int(jobs)
         except ValueError as exc:
             raise WizardError("default jobs must be an integer") from exc
+        if config.get("compose"):
+            runtime = config.setdefault("runtime", {})
+            runtime.setdefault("timeout_seconds", 120)
+            runtime.setdefault("interval_seconds", 2)
+            runtime.setdefault("log_tail", 80)
+            runtime.setdefault("default_running_is_ready", True)
+            runtime.setdefault("services", {})
+            for service in (scan.compose_services if scan else []):
+                runtime["services"].setdefault(service, {"required": True, "depends_on": []})
     return config
 
 
@@ -498,7 +515,7 @@ def _normalize_answers(answers: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(config, dict):
             raise WizardError("answers.config must be an object")
         return copy.deepcopy(config)
-    allowed_top = {"schema_version", "project", "providers", "repositories", "local", "compose", "fingerprint", "profiles", "groups"}
+    allowed_top = {"schema_version", "project", "providers", "repositories", "local", "compose", "runtime", "fingerprint", "profiles", "groups"}
     if any(key in allowed_top for key in answers):
         return {key: copy.deepcopy(value) for key, value in answers.items() if key in allowed_top}
     return {}

@@ -199,5 +199,26 @@
     "shared": [
       "my-shared-contracts"
     ]
+  },
+  "runtime": {
+    "timeout_seconds": 120,
+    "interval_seconds": 2,
+    "log_tail": 80,
+    "default_running_is_ready": true,
+    "services": {
+      "api": {
+        "required": true,
+        "depends_on": [],
+        "probe": {
+          "type": "http",
+          "url": "http://localhost:8080/healthz",
+          "expected_status": [
+            200,
+            204
+          ],
+          "timeout_seconds": 3
+        }
+      }
+    }
   }
 }
