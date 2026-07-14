@@ -25,7 +25,7 @@ complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a ops -d 'Op
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a docs -d 'Documentation utilities'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a completion -d 'Generate shell completion'
 
-complete -c rfm -n '__fish_seen_subcommand_from config; and not __fish_seen_subcommand_from validate migrate render profiles groups' -a 'validate migrate render profiles groups'
+complete -c rfm -n '__fish_seen_subcommand_from config; and not __fish_seen_subcommand_from validate migrate render profiles groups wizard' -a 'validate migrate render profiles groups wizard'
 complete -c rfm -n '__fish_seen_subcommand_from scaffold; and not __fish_seen_subcommand_from templates repository' -a 'templates repository'
 complete -c rfm -n '__fish_seen_subcommand_from bootstrap; and not __fish_seen_subcommand_from lock verify' -a 'lock verify'
 complete -c rfm -n '__fish_seen_subcommand_from auth; and not __fish_seen_subcommand_from status' -a status
@@ -117,3 +117,20 @@ complete -c rfm -n '__fish_seen_subcommand_from import' -l no-config -d 'Do not 
 complete -c rfm -n '__fish_seen_subcommand_from import bootstrap' -l overwrite -d 'Replace existing local remotes'
 complete -c rfm -n '__fish_seen_subcommand_from import bootstrap' -l allow-incomplete -d 'Import an explicitly incomplete cache'
 complete -c rfm -n '__fish_seen_subcommand_from verify import bootstrap' -F -d 'Offline cache archive'
+
+# Configuration wizard
+complete -c rfm -n '__fish_seen_subcommand_from wizard' -l config -r -a '(__fish_complete_suffix .json)' -d 'Existing configuration to edit'
+complete -c rfm -n '__fish_seen_subcommand_from wizard' -l root -r -a '(__fish_complete_directories)' -d 'Project root'
+complete -c rfm -n '__fish_seen_subcommand_from wizard' -l output -r -d 'Generated configuration path'
+complete -c rfm -n '__fish_seen_subcommand_from wizard' -l scan -r -a '(__fish_complete_directories)' -d 'Scan project directory'
+complete -c rfm -n '__fish_seen_subcommand_from wizard' -l quick -d 'Use essential questions and safe defaults'
+complete -c rfm -n '__fish_seen_subcommand_from wizard' -l advanced -d 'Generate profiles and groups'
+complete -c rfm -n '__fish_seen_subcommand_from wizard' -l answers -r -a '(__fish_complete_suffix .json)' -d 'Wizard answer file'
+complete -c rfm -n '__fish_seen_subcommand_from wizard' -l non-interactive -d 'Do not prompt'
+complete -c rfm -n '__fish_seen_subcommand_from wizard' -l resume -d 'Resume saved wizard session'
+complete -c rfm -n '__fish_seen_subcommand_from wizard' -l reset -d 'Delete saved wizard session'
+complete -c rfm -n '__fish_seen_subcommand_from wizard' -l session-file -r -d 'Wizard session path'
+complete -c rfm -n '__fish_seen_subcommand_from wizard' -l show-diff -d 'Show unified config diff'
+complete -c rfm -n '__fish_seen_subcommand_from wizard' -l no-backup -d 'Do not create backup while editing'
+complete -c rfm -n '__fish_seen_subcommand_from wizard' -l apply -d 'Write validated configuration'
+complete -c rfm -n '__fish_seen_subcommand_from wizard' -l json -d 'Print machine-readable result'

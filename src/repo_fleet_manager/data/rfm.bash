@@ -15,9 +15,9 @@ _rfm()
     local global_opts="--help --version --config --root --profile --group"
 
     case "$prev" in
-        --config|--output|--catalog-file|--config-output|--lock-file|--archive)
+        --config|--output|--catalog-file|--config-output|--lock-file|--archive|--answers|--session-file)
             COMPREPLY=( $(compgen -f -- "$cur") ); return ;;
-        --root|--remotes-dir|--backups-dir|--cache-dir|--directory)
+        --root|--remotes-dir|--backups-dir|--cache-dir|--directory|--scan)
             COMPREPLY=( $(compgen -d -- "$cur") ); return ;;
         --provider)
             COMPREPLY=( $(compgen -W "github gitlab local" -- "$cur") ); return ;;
@@ -48,7 +48,7 @@ _rfm()
         token="${words[i]}"
         if (( skip_next )); then skip_next=0; continue; fi
         case "$token" in
-            --config|--root|--profile|--group|--provider|--namespace|--visibility|--format|--view|--priority|--status|--output|--catalog-file|--reason|--jobs|--remote-name|--to|--backups-dir|--config-output|--retention|--cache-dir|--image|--engine|--directory|--branch|--description|--owner|--path|--template|--kind|--tag|--depends-on|--lock-file)
+            --config|--root|--profile|--group|--provider|--namespace|--visibility|--format|--view|--priority|--status|--output|--catalog-file|--reason|--jobs|--remote-name|--to|--backups-dir|--config-output|--retention|--cache-dir|--image|--engine|--directory|--branch|--description|--owner|--path|--template|--kind|--tag|--depends-on|--lock-file|--answers|--session-file|--scan)
                 skip_next=1; continue ;;
             --*) continue ;;
         esac
@@ -62,7 +62,7 @@ _rfm()
 
     local actions="" opts="--help --config --root --profile --group"
     case "$cmd" in
-        config) actions="validate migrate render profiles groups"; opts+=" --strict --json --to --no-backup --output --apply --force --reason" ;;
+        config) actions="validate migrate render profiles groups wizard"; opts+=" --strict --json --to --no-backup --output --apply --force --reason --scan --quick --advanced --answers --non-interactive --resume --reset --session-file --show-diff" ;;
         init-project) opts="--help --directory --branch --provider --namespace --visibility --description --owner --git-init --no-git-init --apply --force" ;;
         scaffold) actions="templates repository"; opts="--help --config --root --path --template --kind --description --branch --provider --visibility --tag --depends-on --owner --no-update-lock --json --apply --force" ;;
         bootstrap) actions="lock verify"; opts+=" --output --lock-file --json --apply --force" ;;

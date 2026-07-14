@@ -19,9 +19,13 @@ REPO_PATH ?=
 REPO_KIND ?= module
 TEMPLATE ?= generic
 LOCK_FILE ?= repo-fleet.lock.json
+WIZARD_OUTPUT ?= repo-fleet.json
+WIZARD_SCAN ?= .
+WIZARD_ANSWERS ?=
+WIZARD_SESSION ?= .repo-fleet/wizard/session.json
 SELECTION_ARGS = $(if $(PROFILE),--profile "$(PROFILE)",) $(if $(GROUP),--group "$(GROUP)",)
 
-.PHONY: install install-cli install-editable install-completions install-all uninstall uninstall-completions doctor auth-status config-validate config-migrate graph safety-status ops-list test validate validate-docs completion-bash completion-fish local-plan local-localize local-localize-apply local-bootstrap local-bootstrap-apply local-remotes local-remotes-apply local-remotes-update publish-github publish-gitlab catalog-summary catalog-tree catalog-gaps catalog-docs catalog-check release-check release-artifacts build clean local-backup local-backup-apply local-backups local-backup-verify local-restore local-restore-apply config-render config-profiles config-groups init-project init-project-apply scaffold-templates scaffold-repository scaffold-repository-apply bootstrap-lock bootstrap-lock-apply bootstrap-verify cache-export cache-export-apply cache-list cache-verify cache-import cache-import-apply cache-bootstrap cache-bootstrap-apply
+.PHONY: install install-cli install-editable install-completions install-all uninstall uninstall-completions doctor auth-status config-validate config-migrate graph safety-status ops-list test validate validate-docs completion-bash completion-fish local-plan local-localize local-localize-apply local-bootstrap local-bootstrap-apply local-remotes local-remotes-apply local-remotes-update publish-github publish-gitlab catalog-summary catalog-tree catalog-gaps catalog-docs catalog-check release-check release-artifacts build clean local-backup local-backup-apply local-backups local-backup-verify local-restore local-restore-apply config-render config-profiles config-groups init-project init-project-apply scaffold-templates scaffold-repository scaffold-repository-apply bootstrap-lock bootstrap-lock-apply bootstrap-verify cache-export cache-export-apply cache-list cache-verify cache-import cache-import-apply cache-bootstrap cache-bootstrap-apply config-wizard config-wizard-apply config-wizard-scan config-wizard-scan-apply config-wizard-answers config-wizard-reset
 
 install: install-cli install-completions
 
@@ -193,6 +197,27 @@ config-profiles:
 
 config-groups:
 	./scripts/rfm.sh config --config "$(CONFIG)" groups
+
+# RFM_CONFIG_WIZARD_TARGETS_BEGIN
+config-wizard:
+	./scripts/rfm.sh config wizard --root "$(ROOT)" --output "$(WIZARD_OUTPUT)" --quick
+
+config-wizard-apply:
+	./scripts/rfm.sh config wizard --root "$(ROOT)" --output "$(WIZARD_OUTPUT)" --quick --apply
+
+config-wizard-scan:
+	./scripts/rfm.sh config wizard --root "$(ROOT)" --scan "$(WIZARD_SCAN)" --output "$(WIZARD_OUTPUT)" --non-interactive
+
+config-wizard-scan-apply:
+	./scripts/rfm.sh config wizard --root "$(ROOT)" --scan "$(WIZARD_SCAN)" --output "$(WIZARD_OUTPUT)" --non-interactive --apply
+
+config-wizard-answers:
+	@test -n "$(WIZARD_ANSWERS)" || (echo "WIZARD_ANSWERS is required" >&2; exit 2)
+	./scripts/rfm.sh config wizard --root "$(ROOT)" --answers "$(WIZARD_ANSWERS)" --output "$(WIZARD_OUTPUT)" --non-interactive --apply
+
+config-wizard-reset:
+	./scripts/rfm.sh config wizard --root "$(ROOT)" --session-file "$(WIZARD_SESSION)" --reset
+# RFM_CONFIG_WIZARD_TARGETS_END
 
 auth-status:
 	./scripts/rfm.sh auth --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) status

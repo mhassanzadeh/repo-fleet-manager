@@ -20,6 +20,7 @@ from .localops import bootstrap_local, clone_local_repositories, create_local_re
 from .images import verify_images
 from .shell import command_exists
 from .service_catalog import load_service_catalog, render_catalog, summary as catalog_summary
+from .wizard import DEFAULT_CONFIG_FILE, DEFAULT_SESSION_FILE, load_answers, reset_session, run_wizard, scan_summary
 from .schema import CURRENT_SCHEMA_VERSION, ConfigValidationError, ValidationIssue, migrate_config_data, validate_config_data, validate_or_raise, write_migrated_config
 from .profiles import ConfigResolutionError
 from .scaffold import (
@@ -498,6 +499,73 @@ def cmd_config_groups(args: argparse.Namespace) -> int:
         for name, group in rows.items():
             print(f"{name}\t{json.dumps(group, ensure_ascii=False)}")
     return 0
+
+def cmd_config_wizard(args: argparse.Namespace) -> int:
+    root = Path(getattr(args, "wizard_root", None) or args.root).expanduser().resolve()
+    input_config_arg = getattr(args, "wizard_config", None) or args.config
+    input_config_path = Path(input_config_arg).expanduser() if input_config_arg else None
+    if input_config_path is not None and not input_config_path.is_absolute():
+        input_config_path = root / input_config_path
+    output = Path(args.output).expanduser() if args.output else (input_config_path if input_config_path else root / DEFAULT_CONFIG_FILE)
+    if not output.is_absolute():
+        output = root / output
+    scan_path = Path(args.scan).expanduser() if args.scan else None
+    if scan_path is not None and not scan_path.is_absolute():
+        scan_path = root / scan_path
+    answers_path = Path(args.answers).expanduser() if args.answers else None
+    if answers_path is not None and not answers_path.is_absolute():
+        answers_path = root / answers_path
+    session_file = Path(args.session_file).expanduser()
+    session_root = output.parent if output.is_absolute() else root
+    if args.reset:
+        target = reset_session(session_file, root=session_root)
+        if args.json:
+            print(json.dumps({"reset": True, "session_file": str(target)}, ensure_ascii=False, indent=2))
+        else:
+            print(f"[OK] removed wizard session: {target}")
+        return 0
+    answers = load_answers(answers_path) if answers_path else None
+    result = run_wizard(
+        output=output,
+        config_path=input_config_path,
+        scan_path=scan_path,
+        answers=answers,
+        quick=args.quick,
+        advanced=args.advanced,
+        non_interactive=args.non_interactive,
+        resume=args.resume,
+        session_file=session_file,
+        apply=args.apply,
+        force=args.force,
+        no_backup=args.no_backup,
+    )
+    payload = {
+        "output": str(result.output),
+        "changed": result.changed,
+        "applied": bool(args.apply),
+        "backup": str(result.backup) if result.backup else None,
+        "session_file": str(result.session_file),
+        "scan": scan_summary(result.scan),
+        "config": result.config,
+    }
+    if args.json:
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if result.scan:
+        summary = payload["scan"]
+        print(f"[SCAN] repositories={summary['repositories']} compose={summary['compose_file'] or '-'} engine={summary['engine']}")
+    if args.show_diff and result.diff:
+        print(result.diff, end="" if result.diff.endswith("\n") else "\n")
+    if args.apply:
+        state = "updated" if result.changed else "unchanged"
+        print(f"[OK] configuration {state}: {result.output}")
+        if result.backup:
+            print(f"[OK] backup: {result.backup}")
+    else:
+        print(json.dumps(result.config, ensure_ascii=False, indent=2))
+        print("[DRY-RUN] no file changed; re-run with --apply")
+    return 0
+
 
 def cmd_config_migrate(args: argparse.Namespace) -> int:
     path, raw = load_raw_config(args.config)
@@ -1147,6 +1215,25 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--json", action="store_true"); p.set_defaults(func=cmd_config_profiles)
     p = config_sub.add_parser("groups", help="List available repository groups.")
     p.add_argument("--json", action="store_true"); p.set_defaults(func=cmd_config_groups)
+    p = config_sub.add_parser("wizard", help="Interactively create, scan or edit repo-fleet.json.")
+    p.add_argument("--config", dest="wizard_config", help="Existing config to edit; accepted after the wizard subcommand.")
+    p.add_argument("--root", dest="wizard_root", help="Project root; accepted after the wizard subcommand.")
+    p.add_argument("--output", help="Output config path. Defaults to the input config or ./repo-fleet.json.")
+    p.add_argument("--scan", nargs="?", const=".", help="Scan a project directory for Git repositories, submodules and Compose hints.")
+    mode = p.add_mutually_exclusive_group()
+    mode.add_argument("--quick", action="store_true", help="Ask only essential questions and use safe defaults.")
+    mode.add_argument("--advanced", action="store_true", help="Add profiles, groups and advanced local defaults.")
+    p.add_argument("--answers", help="JSON answer file for repeatable or non-interactive generation.")
+    p.add_argument("--non-interactive", action="store_true", help="Do not prompt; requires answers, scan data or an existing config.")
+    p.add_argument("--resume", action="store_true", help="Resume answers from the saved wizard session.")
+    p.add_argument("--reset", action="store_true", help="Delete the saved wizard session and exit.")
+    p.add_argument("--session-file", default=DEFAULT_SESSION_FILE, help="Draft answer session path.")
+    p.add_argument("--show-diff", action="store_true", help="Show a unified diff before writing.")
+    p.add_argument("--no-backup", action="store_true", help="Do not create .bak when editing an existing config.")
+    p.add_argument("--json", action="store_true", help="Print machine-readable result details.")
+    p.add_argument("--apply", action="store_true", help="Write the validated configuration.")
+    p.add_argument("--force", action="store_true", help="Allow replacement while preserving the default backup behavior.")
+    p.set_defaults(func=cmd_config_wizard)
 
     p = sub.add_parser("init-project", help="Create a portable RFM parent project with config, CI and bootstrap lock.")
     p.add_argument("name")

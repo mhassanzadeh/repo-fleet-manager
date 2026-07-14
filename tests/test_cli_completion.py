@@ -28,6 +28,8 @@ class CompletionCommandTest(unittest.TestCase):
         self.assertIn("bootstrap", output)
         self.assertIn("cache", output)
         self.assertIn("allow-incomplete", output)
+        self.assertIn("wizard", output)
+        self.assertIn("--non-interactive", output)
 
     def test_fish_completion_contains_nested_commands(self):
         output = self.run_completion("fish")
@@ -43,6 +45,8 @@ class CompletionCommandTest(unittest.TestCase):
         self.assertIn("lock", output)
         self.assertIn("cache", output)
         self.assertIn("require-complete", output)
+        self.assertIn("wizard", output)
+        self.assertIn("session-file", output)
 
 
 if __name__ == "__main__":
