@@ -1,6 +1,6 @@
 # Repo Fleet Manager logical gap analysis
 
-> Catalog version `0.13.0` · 18 prioritized gaps
+> Catalog version `0.14.0` · 18 prioritized gaps
 
 ## P0
 
@@ -216,7 +216,7 @@ Acceptance criteria:
 
 ### GAP-012 — Container registry provenance, SBOM and signatures
 
-**Category:** `supply-chain` · **Current state:** `partial`
+**Category:** `supply-chain` · **Current state:** `implemented`
 
 Source labels alone do not establish which registry digest was deployed or whether the image and dependencies are trusted.
 

@@ -538,3 +538,16 @@ rfm logs --root . verify RUN_ID
 rfm logs --root . purge --retention-days 30
 rfm logs --root . purge --retention-days 30 --apply
 ```
+
+## Supply-chain commands
+
+```bash
+rfm supply-chain --config repo-fleet.json resolve [--service NAME] [--engine auto|docker|podman] [--apply]
+rfm supply-chain --config repo-fleet.json sbom [--format cyclonedx-json|spdx-json] [--apply]
+rfm supply-chain --config repo-fleet.json scan [--fail-on high] [--apply]
+rfm supply-chain --config repo-fleet.json verify [--require-signature] [--require-attestation]
+rfm supply-chain --config repo-fleet.json report
+rfm supply-chain --config repo-fleet.json collect [--fail-on high] [--apply]
+```
+
+تمام فرمان‌ها از `--format text|json|jsonl` و audit logging سراسری پشتیبانی می‌کنند.

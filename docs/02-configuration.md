@@ -336,3 +336,7 @@ rfm config wizard --scan . --advanced --output repo-fleet.json --non-interactive
 ```
 
 `logs_dir` بهتر است برای configهای قابل‌حمل نسبی باشد. `retention_days` بین ۱ تا ۳۶۵۰ است. Profileها می‌توانند این بخش را override کنند. اطلاعات حساس استاندارد بدون وابستگی به `redact_keys` پالایش می‌شوند. جزئیات در [خروجی ساخت‌یافته و Audit Logging](18-structured-output-and-audit-logging.md) آمده است.
+
+## Supply-chain policy
+
+بخش اختیاری `supply_chain` مسیر artifactها، resolver digest، فرمت SBOM، آستانه آسیب‌پذیری و الزامات Cosign را تعیین می‌کند. نمونه کامل در [Supply-chain provenance](19-supply-chain-provenance.md) آمده است. مسیرهای `output_dir`، `cosign.key` و `cosign.attestation_policy` باید قابل‌حمل باشند و secret در config مجاز نیست.

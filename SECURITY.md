@@ -26,3 +26,7 @@ RFM journals local operations to support inspection and recovery. Journals can c
 ## Audit log security
 
 از نسخه `0.13.0` خروجی ساخت‌یافته و audit log پیش از ذخیره پالایش می‌شوند. فایل‌های `.repo-fleet/logs/*.jsonl` با permission محدود ساخته می‌شوند. با وجود redaction خودکار، این فایل‌ها ممکن است شامل نام repository، مسیر workspace، commandها و diagnosticهای عملیاتی باشند؛ بنابراین باید با همان سیاست دسترسی operation journalها نگهداری شوند.
+
+## Container supply-chain trust
+
+نسخه `0.14.0` digest ثابت registry، SBOM و reportهای vulnerability را در `.repo-fleet/supply-chain` نگهداری می‌کند. این artifactها ممکن است نام packageها و topology سرویس‌ها را افشا کنند و باید مانند audit logها محافظت شوند. کلید خصوصی Cosign نباید در config یا repository ذخیره شود؛ فقط public key، KMS URI یا keyless certificate identity/issuer در policy ثبت می‌شود.

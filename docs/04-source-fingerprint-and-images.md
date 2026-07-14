@@ -77,3 +77,7 @@ LABEL io.repo-fleet.build-sha=$MYAPP_BUILD_SHA
 LABEL io.repo-fleet.source-digest=$MYAPP_BUILD_SOURCE_DIGEST
 LABEL io.repo-fleet.build-time=$MYAPP_BUILD_TIME
 ```
+
+## Immutable provenance
+
+فرمان قدیمی `rfm images verify` labelهای image محلی را بررسی می‌کند. برای زنجیره کامل registry digest، SBOM، vulnerability و Cosign از `rfm supply-chain` استفاده کنید. verification جدید fingerprint فعلی را با `io.repo-fleet.source-digest` مقایسه و سپس فقط reference ثابت digest را می‌پذیرد.

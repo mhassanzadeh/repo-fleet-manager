@@ -6,6 +6,22 @@ The format follows Keep a Changelog and the project uses Semantic Versioning whi
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-07-14
+
+### Added
+
+- Immutable registry digest resolution through Docker, Podman or Skopeo.
+- Syft CycloneDX/SPDX SBOM generation and Grype vulnerability scanning.
+- Cosign key-based and keyless signature/attestation verification.
+- `rfm supply-chain resolve`, `sbom`, `scan`, `verify`, `report` and `collect` workflows.
+- Versioned provenance manifest with artifact checksums and per-service policy overrides.
+
+### Security
+
+- Mutable tags, source-label mismatches and unsafe artifact paths are rejected.
+- Signature and attestation enforcement fails closed when trust identity or key is missing.
+- Verification targets immutable `image@sha256:digest` references.
+
 ## [0.13.0] - 2026-07-14
 
 ### Added
@@ -155,7 +171,8 @@ The format follows Keep a Changelog and the project uses Semantic Versioning whi
 - Workspace locking, safety guards, operation journal, resume and rollback.
 - Dependency graph and controlled parallel execution.
 
-[Unreleased]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.14.0...HEAD
+[0.14.0]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.10.0...v0.11.0

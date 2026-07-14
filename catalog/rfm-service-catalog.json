@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "catalog_version": "0.13.0",
+  "catalog_version": "0.14.0",
   "project": {
     "name": "Repo Fleet Manager",
     "short_name": "RFM",
@@ -591,27 +591,36 @@
         {
           "id": "runtime.image-label-verify",
           "name": "Verify image labels against source fingerprints",
-          "status": "partial",
-          "maturity": "alpha",
+          "status": "implemented",
+          "maturity": "beta",
           "commands": [
-            "rfm images verify"
+            "rfm images verify",
+            "rfm supply-chain resolve",
+            "rfm supply-chain verify"
           ],
           "components": [
-            "src/repo_fleet_manager/images.py"
-          ],
-          "gap_refs": [
-            "GAP-012"
+            "src/repo_fleet_manager/images.py",
+            "src/repo_fleet_manager/supply_chain.py",
+            "tests/test_supply_chain.py",
+            "docs/19-supply-chain-provenance.md"
           ]
         },
         {
           "id": "runtime.registry-provenance",
           "name": "Registry digest, SBOM and signature verification",
-          "status": "missing",
-          "maturity": "not-started",
-          "commands": [],
-          "components": [],
-          "gap_refs": [
-            "GAP-012"
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm supply-chain resolve --apply",
+            "rfm supply-chain sbom --apply",
+            "rfm supply-chain scan --apply",
+            "rfm supply-chain verify"
+          ],
+          "components": [
+            "src/repo_fleet_manager/supply_chain.py",
+            "schemas/rfm-provenance.schema.json",
+            "tests/test_supply_chain.py",
+            "docs/19-supply-chain-provenance.md"
           ]
         },
         {
@@ -778,12 +787,18 @@
         {
           "id": "security.supply-chain",
           "name": "SBOM, image signing and commit verification",
-          "status": "missing",
-          "maturity": "not-started",
-          "commands": [],
-          "components": [],
+          "status": "partial",
+          "maturity": "alpha",
+          "commands": [
+            "rfm supply-chain verify --require-signature --require-attestation"
+          ],
+          "components": [
+            "src/repo_fleet_manager/supply_chain.py",
+            "src/repo_fleet_manager/schema.py",
+            "SECURITY.md",
+            "docs/19-supply-chain-provenance.md"
+          ],
           "gap_refs": [
-            "GAP-012",
             "GAP-014"
           ]
         }
@@ -1172,7 +1187,7 @@
       "title": "Container registry provenance, SBOM and signatures",
       "priority": "P1",
       "category": "supply-chain",
-      "status": "partial",
+      "status": "implemented",
       "rationale": "Source labels alone do not establish which registry digest was deployed or whether the image and dependencies are trusted.",
       "recommended_scope": [
         "Resolve immutable registry digests",
@@ -1184,7 +1199,8 @@
         "Verification works without mutable tags",
         "Unsigned/untrusted images can be blocked by policy",
         "Reports identify exact source and image digests"
-      ]
+      ],
+      "resolved_in": "0.14.0"
     },
     {
       "id": "GAP-013",
