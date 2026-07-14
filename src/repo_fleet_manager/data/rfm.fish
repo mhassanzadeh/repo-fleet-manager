@@ -3,7 +3,7 @@ complete -c rfm -f
 complete -c rfm -s h -l help -d 'Show help'
 complete -c rfm -l version -d 'Show version'
 
-set -l rfm_commands config init-project scaffold bootstrap doctor auth catalog graph safety repos submodules local cache git source runtime compose images ops logs docs completion
+set -l rfm_commands config init-project scaffold bootstrap doctor auth catalog graph safety repos submodules local cache git source runtime compose images supply-chain ops logs docs completion
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a config -d 'Validate and migrate configuration'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a init-project -d 'Create a portable parent project'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a scaffold -d 'Generate repositories from templates'
@@ -22,6 +22,7 @@ complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a source -d 
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a runtime -d 'Runtime health and readiness'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a compose -d 'Compose operations'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a images -d 'Image verification'
+complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a supply-chain -d 'Image provenance, SBOM and signature verification'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a ops -d 'Operation journals and rollback'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a logs -d 'Structured audit logs'
 complete -c rfm -n "not __fish_seen_subcommand_from $rfm_commands" -a docs -d 'Documentation utilities'
@@ -42,6 +43,7 @@ complete -c rfm -n '__fish_seen_subcommand_from source; and not __fish_seen_subc
 complete -c rfm -n '__fish_seen_subcommand_from runtime; and not __fish_seen_subcommand_from status doctor wait up' -a 'status doctor wait up'
 complete -c rfm -n '__fish_seen_subcommand_from compose; and not __fish_seen_subcommand_from ps up down build pull logs' -a 'ps up down build pull logs'
 complete -c rfm -n '__fish_seen_subcommand_from images; and not __fish_seen_subcommand_from verify' -a verify
+complete -c rfm -n '__fish_seen_subcommand_from supply-chain; and not __fish_seen_subcommand_from resolve sbom scan verify report collect' -a 'resolve sbom scan verify report collect'
 complete -c rfm -n '__fish_seen_subcommand_from ops; and not __fish_seen_subcommand_from list show resume rollback' -a 'list show resume rollback'
 complete -c rfm -n '__fish_seen_subcommand_from logs; and not __fish_seen_subcommand_from list show verify purge' -a 'list show verify purge'
 complete -c rfm -n '__fish_seen_subcommand_from docs; and not __fish_seen_subcommand_from validate-links' -a validate-links
@@ -156,3 +158,19 @@ complete -c rfm -n '__fish_seen_subcommand_from logs' -l log-dir -r -a '(__fish_
 complete -c rfm -n '__fish_seen_subcommand_from purge' -l retention-days -r -d 'Delete logs older than this many days'
 complete -c rfm -n '__fish_seen_subcommand_from purge' -l apply -d 'Delete matched logs'
 complete -c rfm -n '__fish_seen_subcommand_from list show verify purge' -l json -d 'JSON output'
+
+# Supply-chain provenance
+complete -c rfm -n '__fish_seen_subcommand_from supply-chain' -l service -r -d 'Limit to service; repeatable'
+complete -c rfm -n '__fish_seen_subcommand_from supply-chain' -l output-dir -r -a '(__fish_complete_directories)' -d 'Provenance output directory'
+complete -c rfm -n '__fish_seen_subcommand_from resolve collect' -l engine -r -a 'auto docker podman' -d 'Container engine'
+complete -c rfm -n '__fish_seen_subcommand_from sbom collect' -l format -r -a 'cyclonedx-json spdx-json' -d 'SBOM format'
+complete -c rfm -n '__fish_seen_subcommand_from scan verify collect' -l fail-on -r -a 'unknown negligible low medium high critical' -d 'Vulnerability severity threshold'
+complete -c rfm -n '__fish_seen_subcommand_from sbom collect' -l allow-mutable -d 'Allow mutable image references'
+complete -c rfm -n '__fish_seen_subcommand_from verify' -l require-signature -d 'Require Cosign signature'
+complete -c rfm -n '__fish_seen_subcommand_from verify' -l no-require-signature -d 'Do not require Cosign signature'
+complete -c rfm -n '__fish_seen_subcommand_from verify' -l require-attestation -d 'Require Cosign attestation'
+complete -c rfm -n '__fish_seen_subcommand_from verify' -l no-require-attestation -d 'Do not require Cosign attestation'
+complete -c rfm -n '__fish_seen_subcommand_from verify' -l key -r -F -d 'Cosign public key or KMS URI'
+complete -c rfm -n '__fish_seen_subcommand_from verify' -l certificate-identity -r -d 'Expected signing identity'
+complete -c rfm -n '__fish_seen_subcommand_from verify' -l certificate-oidc-issuer -r -d 'Expected OIDC issuer'
+complete -c rfm -n '__fish_seen_subcommand_from verify' -l attestation-type -r -d 'Cosign attestation type'

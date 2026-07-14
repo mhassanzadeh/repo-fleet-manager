@@ -286,6 +286,33 @@ def _runtime_issues(data: dict[str, Any]) -> list[ValidationIssue]:
     return issues
 
 
+
+def _supply_chain_issues(data: dict[str, Any]) -> list[ValidationIssue]:
+    issues: list[ValidationIssue] = []
+    config = data.get("supply_chain") or {}
+    if not isinstance(config, dict):
+        return issues
+    services = config.get("services") or {}
+    service_enforcement = any(
+        isinstance(value, dict) and (value.get("require_signature") or value.get("require_attestation"))
+        for value in services.values()
+    ) if isinstance(services, dict) else False
+    signature_required = bool(config.get("require_signature"))
+    attestation_required = bool(config.get("require_attestation"))
+    if signature_required or attestation_required or service_enforcement:
+        cosign = config.get("cosign") or {}
+        key = cosign.get("key") if isinstance(cosign, dict) else None
+        identity = cosign.get("certificate_identity") if isinstance(cosign, dict) else None
+        issuer = cosign.get("certificate_oidc_issuer") if isinstance(cosign, dict) else None
+        if not key and not (identity and issuer):
+            issues.append(ValidationIssue(
+                "$.supply_chain.cosign",
+                "signature or attestation enforcement requires a public key/KMS URI or certificate identity and OIDC issuer",
+                "missing-cosign-trust-policy",
+                "configure cosign.key or both certificate_identity and certificate_oidc_issuer",
+            ))
+    return issues
+
 def semantic_issues(data: dict[str, Any]) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
     providers = data.get("providers") or {}
@@ -338,6 +365,7 @@ def semantic_issues(data: dict[str, Any]) -> list[ValidationIssue]:
     issues.extend(_dependency_issues(repositories))
     issues.extend(_profile_and_group_issues(data))
     issues.extend(_runtime_issues(data))
+    issues.extend(_supply_chain_issues(data))
     issues.extend(_walk_sensitive(data))
     return issues
 

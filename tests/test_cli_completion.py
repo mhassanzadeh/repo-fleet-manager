@@ -37,6 +37,8 @@ class CompletionCommandTest(unittest.TestCase):
         self.assertIn("jsonl", output)
         self.assertIn("--audit-log", output)
         self.assertIn("--run-id", output)
+        self.assertIn("supply-chain", output)
+        self.assertIn("--require-attestation", output)
 
     def test_fish_completion_contains_nested_commands(self):
         output = self.run_completion("fish")
@@ -60,6 +62,8 @@ class CompletionCommandTest(unittest.TestCase):
         self.assertIn("jsonl", output)
         self.assertIn("audit-log", output)
         self.assertIn("run-id", output)
+        self.assertIn("supply-chain", output)
+        self.assertIn("require-attestation", output)
 
 
 if __name__ == "__main__":

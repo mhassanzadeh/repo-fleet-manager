@@ -573,5 +573,19 @@
     "audit_enabled": true,
     "retention_days": 30,
     "include_output": true
+  },
+  "supply_chain": {
+    "output_dir": ".repo-fleet/supply-chain",
+    "engine": "auto",
+    "digest_resolver": "auto",
+    "sbom_format": "cyclonedx-json",
+    "vulnerability_threshold": "high",
+    "require_immutable_digest": true,
+    "require_source_label": true,
+    "require_sbom": true,
+    "require_scan": false,
+    "require_signature": false,
+    "require_attestation": false,
+    "cosign": {}
   }
 }

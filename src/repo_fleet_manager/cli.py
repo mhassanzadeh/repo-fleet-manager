@@ -21,6 +21,10 @@ from .gitops import audit, create_repositories, git_foreach, print_audit_report,
 from .localops import bootstrap_local, clone_local_repositories, create_local_remotes, init_local_worktrees, localize, print_local_plan
 from .images import verify_images
 from .runtime import ordered_runtime_up, runtime_doctor, runtime_status, wait_runtime
+from .supply_chain import (
+    SEVERITIES, collect_supply_chain, generate_sboms, report_supply_chain,
+    resolve_supply_chain, scan_sboms, verify_supply_chain,
+)
 from .shell import command_exists
 from .service_catalog import load_service_catalog, render_catalog, summary as catalog_summary
 from .wizard import DEFAULT_CONFIG_FILE, DEFAULT_SESSION_FILE, load_answers, reset_session, run_wizard, scan_summary
@@ -470,7 +474,7 @@ def _command_label(args: argparse.Namespace) -> str:
     action_names = (
         "config_action", "scaffold_action", "bootstrap_action", "catalog_action", "repos_action",
         "submodules_action", "local_action", "cache_action", "git_action", "source_action",
-        "runtime_action", "compose_action", "images_action", "ops_action", "logs_action", "docs_action",
+        "runtime_action", "compose_action", "images_action", "supply_chain_action", "ops_action", "logs_action", "docs_action",
     )
     for name in action_names:
         value = getattr(args, name, None)
@@ -871,7 +875,24 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     cfg = _config(args)
     root = _root(args)
     required = ["git", "python3"]
-    optional = ["docker", "podman", "podman-compose", "gh", "glab"]
+    optional = ["docker", "podman", "podman-compose", "gh", "glab", "skopeo"]
+    supply = cfg.supply_chain or {}
+    supply_required: list[str] = []
+    if supply:
+        if supply.get("require_sbom", True):
+            supply_required.append("syft")
+        if supply.get("require_scan", False):
+            supply_required.append("grype")
+        service_policies = supply.get("services") or {}
+        signature_required = bool(supply.get("require_signature") or supply.get("require_attestation"))
+        if isinstance(service_policies, dict):
+            signature_required = signature_required or any(
+                isinstance(policy, dict) and (policy.get("require_signature") or policy.get("require_attestation"))
+                for policy in service_policies.values()
+            )
+        if signature_required:
+            supply_required.append("cosign")
+    required.extend(command for command in supply_required if command not in required)
     print(f"Repo Fleet Manager {__version__}")
     print(f"config: {cfg.path}")
     print(f"schema: {cfg.schema_version}")
@@ -1364,6 +1385,92 @@ def cmd_images_verify(args: argparse.Namespace) -> int:
     return verify_images(cfg, _root(args), args.json)
 
 
+def _print_supply_resolution(report, *, json_output: bool = False) -> int:
+    if json_output:
+        print(json.dumps(report.to_dict(), ensure_ascii=False, indent=2))
+    else:
+        print(f"Supply chain resolution: {'OK' if report.ok else 'INCOMPLETE'} engine={report.engine or '-'}")
+        for item in report.services:
+            status = "OK" if not item.errors else "FAIL"
+            print(
+                f" - [{status:<4}] {item.service:<24} digest={item.digest or '-':<71} "
+                f"source={'MATCH' if item.source_match else 'FAIL'} image={item.resolved_reference or item.image or '-'}"
+            )
+            for error in item.errors:
+                print(f"     error: {error}")
+        for error in report.errors:
+            print(f"[ERROR] {error}")
+    return 0 if report.ok else 2
+
+
+def cmd_supply_chain_resolve(args: argparse.Namespace) -> int:
+    cfg = _config(args)
+    callback = lambda: _print_supply_resolution(
+        resolve_supply_chain(
+            cfg, _root(args), selected=args.service, engine=args.engine,
+            output_override=args.output_dir, write=args.apply,
+        ),
+        json_output=args.json,
+    )
+    if not args.apply:
+        return callback()
+    return _mutate(args, cfg, "supply-chain resolve", callback, require_clean=False)
+
+
+def cmd_supply_chain_sbom(args: argparse.Namespace) -> int:
+    cfg = _config(args)
+    callback = lambda: generate_sboms(
+        cfg, _root(args), selected=args.service, sbom_format=args.sbom_format,
+        output_override=args.output_dir, allow_mutable=args.allow_mutable,
+        apply=args.apply, json_output=args.json,
+    )
+    if not args.apply:
+        return callback()
+    return _mutate(args, cfg, "supply-chain sbom", callback, require_clean=False)
+
+
+def cmd_supply_chain_scan(args: argparse.Namespace) -> int:
+    cfg = _config(args)
+    callback = lambda: scan_sboms(
+        cfg, _root(args), selected=args.service, threshold=args.fail_on,
+        output_override=args.output_dir, apply=args.apply, json_output=args.json,
+    )
+    if not args.apply:
+        return callback()
+    return _mutate(args, cfg, "supply-chain scan", callback, require_clean=False)
+
+
+def cmd_supply_chain_verify(args: argparse.Namespace) -> int:
+    cfg = _config(args)
+    return verify_supply_chain(
+        cfg, _root(args), selected=args.service, output_override=args.output_dir,
+        threshold=args.fail_on, require_signature=args.require_signature,
+        require_attestation=args.require_attestation, key=args.key,
+        certificate_identity=args.certificate_identity,
+        certificate_oidc_issuer=args.certificate_oidc_issuer,
+        attestation_type=args.attestation_type, json_output=args.json,
+    )
+
+
+def cmd_supply_chain_report(args: argparse.Namespace) -> int:
+    cfg = _config(args)
+    return report_supply_chain(
+        cfg, _root(args), selected=args.service, output_override=args.output_dir, json_output=args.json,
+    )
+
+
+def cmd_supply_chain_collect(args: argparse.Namespace) -> int:
+    cfg = _config(args)
+    callback = lambda: collect_supply_chain(
+        cfg, _root(args), selected=args.service, engine=args.engine, sbom_format=args.sbom_format,
+        threshold=args.fail_on, output_override=args.output_dir, allow_mutable=args.allow_mutable,
+        apply=args.apply, json_output=args.json,
+    )
+    if not args.apply:
+        return callback()
+    return _mutate(args, cfg, "supply-chain collect", callback, require_clean=False)
+
+
 def cmd_docs_validate(args: argparse.Namespace) -> int:
     return validate_links(_root(args))
 
@@ -1615,6 +1722,21 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("compose", help="Run compose operations with generated source metadata.")
     add_common(p); p.add_argument("compose_action", choices=["ps", "up", "down", "build", "pull", "logs"]); p.add_argument("--apply", action="store_true"); add_safety_flags(p); p.add_argument("extra", nargs=argparse.REMAINDER); p.set_defaults(func=cmd_compose)
+
+    supply = sub.add_parser("supply-chain", help="Resolve immutable image provenance, generate SBOMs and enforce trust policy.")
+    add_common(supply); supply_sub = supply.add_subparsers(dest="supply_chain_action", required=True)
+    sp = supply_sub.add_parser("resolve", help="Resolve immutable digests and compare source labels.")
+    sp.add_argument("--service", action="append"); sp.add_argument("--engine", choices=["auto", "docker", "podman"]); sp.add_argument("--output-dir"); sp.add_argument("--json", action="store_true"); sp.add_argument("--apply", action="store_true"); add_safety_flags(sp); sp.set_defaults(func=cmd_supply_chain_resolve)
+    sp = supply_sub.add_parser("sbom", help="Generate CycloneDX or SPDX SBOMs with Syft.")
+    sp.add_argument("--service", action="append"); sp.add_argument("--format", dest="sbom_format", choices=["cyclonedx-json", "spdx-json"]); sp.add_argument("--output-dir"); sp.add_argument("--allow-mutable", action="store_true"); sp.add_argument("--json", action="store_true"); sp.add_argument("--apply", action="store_true"); add_safety_flags(sp); sp.set_defaults(func=cmd_supply_chain_sbom)
+    sp = supply_sub.add_parser("scan", help="Scan generated SBOMs with Grype and enforce a severity threshold.")
+    sp.add_argument("--service", action="append"); sp.add_argument("--fail-on", choices=list(SEVERITIES)); sp.add_argument("--output-dir"); sp.add_argument("--json", action="store_true"); sp.add_argument("--apply", action="store_true"); add_safety_flags(sp); sp.set_defaults(func=cmd_supply_chain_scan)
+    sp = supply_sub.add_parser("verify", help="Verify digest, source provenance, SBOM, vulnerabilities and Cosign trust.")
+    sp.add_argument("--service", action="append"); sp.add_argument("--fail-on", choices=list(SEVERITIES)); sp.add_argument("--output-dir"); sp.add_argument("--require-signature", action=argparse.BooleanOptionalAction, default=None); sp.add_argument("--require-attestation", action=argparse.BooleanOptionalAction, default=None); sp.add_argument("--key"); sp.add_argument("--certificate-identity"); sp.add_argument("--certificate-oidc-issuer"); sp.add_argument("--attestation-type"); sp.add_argument("--json", action="store_true"); sp.set_defaults(func=cmd_supply_chain_verify)
+    sp = supply_sub.add_parser("report", help="Render the current provenance manifest.")
+    sp.add_argument("--service", action="append"); sp.add_argument("--output-dir"); sp.add_argument("--json", action="store_true"); sp.set_defaults(func=cmd_supply_chain_report)
+    sp = supply_sub.add_parser("collect", help="Resolve, generate SBOMs and scan in one workflow.")
+    sp.add_argument("--service", action="append"); sp.add_argument("--engine", choices=["auto", "docker", "podman"]); sp.add_argument("--format", dest="sbom_format", choices=["cyclonedx-json", "spdx-json"]); sp.add_argument("--fail-on", choices=list(SEVERITIES)); sp.add_argument("--output-dir"); sp.add_argument("--allow-mutable", action="store_true"); sp.add_argument("--json", action="store_true"); sp.add_argument("--apply", action="store_true"); add_safety_flags(sp); sp.set_defaults(func=cmd_supply_chain_collect)
 
     p = sub.add_parser("images", help="Verify built image labels against source fingerprints.")
     add_common(p); img_sub = p.add_subparsers(dest="images_action", required=True)

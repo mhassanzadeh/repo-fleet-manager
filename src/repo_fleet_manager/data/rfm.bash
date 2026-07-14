@@ -11,13 +11,13 @@ _rfm()
         prev="${COMP_WORDS[COMP_CWORD-1]}"
     fi
 
-    local commands="config init-project scaffold bootstrap doctor auth catalog graph safety repos submodules local cache git source runtime compose images ops logs docs completion"
+    local commands="config init-project scaffold bootstrap doctor auth catalog graph safety repos submodules local cache git source runtime compose images supply-chain ops logs docs completion"
     local global_opts="--help --version --config --root --profile --group --format --log-dir --run-id --audit-log --no-audit-log"
 
     case "$prev" in
-        --config|--output|--catalog-file|--config-output|--lock-file|--archive|--answers|--session-file)
+        --config|--output|--catalog-file|--config-output|--lock-file|--archive|--answers|--session-file|--key)
             COMPREPLY=( $(compgen -f -- "$cur") ); return ;;
-        --root|--remotes-dir|--backups-dir|--cache-dir|--directory|--scan|--log-dir)
+        --root|--remotes-dir|--backups-dir|--cache-dir|--directory|--scan|--log-dir|--output-dir)
             COMPREPLY=( $(compgen -d -- "$cur") ); return ;;
         --provider)
             COMPREPLY=( $(compgen -W "github gitlab local" -- "$cur") ); return ;;
@@ -35,6 +35,8 @@ _rfm()
             COMPREPLY=( $(compgen -W "P0 P1 P2 P3" -- "$cur") ); return ;;
         --status)
             COMPREPLY=( $(compgen -W "implemented partial planned missing" -- "$cur") ); return ;;
+        --fail-on)
+            COMPREPLY=( $(compgen -W "unknown negligible low medium high critical" -- "$cur") ); return ;;
         --only)
             COMPREPLY=( $(compgen -W "all new upstream existing" -- "$cur") ); return ;;
         --to)
@@ -48,7 +50,7 @@ _rfm()
         token="${words[i]}"
         if (( skip_next )); then skip_next=0; continue; fi
         case "$token" in
-            --config|--root|--profile|--group|--provider|--namespace|--visibility|--format|--view|--priority|--status|--output|--catalog-file|--reason|--jobs|--remote-name|--to|--backups-dir|--config-output|--retention|--cache-dir|--image|--engine|--directory|--branch|--description|--owner|--path|--template|--kind|--tag|--depends-on|--lock-file|--answers|--session-file|--scan|--service|--timeout|--interval|--tail|--log-dir|--run-id|--retention-days)
+            --config|--root|--profile|--group|--provider|--namespace|--visibility|--format|--view|--priority|--status|--output|--catalog-file|--reason|--jobs|--remote-name|--to|--backups-dir|--config-output|--retention|--cache-dir|--image|--engine|--directory|--branch|--description|--owner|--path|--template|--kind|--tag|--depends-on|--lock-file|--answers|--session-file|--scan|--service|--timeout|--interval|--tail|--log-dir|--run-id|--retention-days|--output-dir|--fail-on|--key|--certificate-identity|--certificate-oidc-issuer|--attestation-type)
                 skip_next=1; continue ;;
             --*) continue ;;
         esac
@@ -80,6 +82,7 @@ _rfm()
         runtime) actions="status doctor wait up"; opts+=" --service --timeout --interval --logs --no-logs --tail --json --apply --force --reason" ;;
         compose) actions="ps up down build pull logs"; opts+=" --apply --force --reason" ;;
         images) actions="verify"; opts+=" --json" ;;
+        supply-chain) actions="resolve sbom scan verify report collect"; opts+=" --service --engine --output-dir --format --fail-on --allow-mutable --require-signature --no-require-signature --require-attestation --no-require-attestation --key --certificate-identity --certificate-oidc-issuer --attestation-type --json --apply --force --reason" ;;
         ops) actions="list show resume rollback"; opts+=" --json --force --reason" ;;
         logs) actions="list show verify purge"; opts+=" --json --retention-days --apply" ;;
         docs) actions="validate-links" ;;

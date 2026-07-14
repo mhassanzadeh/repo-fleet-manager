@@ -32,10 +32,20 @@ OUTPUT_FORMAT ?= text
 LOG_DIR ?=
 RUN_ID ?=
 RETENTION_DAYS ?= 30
+SUPPLY_SERVICE ?=
+SUPPLY_ENGINE ?=
+SUPPLY_OUTPUT_DIR ?=
+SUPPLY_FORMAT ?= cyclonedx-json
+SUPPLY_FAIL_ON ?= high
+SUPPLY_KEY ?=
+SUPPLY_CERTIFICATE_IDENTITY ?=
+SUPPLY_CERTIFICATE_OIDC_ISSUER ?=
+SUPPLY_ATTESTATION_TYPE ?=
+SUPPLY_ARGS = $(if $(SUPPLY_SERVICE),--service "$(SUPPLY_SERVICE)",) $(if $(SUPPLY_OUTPUT_DIR),--output-dir "$(SUPPLY_OUTPUT_DIR)",)
 OBSERVABILITY_ARGS = --format "$(OUTPUT_FORMAT)" $(if $(LOG_DIR),--log-dir "$(LOG_DIR)",)
 SELECTION_ARGS = $(if $(PROFILE),--profile "$(PROFILE)",) $(if $(GROUP),--group "$(GROUP)",)
 
-.PHONY: install install-cli install-editable install-completions install-all uninstall uninstall-completions doctor auth-status config-validate config-migrate graph safety-status ops-list test validate validate-docs completion-bash completion-fish local-plan local-localize local-localize-apply local-bootstrap local-bootstrap-apply local-remotes local-remotes-apply local-remotes-update publish-github publish-gitlab catalog-summary catalog-tree catalog-gaps catalog-docs catalog-check release-check release-artifacts build clean local-backup local-backup-apply local-backups local-backup-verify local-restore local-restore-apply config-render config-profiles config-groups init-project init-project-apply scaffold-templates scaffold-repository scaffold-repository-apply bootstrap-lock bootstrap-lock-apply bootstrap-verify cache-export cache-export-apply cache-list cache-verify cache-import cache-import-apply cache-bootstrap cache-bootstrap-apply config-wizard config-wizard-apply config-wizard-scan config-wizard-scan-apply config-wizard-answers config-wizard-reset runtime-status runtime-doctor runtime-wait runtime-up runtime-up-apply logs-list logs-show logs-verify logs-purge logs-purge-apply
+.PHONY: install install-cli install-editable install-completions install-all uninstall uninstall-completions doctor auth-status config-validate config-migrate graph safety-status ops-list test validate validate-docs completion-bash completion-fish local-plan local-localize local-localize-apply local-bootstrap local-bootstrap-apply local-remotes local-remotes-apply local-remotes-update publish-github publish-gitlab catalog-summary catalog-tree catalog-gaps catalog-docs catalog-check release-check release-artifacts build clean local-backup local-backup-apply local-backups local-backup-verify local-restore local-restore-apply config-render config-profiles config-groups init-project init-project-apply scaffold-templates scaffold-repository scaffold-repository-apply bootstrap-lock bootstrap-lock-apply bootstrap-verify cache-export cache-export-apply cache-list cache-verify cache-import cache-import-apply cache-bootstrap cache-bootstrap-apply config-wizard config-wizard-apply config-wizard-scan config-wizard-scan-apply config-wizard-answers config-wizard-reset runtime-status runtime-doctor runtime-wait runtime-up runtime-up-apply logs-list logs-show logs-verify logs-purge logs-purge-apply supply-chain-resolve supply-chain-resolve-apply supply-chain-sbom supply-chain-sbom-apply supply-chain-scan supply-chain-scan-apply supply-chain-verify supply-chain-report supply-chain-collect supply-chain-collect-apply
 
 install: install-cli install-completions
 
@@ -245,6 +255,38 @@ config-wizard-answers:
 config-wizard-reset:
 	./scripts/rfm.sh config wizard --root "$(ROOT)" --session-file "$(WIZARD_SESSION)" --reset
 # RFM_CONFIG_WIZARD_TARGETS_END
+
+# RFM_SUPPLY_CHAIN_TARGETS_BEGIN
+supply-chain-resolve:
+	./scripts/rfm.sh supply-chain --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) resolve $(SUPPLY_ARGS) $(if $(SUPPLY_ENGINE),--engine "$(SUPPLY_ENGINE)",)
+
+supply-chain-resolve-apply:
+	./scripts/rfm.sh supply-chain --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) resolve $(SUPPLY_ARGS) $(if $(SUPPLY_ENGINE),--engine "$(SUPPLY_ENGINE)",) --apply
+
+supply-chain-sbom:
+	./scripts/rfm.sh supply-chain --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) sbom $(SUPPLY_ARGS) --format "$(SUPPLY_FORMAT)"
+
+supply-chain-sbom-apply:
+	./scripts/rfm.sh supply-chain --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) sbom $(SUPPLY_ARGS) --format "$(SUPPLY_FORMAT)" --apply
+
+supply-chain-scan:
+	./scripts/rfm.sh supply-chain --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) scan $(SUPPLY_ARGS) --fail-on "$(SUPPLY_FAIL_ON)"
+
+supply-chain-scan-apply:
+	./scripts/rfm.sh supply-chain --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) scan $(SUPPLY_ARGS) --fail-on "$(SUPPLY_FAIL_ON)" --apply
+
+supply-chain-verify:
+	./scripts/rfm.sh supply-chain --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) verify $(SUPPLY_ARGS) --fail-on "$(SUPPLY_FAIL_ON)" $(if $(SUPPLY_KEY),--key "$(SUPPLY_KEY)",) $(if $(SUPPLY_CERTIFICATE_IDENTITY),--certificate-identity "$(SUPPLY_CERTIFICATE_IDENTITY)",) $(if $(SUPPLY_CERTIFICATE_OIDC_ISSUER),--certificate-oidc-issuer "$(SUPPLY_CERTIFICATE_OIDC_ISSUER)",) $(if $(SUPPLY_ATTESTATION_TYPE),--attestation-type "$(SUPPLY_ATTESTATION_TYPE)",)
+
+supply-chain-report:
+	./scripts/rfm.sh supply-chain --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) report $(SUPPLY_ARGS)
+
+supply-chain-collect:
+	./scripts/rfm.sh supply-chain --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) collect $(SUPPLY_ARGS) $(if $(SUPPLY_ENGINE),--engine "$(SUPPLY_ENGINE)",) --format "$(SUPPLY_FORMAT)" --fail-on "$(SUPPLY_FAIL_ON)"
+
+supply-chain-collect-apply:
+	./scripts/rfm.sh supply-chain --config "$(CONFIG)" --root "$(ROOT)" $(SELECTION_ARGS) collect $(SUPPLY_ARGS) $(if $(SUPPLY_ENGINE),--engine "$(SUPPLY_ENGINE)",) --format "$(SUPPLY_FORMAT)" --fail-on "$(SUPPLY_FAIL_ON)" --apply
+# RFM_SUPPLY_CHAIN_TARGETS_END
 
 # RFM_OBSERVABILITY_TARGETS_BEGIN
 logs-list:

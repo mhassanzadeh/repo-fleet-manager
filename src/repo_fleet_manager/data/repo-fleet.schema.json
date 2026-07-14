@@ -457,6 +457,10 @@
             "type": "string"
           },
           "uniqueItems": true
+        },
+        "bin": {
+          "type": "string",
+          "minLength": 1
         }
       }
     },
@@ -777,6 +781,10 @@
                 "items": {
                   "type": "string"
                 }
+              },
+              "bin": {
+                "type": "string",
+                "minLength": 1
               }
             }
           },
@@ -1045,6 +1053,126 @@
                 }
               }
             }
+          },
+          "supply_chain": {
+            "type": "object",
+            "additionalProperties": false,
+            "patternProperties": {
+              "^x-": {}
+            },
+            "properties": {
+              "output_dir": {
+                "type": "string",
+                "minLength": 1
+              },
+              "engine": {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "docker",
+                  "podman"
+                ]
+              },
+              "digest_resolver": {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "engine",
+                  "skopeo"
+                ]
+              },
+              "sbom_format": {
+                "type": "string",
+                "enum": [
+                  "cyclonedx-json",
+                  "spdx-json"
+                ]
+              },
+              "vulnerability_threshold": {
+                "type": "string",
+                "enum": [
+                  "unknown",
+                  "negligible",
+                  "low",
+                  "medium",
+                  "high",
+                  "critical"
+                ]
+              },
+              "require_immutable_digest": {
+                "type": "boolean"
+              },
+              "require_source_label": {
+                "type": "boolean"
+              },
+              "require_sbom": {
+                "type": "boolean"
+              },
+              "require_scan": {
+                "type": "boolean"
+              },
+              "require_signature": {
+                "type": "boolean"
+              },
+              "require_attestation": {
+                "type": "boolean"
+              },
+              "cosign": {
+                "type": "object",
+                "additionalProperties": false,
+                "patternProperties": {
+                  "^x-": {}
+                },
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "certificate_identity": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "certificate_oidc_issuer": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "attestation_type": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "attestation_policy": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "services": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    "^x-": {}
+                  },
+                  "properties": {
+                    "image": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "expected_digest": {
+                      "type": "string",
+                      "pattern": "^sha256:[0-9a-fA-F]{64}$"
+                    },
+                    "require_signature": {
+                      "type": "boolean"
+                    },
+                    "require_attestation": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1297,6 +1425,126 @@
           "items": {
             "type": "string",
             "minLength": 1
+          }
+        }
+      }
+    },
+    "supply_chain": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {}
+      },
+      "properties": {
+        "output_dir": {
+          "type": "string",
+          "minLength": 1
+        },
+        "engine": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "docker",
+            "podman"
+          ]
+        },
+        "digest_resolver": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "engine",
+            "skopeo"
+          ]
+        },
+        "sbom_format": {
+          "type": "string",
+          "enum": [
+            "cyclonedx-json",
+            "spdx-json"
+          ]
+        },
+        "vulnerability_threshold": {
+          "type": "string",
+          "enum": [
+            "unknown",
+            "negligible",
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ]
+        },
+        "require_immutable_digest": {
+          "type": "boolean"
+        },
+        "require_source_label": {
+          "type": "boolean"
+        },
+        "require_sbom": {
+          "type": "boolean"
+        },
+        "require_scan": {
+          "type": "boolean"
+        },
+        "require_signature": {
+          "type": "boolean"
+        },
+        "require_attestation": {
+          "type": "boolean"
+        },
+        "cosign": {
+          "type": "object",
+          "additionalProperties": false,
+          "patternProperties": {
+            "^x-": {}
+          },
+          "properties": {
+            "key": {
+              "type": "string",
+              "minLength": 1
+            },
+            "certificate_identity": {
+              "type": "string",
+              "minLength": 1
+            },
+            "certificate_oidc_issuer": {
+              "type": "string",
+              "minLength": 1
+            },
+            "attestation_type": {
+              "type": "string",
+              "minLength": 1
+            },
+            "attestation_policy": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "services": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "patternProperties": {
+              "^x-": {}
+            },
+            "properties": {
+              "image": {
+                "type": "string",
+                "minLength": 1
+              },
+              "expected_digest": {
+                "type": "string",
+                "pattern": "^sha256:[0-9a-fA-F]{64}$"
+              },
+              "require_signature": {
+                "type": "boolean"
+              },
+              "require_attestation": {
+                "type": "boolean"
+              }
+            }
           }
         }
       }

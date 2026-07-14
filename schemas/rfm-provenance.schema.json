@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repo-fleet-manager.local/schemas/rfm-provenance.schema.json",
+  "title": "Repo Fleet Manager provenance manifest",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "tool_version",
+    "project",
+    "generated_at",
+    "services"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "tool_version": {
+      "type": "string"
+    },
+    "project": {
+      "type": "string"
+    },
+    "engine": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "ok": {
+      "type": "boolean"
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "services": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "service",
+          "immutable",
+          "source_match",
+          "errors"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "service": {
+            "type": "string"
+          },
+          "resolved_reference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "digest": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "immutable": {
+            "type": "boolean"
+          },
+          "source_match": {
+            "type": "boolean"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sbom": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "scan": {
+            "type": [
+              "object",
+              "null"
+            ]
+          }
+        }
+      }
+    }
+  }
+}
