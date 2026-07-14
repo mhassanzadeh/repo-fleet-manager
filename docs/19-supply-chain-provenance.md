@@ -119,3 +119,14 @@ rfm --format jsonl supply-chain --config repo-fleet.json verify
 ```
 
 A verification failure exits with code `2`, allowing CI to block mutable, unsigned, unattested, source-mismatched or vulnerable images.
+
+## Governance gate
+
+Supply-chain verification can be made part of the broader Policy-as-Code gate. `supply-chain.registry` restricts registries, while `supply-chain.requirements` checks that immutable digest, source label, SBOM, scan, signature and attestation requirements are enabled and represented in the provenance manifest.
+
+```bash
+rfm policy --config repo-fleet.json enforce --rule approved-registries
+rfm policy --config repo-fleet.json enforce --rule supply-chain-controls
+```
+
+See [Policy-as-Code governance](20-policy-as-code.md).

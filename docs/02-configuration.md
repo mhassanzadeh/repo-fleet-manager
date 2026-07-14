@@ -340,3 +340,29 @@ rfm config wizard --scan . --advanced --output repo-fleet.json --non-interactive
 ## Supply-chain policy
 
 بخش اختیاری `supply_chain` مسیر artifactها، resolver digest، فرمت SBOM، آستانه آسیب‌پذیری و الزامات Cosign را تعیین می‌کند. نمونه کامل در [Supply-chain provenance](19-supply-chain-provenance.md) آمده است. مسیرهای `output_dir`، `cosign.key` و `cosign.attestation_policy` باید قابل‌حمل باشند و secret در config مجاز نیست.
+
+## Policy-as-Code
+
+The optional `policy` section defines built-in governance rules, expiring exceptions and an optional OPA/Rego adapter. Profile overlays may override policy mode or parameters.
+
+```json
+{
+  "policy": {
+    "enabled": true,
+    "mode": "check",
+    "fail_on": "error",
+    "rules": [
+      {
+        "id": "private-critical-repos",
+        "type": "repository.visibility",
+        "severity": "error",
+        "selectors": {"tags": ["critical"]},
+        "parameters": {"allowed": ["private"]}
+      }
+    ],
+    "exceptions": []
+  }
+}
+```
+
+See [Policy-as-Code governance](20-policy-as-code.md) for rule types, mutation enforcement and Rego integration.

@@ -1,6 +1,6 @@
 # Repo Fleet Manager service catalog
 
-> Catalog version `0.14.0` · schema `1.0` · lifecycle `beta`
+> Catalog version `0.15.0` · schema `1.0` · lifecycle `beta`
 
 Config-driven orchestration for large Git repository fleets, submodules, local development, providers, Compose runtimes and source/image integrity.
 
@@ -10,11 +10,11 @@ Config-driven orchestration for large Git repository fleets, submodules, local d
 |---|---:|
 | Domains | 11 |
 | Capabilities | 58 |
-| Implemented | 50 |
-| Partial | 4 |
+| Implemented | 52 |
+| Partial | 3 |
 | Planned | 1 |
-| Missing | 3 |
-| Logical completion | 89.9% |
+| Missing | 2 |
+| Logical completion | 92.5% |
 | Open gaps | 18 |
 
 The completion percentage is a planning indicator: implemented capabilities count as 100%, partial as 50%, and planned as 15%. It is not a production-readiness certification.
@@ -128,9 +128,9 @@ Credentials, policy enforcement, auditability and supply-chain controls.
 |---|---|---|---|
 | `security.secret-guidance` — Avoid secrets in config documentation | ✓ implemented | beta | `rfm config --config repo-fleet.json validate --strict`<br>`rfm auth --config repo-fleet.json status`<br>`src/repo_fleet_manager/schema.py`<br>`src/repo_fleet_manager/provider.py`<br>`docs/11-operational-safety-and-recovery.md` |
 | `security.credentials` — Credential profiles and secret-store integration | ~ partial | beta | `rfm auth --config repo-fleet.json status --strict-scopes`<br>`src/repo_fleet_manager/provider.py`<br>`docs/05-repository-providers.md` |
-| `security.policy` — Policy-as-code for provider, branch and image rules | × missing | not-started | — |
+| `security.policy` — Policy-as-code for repository, operation and supply-chain governance | ✓ implemented | beta | `rfm policy check`<br>`rfm policy enforce`<br>`rfm policy explain RULE_ID`<br>`rfm policy exceptions`<br>`src/repo_fleet_manager/policy.py`<br>`src/repo_fleet_manager/cli.py`<br>`schemas/rfm-policy-report.schema.json`<br>`tests/test_policy.py`<br>`docs/20-policy-as-code.md` |
 | `security.audit-log` — Structured redacted JSONL audit log | ✓ implemented | beta | `rfm logs list`<br>`rfm logs show RUN_ID`<br>`rfm logs verify RUN_ID`<br>`rfm logs purge --apply`<br>`src/repo_fleet_manager/observability.py`<br>`src/repo_fleet_manager/operations.py`<br>`schemas/rfm-event.schema.json`<br>`tests/test_observability.py`<br>`docs/18-structured-output-and-audit-logging.md` |
-| `security.supply-chain` — SBOM, image signing and commit verification | ~ partial | alpha | `rfm supply-chain verify --require-signature --require-attestation`<br>`src/repo_fleet_manager/supply_chain.py`<br>`src/repo_fleet_manager/schema.py`<br>`SECURITY.md`<br>`docs/19-supply-chain-provenance.md` |
+| `security.supply-chain` — SBOM, image signing and commit verification | ✓ implemented | beta | `rfm supply-chain verify --require-signature --require-attestation`<br>`rfm policy enforce --rule supply-chain-controls`<br>`src/repo_fleet_manager/supply_chain.py`<br>`src/repo_fleet_manager/policy.py`<br>`schemas/rfm-provenance.schema.json`<br>`tests/test_supply_chain.py`<br>`tests/test_policy.py`<br>`SECURITY.md`<br>`docs/19-supply-chain-provenance.md`<br>`docs/20-policy-as-code.md` |
 
 ### Catalog and extensibility
 
@@ -432,7 +432,7 @@ Acceptance criteria:
 
 #### GAP-014 — Policy-as-code for repository and supply-chain governance
 
-**Category:** `governance` · **Current state:** `missing`
+**Category:** `governance` · **Current state:** `implemented`
 
 Teams need enforceable rules for visibility, branches, remotes, signing, image sources and destructive actions.
 

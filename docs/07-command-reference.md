@@ -551,3 +551,15 @@ rfm supply-chain --config repo-fleet.json collect [--fail-on high] [--apply]
 ```
 
 تمام فرمان‌ها از `--format text|json|jsonl` و audit logging سراسری پشتیبانی می‌کنند.
+
+## `rfm policy`
+
+```bash
+rfm policy --config repo-fleet.json --root . check [--rule ID] [--repository NAME] [--fail-on error]
+rfm policy --config repo-fleet.json --root . enforce [--rule ID] [--repository NAME] [--fail-on warning]
+rfm policy --config repo-fleet.json explain RULE_ID
+rfm policy --config repo-fleet.json exceptions [--active-only]
+rfm policy --config repo-fleet.json --root . input
+```
+
+`check` is advisory and returns zero after a valid evaluation. `enforce` returns `2` for unexcepted violations at or above the threshold. The normalized policy input and report format are documented in [Policy-as-Code governance](20-policy-as-code.md).

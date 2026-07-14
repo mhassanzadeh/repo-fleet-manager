@@ -1,6 +1,6 @@
 # Repo Fleet Manager logical gap analysis
 
-> Catalog version `0.14.0` · 18 prioritized gaps
+> Catalog version `0.15.0` · 18 prioritized gaps
 
 ## P0
 
@@ -276,7 +276,7 @@ Acceptance criteria:
 
 ### GAP-014 — Policy-as-code for repository and supply-chain governance
 
-**Category:** `governance` · **Current state:** `missing`
+**Category:** `governance` · **Current state:** `implemented`
 
 Teams need enforceable rules for visibility, branches, remotes, signing, image sources and destructive actions.
 

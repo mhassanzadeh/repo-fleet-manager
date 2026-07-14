@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "catalog_version": "0.14.0",
+  "catalog_version": "0.15.0",
   "project": {
     "name": "Repo Fleet Manager",
     "short_name": "RFM",
@@ -756,13 +756,21 @@
         },
         {
           "id": "security.policy",
-          "name": "Policy-as-code for provider, branch and image rules",
-          "status": "missing",
-          "maturity": "not-started",
-          "commands": [],
-          "components": [],
-          "gap_refs": [
-            "GAP-014"
+          "name": "Policy-as-code for repository, operation and supply-chain governance",
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm policy check",
+            "rfm policy enforce",
+            "rfm policy explain RULE_ID",
+            "rfm policy exceptions"
+          ],
+          "components": [
+            "src/repo_fleet_manager/policy.py",
+            "src/repo_fleet_manager/cli.py",
+            "schemas/rfm-policy-report.schema.json",
+            "tests/test_policy.py",
+            "docs/20-policy-as-code.md"
           ]
         },
         {
@@ -787,19 +795,21 @@
         {
           "id": "security.supply-chain",
           "name": "SBOM, image signing and commit verification",
-          "status": "partial",
-          "maturity": "alpha",
+          "status": "implemented",
+          "maturity": "beta",
           "commands": [
-            "rfm supply-chain verify --require-signature --require-attestation"
+            "rfm supply-chain verify --require-signature --require-attestation",
+            "rfm policy enforce --rule supply-chain-controls"
           ],
           "components": [
             "src/repo_fleet_manager/supply_chain.py",
-            "src/repo_fleet_manager/schema.py",
+            "src/repo_fleet_manager/policy.py",
+            "schemas/rfm-provenance.schema.json",
+            "tests/test_supply_chain.py",
+            "tests/test_policy.py",
             "SECURITY.md",
-            "docs/19-supply-chain-provenance.md"
-          ],
-          "gap_refs": [
-            "GAP-014"
+            "docs/19-supply-chain-provenance.md",
+            "docs/20-policy-as-code.md"
           ]
         }
       ]
@@ -1227,7 +1237,7 @@
       "title": "Policy-as-code for repository and supply-chain governance",
       "priority": "P2",
       "category": "governance",
-      "status": "missing",
+      "status": "implemented",
       "rationale": "Teams need enforceable rules for visibility, branches, remotes, signing, image sources and destructive actions.",
       "recommended_scope": [
         "Define policy rules in config or Rego",
@@ -1238,7 +1248,8 @@
         "Policy violations are visible in audit",
         "CI can block non-compliant state",
         "Exceptions are explicit and traceable"
-      ]
+      ],
+      "resolved_in": "0.15.0"
     },
     {
       "id": "GAP-015",

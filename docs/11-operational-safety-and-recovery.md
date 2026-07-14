@@ -183,3 +183,7 @@ rfm ops show OPERATION_ID
 ```
 
 argv و commandهای ثبت‌شده پیش از ذخیره پالایش می‌شوند تا token یا password وارد log و journal نشود.
+
+## Policy guard before mutations
+
+RFM 0.15.0 evaluates enabled policy rules before entering a mutation journal. `operation.guard` can deny selected actions or require `--reason` and `--force`. Policy decisions, violations and applied exception IDs are written into the same structured audit run as the operation. This governance layer complements workspace safety checks; it does not replace clean-tree, detached-HEAD or divergence protection.

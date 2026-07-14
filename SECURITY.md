@@ -30,3 +30,7 @@ RFM journals local operations to support inspection and recovery. Journals can c
 ## Container supply-chain trust
 
 نسخه `0.14.0` digest ثابت registry، SBOM و reportهای vulnerability را در `.repo-fleet/supply-chain` نگهداری می‌کند. این artifactها ممکن است نام packageها و topology سرویس‌ها را افشا کنند و باید مانند audit logها محافظت شوند. کلید خصوصی Cosign نباید در config یا repository ذخیره شود؛ فقط public key، KMS URI یا keyless certificate identity/issuer در policy ثبت می‌شود.
+
+## Policy exception security
+
+Policy exceptionها کنترل امنیتی را به‌صورت موقت کاهش می‌دهند و باید مانند تغییر production بازبینی شوند. هر exception باید scope محدود، دلیل قابل ممیزی، تأییدکننده، ticket و تاریخ انقضا داشته باشد. exception منقضی‌شده هیچ violationی را suppress نمی‌کند. استفاده از `rule_id: "*"` بدون scope دقیق repository یا action توصیه نمی‌شود. فایل‌های Rego باید داخل workspace باشند و از همان فرایند code review سایر کدهای امنیتی عبور کنند.

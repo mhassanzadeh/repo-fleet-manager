@@ -6,6 +6,23 @@ The format follows Keep a Changelog and the project uses Semantic Versioning whi
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-07-14
+
+### Added
+
+- Built-in Policy-as-Code rules for repository visibility, branches, providers, remote hosts, clean worktrees and signed HEAD commits.
+- Supply-chain registry and provenance requirement policies.
+- `rfm policy check`, `enforce`, `explain`, `exceptions` and `input` commands.
+- Expiring, approved exceptions with reason, ticket, repository and action scoping.
+- Optional OPA/Rego evaluation using the same normalized policy input.
+- Automatic policy guard before mutation operations when `policy.mode` is `enforce`.
+
+### Security
+
+- Policy decisions and applied exceptions are emitted into the structured audit log.
+- Rego policy paths must remain inside the workspace.
+- CI can block non-compliant repository or supply-chain state with exit code `2`.
+
 ## [0.14.0] - 2026-07-14
 
 ### Added
@@ -171,7 +188,8 @@ The format follows Keep a Changelog and the project uses Semantic Versioning whi
 - Workspace locking, safety guards, operation journal, resume and rollback.
 - Dependency graph and controlled parallel execution.
 
-[Unreleased]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.11.0...v0.12.0
