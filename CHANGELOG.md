@@ -6,6 +6,27 @@ The format follows Keep a Changelog and the project uses Semantic Versioning whi
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-07-14
+
+### Added
+
+- Position-independent `--format text|json|jsonl` support across CLI commands.
+- Stable JSON execution envelope and versioned JSONL event schema.
+- Redacted audit logs under `.repo-fleet/logs` with run IDs, duration and exit status.
+- `rfm logs list`, `show`, `verify` and retention-aware `purge` workflows.
+- Correlation between CLI audit runs and mutation operation journals.
+
+### Security
+
+- Sensitive argv values, URL credentials and common GitHub/GitLab tokens are redacted.
+- Operation journal argv and step commands are stored in redacted form.
+- Audit logs are created with user-only permissions.
+
+### Compatibility
+
+- Existing command-specific `--json` payloads remain unchanged.
+- Catalog and graph command-specific formats remain available.
+
 ## [0.12.0] - 2026-07-14
 
 ### Added
@@ -134,7 +155,8 @@ The format follows Keep a Changelog and the project uses Semantic Versioning whi
 - Workspace locking, safety guards, operation journal, resume and rollback.
 - Dependency graph and controlled parallel execution.
 
-[Unreleased]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.9.0...v0.10.0

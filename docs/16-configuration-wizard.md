@@ -151,3 +151,7 @@ make config-wizard-reset
 ## Runtime defaults from Compose scan
 
 وقتی scan یک Compose file و serviceهای آن را تشخیص دهد، ویزارد بخش `runtime.services` را با serviceهای required تولید می‌کند. healthcheckهای Compose در زمان اجرا خوانده می‌شوند و کاربر می‌تواند بعداً برای هر service یک HTTP/TCP/command probe یا remediation اختصاصی اضافه کند.
+
+## پیش‌فرض Observability
+
+ویزارد در configهای جدید بخش `observability` را با مسیر قابل‌حمل `.repo-fleet/logs`، audit فعال و retention سی‌روزه تولید می‌کند. در حالت advanced می‌توان این مقادیر را بعداً با profileها override کرد. ویزارد هیچ token یا secret را در این بخش ذخیره نمی‌کند.

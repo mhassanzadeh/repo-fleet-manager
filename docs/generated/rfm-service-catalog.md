@@ -1,6 +1,6 @@
 # Repo Fleet Manager service catalog
 
-> Catalog version `0.12.0` · schema `1.0` · lifecycle `beta`
+> Catalog version `0.13.0` · schema `1.0` · lifecycle `beta`
 
 Config-driven orchestration for large Git repository fleets, submodules, local development, providers, Compose runtimes and source/image integrity.
 
@@ -10,11 +10,11 @@ Config-driven orchestration for large Git repository fleets, submodules, local d
 |---|---:|
 | Domains | 11 |
 | Capabilities | 58 |
-| Implemented | 46 |
-| Partial | 6 |
+| Implemented | 48 |
+| Partial | 4 |
 | Planned | 1 |
 | Missing | 5 |
-| Logical completion | 84.7% |
+| Logical completion | 86.5% |
 | Open gaps | 18 |
 
 The completion percentage is a planning indicator: implemented capabilities count as 100%, partial as 50%, and planned as 15%. It is not a production-readiness certification.
@@ -30,7 +30,7 @@ Terminal entrypoint, discoverability, safety switches and machine-readable outpu
 | `cli.entrypoint` — Installable rfm terminal command | ✓ implemented | beta | `rfm --version`<br>`make install`<br>`pyproject.toml`<br>`src/repo_fleet_manager/cli.py`<br>`Makefile` |
 | `cli.completion` — Bash and Fish completion | ✓ implemented | beta | `rfm completion bash`<br>`rfm completion fish`<br>`completions/rfm.bash`<br>`completions/rfm.fish`<br>`src/repo_fleet_manager/cli.py` |
 | `cli.plan-apply` — Dry-run and explicit apply model | ✓ implemented | beta | `rfm local plan`<br>`rfm local localize --apply`<br>`src/repo_fleet_manager/cli.py`<br>`src/repo_fleet_manager/localops.py` |
-| `cli.structured-output` — Consistent JSON output and exit codes | ~ partial | alpha | `rfm catalog --json`<br>`rfm repos audit --json`<br>`src/repo_fleet_manager/cli.py` |
+| `cli.structured-output` — Unified text, JSON and JSONL output | ✓ implemented | beta | `rfm --format json config validate`<br>`rfm runtime status --format jsonl`<br>`rfm --format json doctor`<br>`src/repo_fleet_manager/observability.py`<br>`src/repo_fleet_manager/cli.py`<br>`schemas/rfm-event.schema.json`<br>`tests/test_observability.py` |
 | `cli.profiles` — Named execution profiles and environment overlays | × missing | not-started | — |
 
 ### Configuration and inventory
@@ -129,7 +129,7 @@ Credentials, policy enforcement, auditability and supply-chain controls.
 | `security.secret-guidance` — Avoid secrets in config documentation | ✓ implemented | beta | `rfm config --config repo-fleet.json validate --strict`<br>`rfm auth --config repo-fleet.json status`<br>`src/repo_fleet_manager/schema.py`<br>`src/repo_fleet_manager/provider.py`<br>`docs/11-operational-safety-and-recovery.md` |
 | `security.credentials` — Credential profiles and secret-store integration | ~ partial | beta | `rfm auth --config repo-fleet.json status --strict-scopes`<br>`src/repo_fleet_manager/provider.py`<br>`docs/05-repository-providers.md` |
 | `security.policy` — Policy-as-code for provider, branch and image rules | × missing | not-started | — |
-| `security.audit-log` — Structured immutable audit log | ~ partial | beta | `rfm ops --config repo-fleet.json list`<br>`rfm ops --config repo-fleet.json show OPERATION_ID --json`<br>`src/repo_fleet_manager/operations.py` |
+| `security.audit-log` — Structured redacted JSONL audit log | ✓ implemented | beta | `rfm logs list`<br>`rfm logs show RUN_ID`<br>`rfm logs verify RUN_ID`<br>`rfm logs purge --apply`<br>`src/repo_fleet_manager/observability.py`<br>`src/repo_fleet_manager/operations.py`<br>`schemas/rfm-event.schema.json`<br>`tests/test_observability.py`<br>`docs/18-structured-output-and-audit-logging.md` |
 | `security.supply-chain` — SBOM, image signing and commit verification | × missing | not-started | — |
 
 ### Catalog and extensibility
@@ -278,7 +278,7 @@ Acceptance criteria:
 
 #### GAP-007 — Unified structured output and audit logging
 
-**Category:** `observability` · **Current state:** `partial`
+**Category:** `observability` · **Current state:** `implemented`
 
 Automation and support need stable event records rather than mixed human text and command-specific JSON shapes.
 

@@ -318,3 +318,21 @@ rfm config wizard --scan . --advanced --output repo-fleet.json --non-interactive
 ```
 
 جزئیات resolution، startup ترتیبی و exit codeها در [Runtime health and readiness](17-runtime-health-readiness.md) آمده است.
+
+## Observability و Audit Logging
+
+بخش اختیاری `observability` رفتار log سراسری RFM را کنترل می‌کند:
+
+```json
+{
+  "observability": {
+    "logs_dir": ".repo-fleet/logs",
+    "audit_enabled": true,
+    "retention_days": 30,
+    "include_output": true,
+    "redact_keys": ["custom_credential"]
+  }
+}
+```
+
+`logs_dir` بهتر است برای configهای قابل‌حمل نسبی باشد. `retention_days` بین ۱ تا ۳۶۵۰ است. Profileها می‌توانند این بخش را override کنند. اطلاعات حساس استاندارد بدون وابستگی به `redact_keys` پالایش می‌شوند. جزئیات در [خروجی ساخت‌یافته و Audit Logging](18-structured-output-and-audit-logging.md) آمده است.

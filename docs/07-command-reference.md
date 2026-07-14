@@ -495,3 +495,46 @@ rfm runtime --config repo-fleet.json up [--service NAME] [--timeout SECONDS] [--
 ```
 
 `status` تفاوت container state و readiness را نشان می‌دهد. `doctor` برای serviceهای ناموفق remediation و log می‌دهد. `wait` تا آماده‌شدن serviceهای required صبر می‌کند. `up` dependency levelها را ترتیبی start کرده و پس از readiness هر level به مرحله بعد می‌رود. `up` بدون `--apply` فقط plan را چاپ می‌کند.
+
+## خروجی سراسری و Audit Log
+
+این optionها در ابتدا یا انتهای همه فرمان‌ها پذیرفته می‌شوند:
+
+```bash
+--format text|json|jsonl
+--log-dir PATH
+--run-id ID
+--audit-log
+--no-audit-log
+```
+
+گزینه `--json` اختصاصی فرمان‌های قدیمی برای سازگاری حفظ شده است. فرمت جدید `--format json` یک envelope مشترک و `--format jsonl` event stream تولید می‌کند.
+
+### `logs list`
+
+```bash
+rfm logs --root . list
+rfm logs --root . list --json
+```
+
+### `logs show`
+
+```bash
+rfm logs --root . show RUN_ID
+rfm logs --root . show RUN_ID --json
+```
+
+### `logs verify`
+
+```bash
+rfm logs --root . verify RUN_ID
+```
+
+فایل JSONL با event schema، sequence و run ID کنترل می‌شود.
+
+### `logs purge`
+
+```bash
+rfm logs --root . purge --retention-days 30
+rfm logs --root . purge --retention-days 30 --apply
+```

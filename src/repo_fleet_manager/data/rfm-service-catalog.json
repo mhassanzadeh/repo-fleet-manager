@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "catalog_version": "0.12.0",
+  "catalog_version": "0.13.0",
   "project": {
     "name": "Repo Fleet Manager",
     "short_name": "RFM",
@@ -70,18 +70,19 @@
         },
         {
           "id": "cli.structured-output",
-          "name": "Consistent JSON output and exit codes",
-          "status": "partial",
-          "maturity": "alpha",
+          "name": "Unified text, JSON and JSONL output",
+          "status": "implemented",
+          "maturity": "beta",
           "commands": [
-            "rfm catalog --json",
-            "rfm repos audit --json"
+            "rfm --format json config validate",
+            "rfm runtime status --format jsonl",
+            "rfm --format json doctor"
           ],
           "components": [
-            "src/repo_fleet_manager/cli.py"
-          ],
-          "gap_refs": [
-            "GAP-007"
+            "src/repo_fleet_manager/observability.py",
+            "src/repo_fleet_manager/cli.py",
+            "schemas/rfm-event.schema.json",
+            "tests/test_observability.py"
           ]
         },
         {
@@ -757,15 +758,21 @@
         },
         {
           "id": "security.audit-log",
-          "name": "Structured immutable audit log",
-          "status": "partial",
+          "name": "Structured redacted JSONL audit log",
+          "status": "implemented",
           "maturity": "beta",
           "commands": [
-            "rfm ops --config repo-fleet.json list",
-            "rfm ops --config repo-fleet.json show OPERATION_ID --json"
+            "rfm logs list",
+            "rfm logs show RUN_ID",
+            "rfm logs verify RUN_ID",
+            "rfm logs purge --apply"
           ],
           "components": [
-            "src/repo_fleet_manager/operations.py"
+            "src/repo_fleet_manager/observability.py",
+            "src/repo_fleet_manager/operations.py",
+            "schemas/rfm-event.schema.json",
+            "tests/test_observability.py",
+            "docs/18-structured-output-and-audit-logging.md"
           ]
         },
         {
@@ -1064,7 +1071,7 @@
       "title": "Unified structured output and audit logging",
       "priority": "P1",
       "category": "observability",
-      "status": "partial",
+      "status": "implemented",
       "rationale": "Automation and support need stable event records rather than mixed human text and command-specific JSON shapes.",
       "recommended_scope": [
         "Define a common event schema",
@@ -1076,7 +1083,8 @@
         "All commands can emit JSONL",
         "Sensitive values are redacted",
         "A failed fleet run can be diagnosed from one log directory"
-      ]
+      ],
+      "resolved_in": "0.13.0"
     },
     {
       "id": "GAP-008",

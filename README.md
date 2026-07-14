@@ -39,6 +39,7 @@ Repo Fleet Manager یک ابزار واحد و config-driven برای مدیری
 - ساخت پروژه مادر، scaffolding repository/service و bootstrap lockfile قابل‌حمل
 - export/import تأییدشده Git bundleها و image archiveها برای bootstrap در محیط air-gapped
 - runtime status/doctor/wait و startup ترتیبی Compose بر اساس healthcheck، probe و dependency graph
+- خروجی یکپارچه text/JSON/JSONL و audit log پالایش‌شده با correlation به operation journal
 - ویزارد تعاملی و قابل‌اسکریپت برای scan، ساخت و ویرایش امن `repo-fleet.json`
 
 ## شروع سریع
@@ -107,14 +108,14 @@ rfm config wizard --scan . --advanced --output repo-fleet.json --non-interactive
 برای نصب ایزوله آخرین نسخه مستقیم از GitHub:
 
 ```bash
-pipx install git+https://github.com/mhassanzadeh/repo-fleet-manager.git@v0.12.0
+pipx install git+https://github.com/mhassanzadeh/repo-fleet-manager.git@v0.13.0
 rfm --version
 ```
 
 یا Wheel را از GitHub Release دانلود و نصب کنید:
 
 ```bash
-python3 -m pip install ./repo_fleet_manager-0.12.0-py3-none-any.whl
+python3 -m pip install ./repo_fleet_manager-0.13.0-py3-none-any.whl
 rfm --version
 ```
 
@@ -234,6 +235,19 @@ rfm runtime --config repo-fleet.json up --apply
 
 `runtime up` سرویس‌ها را بر اساس dependency level راه‌اندازی می‌کند و تا آماده‌شدن هر level صبر می‌کند. جزئیات probeهای HTTP/TCP/command در [راهنمای Runtime health و readiness](docs/17-runtime-health-readiness.md) آمده است.
 <!-- RFM_RUNTIME_READINESS_END -->
+
+## خروجی ساخت‌یافته و Audit Logging
+
+تمام فرمان‌ها می‌توانند یک JSON envelope یا JSONL event stream پایدار تولید کنند:
+
+```bash
+rfm --format json config --config repo-fleet.json validate --strict
+rfm runtime --config repo-fleet.json status --format jsonl
+rfm logs --root . list
+rfm logs --root . verify RUN_ID
+```
+
+Audit log پیش‌فرض در `.repo-fleet/logs` نوشته می‌شود، مقادیر حساس پالایش می‌شوند و mutationها به operation journal مرتبط می‌شوند. جزئیات در [راهنمای خروجی ساخت‌یافته و Audit Logging](docs/18-structured-output-and-audit-logging.md) آمده است.
 
 ## جریان‌های کاری پرکاربرد
 
@@ -368,6 +382,9 @@ make cache-verify ARCHIVE=/path/to/fleet.rfm-cache.tar.gz
 make cache-import-apply ROOT=/path/to/import ARCHIVE=/path/to/fleet.rfm-cache.tar.gz
 make cache-bootstrap-apply ROOT=/path/to/workspace ARCHIVE=/path/to/fleet.rfm-cache.tar.gz
 make config-wizard-scan-apply ROOT=. WIZARD_SCAN=. WIZARD_OUTPUT=repo-fleet.json
+make logs-list CONFIG=repo-fleet.json ROOT=.
+make logs-verify CONFIG=repo-fleet.json ROOT=. RUN_ID=<run-id>
+make logs-purge-apply CONFIG=repo-fleet.json ROOT=. RETENTION_DAYS=30
 make publish-github CONFIG=repo-fleet.json ROOT=/path/to/workspace NAMESPACE=my-user
 make publish-gitlab CONFIG=repo-fleet.json ROOT=/path/to/workspace NAMESPACE=my-group
 make catalog-summary
@@ -384,7 +401,7 @@ CI روی هر دو شاخه `master` و `main` اجرا می‌شود. tagها�
 
 ```bash
 make validate
-python scripts/check_release_version.py 0.12.0
+python scripts/check_release_version.py 0.13.0
 make release-artifacts
 ```
 
@@ -427,6 +444,7 @@ repo-fleet-manager/
 - [Offline cache و bootstrap در محیط air-gapped](docs/15-offline-cache-and-air-gapped-bootstrap.md)
 - [ویزارد ساخت و ویرایش کانفیگ](docs/16-configuration-wizard.md)
 - [Runtime health، readiness و startup ترتیبی](docs/17-runtime-health-readiness.md)
+- [خروجی ساخت‌یافته و Audit Logging](docs/18-structured-output-and-audit-logging.md)
 - [خروجی کامل service catalog](docs/generated/rfm-service-catalog.md)
 - [gap analysis منطقی](reports/gap-analysis.md)
 - [گزارش بررسی اسکریپت‌های ارسالی](reports/script-audit.md)
@@ -453,4 +471,4 @@ rfm config --config repo-fleet.json validate --strict
 
 ## Git commit guide
 
-تغییرات و روش انتشار نسخه جاری در [`PATCH_NOTES_v0.12.0.md`](PATCH_NOTES_v0.12.0.md)، [`GIT_COMMIT_GUIDE_v0.12.0.md`](GIT_COMMIT_GUIDE_v0.12.0.md) و [`CHANGELOG.md`](CHANGELOG.md) قرار دارد.
+تغییرات و روش انتشار نسخه جاری در [`PATCH_NOTES_v0.13.0.md`](PATCH_NOTES_v0.13.0.md)، [`GIT_COMMIT_GUIDE_v0.13.0.md`](GIT_COMMIT_GUIDE_v0.13.0.md) و [`CHANGELOG.md`](CHANGELOG.md) قرار دارد.

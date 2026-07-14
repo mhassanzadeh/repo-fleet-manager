@@ -1,6 +1,6 @@
 # Repo Fleet Manager logical gap analysis
 
-> Catalog version `0.12.0` · 18 prioritized gaps
+> Catalog version `0.13.0` · 18 prioritized gaps
 
 ## P0
 
@@ -122,7 +122,7 @@ Acceptance criteria:
 
 ### GAP-007 — Unified structured output and audit logging
 
-**Category:** `observability` · **Current state:** `partial`
+**Category:** `observability` · **Current state:** `implemented`
 
 Automation and support need stable event records rather than mixed human text and command-specific JSON shapes.
 

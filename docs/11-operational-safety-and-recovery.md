@@ -167,3 +167,19 @@ rfm local verify-backup .repo-fleet/backups/<archive>.rfm-backup.tar.gz
 ```
 
 See [backup and restore](12-backup-and-restore.md) for clean-machine recovery.
+
+## ارتباط Operation Journal با Audit Log
+
+از نسخه `0.13.0` هر اجرای CLI یک `run_id` دارد و mutationها پس از ایجاد journal، `operation_id` را در event stream ثبت می‌کنند. بنابراین برای تحلیل یک خطا می‌توان این دو فایل را کنار هم بررسی کرد:
+
+```text
+.repo-fleet/logs/<RUN_ID>.jsonl
+.repo-fleet/operations/<OPERATION_ID>.json
+```
+
+```bash
+rfm logs show RUN_ID
+rfm ops show OPERATION_ID
+```
+
+argv و commandهای ثبت‌شده پیش از ذخیره پالایش می‌شوند تا token یا password وارد log و journal نشود.
