@@ -220,6 +220,39 @@ rfm docs [--root .] validate-links
 
 لینک‌های داخلی Markdown را بررسی می‌کند.
 
+## `config wizard`
+
+ساخت تعاملی فایل تنظیمات:
+
+```bash
+rfm config wizard --quick --output repo-fleet.json
+rfm config wizard --quick --output repo-fleet.json --apply
+```
+
+Scan و تولید غیرتعاملی:
+
+```bash
+rfm config wizard --scan . --advanced --output repo-fleet.json --non-interactive
+rfm config wizard --scan . --advanced --output repo-fleet.json --non-interactive --apply
+```
+
+ویرایش امن، نمایش diff و ادامه جلسه:
+
+```bash
+rfm config wizard --config repo-fleet.json --show-diff
+rfm config wizard --config repo-fleet.json --show-diff --apply
+rfm config wizard --resume
+rfm config wizard --reset
+```
+
+تولید از answer file:
+
+```bash
+rfm config wizard --answers configs/wizard-answers.example.json --non-interactive --apply
+```
+
+گزینه‌های اصلی: `--scan`, `--quick`, `--advanced`, `--answers`, `--non-interactive`, `--resume`, `--reset`, `--session-file`, `--show-diff`, `--no-backup`, `--json` و `--apply`.
+
 ## `config validate|migrate`
 
 ```bash

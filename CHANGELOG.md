@@ -6,6 +6,21 @@ The format follows Keep a Changelog and the project uses Semantic Versioning whi
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-07-14
+
+### Added
+
+- Interactive `rfm config wizard` with quick and advanced modes.
+- Project scanning for Git roots, submodules, nested repositories, Compose files, container images and runtime engine hints.
+- Repeatable non-interactive generation from JSON answer files.
+- Resumable wizard sessions, dry-run previews and unified config diffs.
+
+### Security
+
+- Secret-like answer keys are rejected before configuration generation.
+- Generated filesystem paths must remain relative and portable.
+- Existing configs are validated before atomic replacement and receive `.bak` backups by default.
+
 ## [0.10.0] - 2026-07-13
 
 ### Added
@@ -104,7 +119,8 @@ The format follows Keep a Changelog and the project uses Semantic Versioning whi
 - Workspace locking, safety guards, operation journal, resume and rollback.
 - Dependency graph and controlled parallel execution.
 
-[Unreleased]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/mhassanzadeh/repo-fleet-manager/compare/v0.7.0...v0.8.0

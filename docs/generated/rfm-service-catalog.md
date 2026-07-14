@@ -1,6 +1,6 @@
 # Repo Fleet Manager service catalog
 
-> Catalog version `0.10.0` · schema `1.0` · lifecycle `beta`
+> Catalog version `0.11.0` · schema `1.0` · lifecycle `beta`
 
 Config-driven orchestration for large Git repository fleets, submodules, local development, providers, Compose runtimes and source/image integrity.
 
@@ -9,13 +9,13 @@ Config-driven orchestration for large Git repository fleets, submodules, local d
 | Metric | Value |
 |---|---:|
 | Domains | 11 |
-| Capabilities | 57 |
-| Implemented | 44 |
+| Capabilities | 58 |
+| Implemented | 45 |
 | Partial | 6 |
 | Planned | 1 |
 | Missing | 6 |
-| Logical completion | 82.7% |
-| Open gaps | 17 |
+| Logical completion | 83.0% |
+| Open gaps | 18 |
 
 The completion percentage is a planning indicator: implemented capabilities count as 100%, partial as 50%, and planned as 15%. It is not a production-readiness certification.
 
@@ -44,6 +44,7 @@ Central definition of projects, providers, repository lifecycle, Compose and fin
 | `config.schema-validation` — Versioned JSON Schema validation | ✓ implemented | beta | `rfm config --config repo-fleet.json validate --strict`<br>`schemas/repo-fleet.schema.json`<br>`src/repo_fleet_manager/schema.py`<br>`tests/test_schema_migration.py` |
 | `config.migrations` — Config schema migrations and backward compatibility | ✓ implemented | beta | `rfm config --config repo-fleet.json migrate`<br>`rfm config --config repo-fleet.json migrate --apply`<br>`src/repo_fleet_manager/schema.py`<br>`docs/02-configuration.md`<br>`MIGRATION.md` |
 | `config.overlays` — Profiles, overlays and repository groups | ✓ implemented | beta | `rfm config --config repo-fleet.json --profile ci --group backend render`<br>`rfm git --config repo-fleet.json --group backend status`<br>`src/repo_fleet_manager/profiles.py`<br>`src/repo_fleet_manager/config.py`<br>`schemas/repo-fleet.schema.json`<br>`docs/13-profiles-overlays-and-groups.md`<br>`tests/test_profiles_groups.py` |
+| `config.wizard` — Interactive and non-interactive configuration wizard | ✓ implemented | beta | `rfm config wizard --quick --output repo-fleet.json`<br>`rfm config wizard --scan . --advanced --non-interactive --apply`<br>`rfm config wizard --answers answers.json --non-interactive --apply`<br>`src/repo_fleet_manager/wizard.py`<br>`src/repo_fleet_manager/cli.py`<br>`tests/test_config_wizard.py`<br>`docs/16-configuration-wizard.md`<br>`configs/wizard-answers.example.json` |
 
 ### Repository lifecycle management
 
@@ -406,6 +407,26 @@ Acceptance criteria:
 - Bootstrap waits for required services
 - Failures show logs and remediation
 - Status distinguishes running from ready
+
+#### GAP-018 — Interactive configuration wizard
+
+**Category:** `developer-experience` · **Current state:** `implemented`
+
+Hand-editing a large repository inventory is error-prone and prevents new users from safely adopting profiles, local workflows, Compose and offline cache settings.
+
+Recommended scope:
+
+- Add quick and advanced interactive modes
+- Scan Git repositories, submodules and Compose hints
+- Support resumable and non-interactive answer files
+- Validate, diff, back up and atomically write configuration
+
+Acceptance criteria:
+
+- A new user can generate a strict-valid config without editing JSON
+- Existing projects can be scanned without storing absolute personal paths or secrets
+- Interrupted sessions can resume and CI generation is repeatable
+- An invalid result never replaces the existing configuration
 
 ### P2
 

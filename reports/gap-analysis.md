@@ -1,6 +1,6 @@
 # Repo Fleet Manager logical gap analysis
 
-> Catalog version `0.10.0` · 17 prioritized gaps
+> Catalog version `0.11.0` · 18 prioritized gaps
 
 ## P0
 
@@ -251,6 +251,26 @@ Acceptance criteria:
 - Bootstrap waits for required services
 - Failures show logs and remediation
 - Status distinguishes running from ready
+
+### GAP-018 — Interactive configuration wizard
+
+**Category:** `developer-experience` · **Current state:** `implemented`
+
+Hand-editing a large repository inventory is error-prone and prevents new users from safely adopting profiles, local workflows, Compose and offline cache settings.
+
+Recommended scope:
+
+- Add quick and advanced interactive modes
+- Scan Git repositories, submodules and Compose hints
+- Support resumable and non-interactive answer files
+- Validate, diff, back up and atomically write configuration
+
+Acceptance criteria:
+
+- A new user can generate a strict-valid config without editing JSON
+- Existing projects can be scanned without storing absolute personal paths or secrets
+- Interrupted sessions can resume and CI generation is repeatable
+- An invalid result never replaces the existing configuration
 
 ## P2
 

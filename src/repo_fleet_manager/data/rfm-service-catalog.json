@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "catalog_version": "0.10.0",
+  "catalog_version": "0.11.0",
   "project": {
     "name": "Repo Fleet Manager",
     "short_name": "RFM",
@@ -178,6 +178,27 @@
           ],
           "gap_refs": [
             "GAP-009"
+          ]
+        },
+        {
+          "id": "config.wizard",
+          "name": "Interactive and non-interactive configuration wizard",
+          "status": "implemented",
+          "maturity": "beta",
+          "commands": [
+            "rfm config wizard --quick --output repo-fleet.json",
+            "rfm config wizard --scan . --advanced --non-interactive --apply",
+            "rfm config wizard --answers answers.json --non-interactive --apply"
+          ],
+          "components": [
+            "src/repo_fleet_manager/wizard.py",
+            "src/repo_fleet_manager/cli.py",
+            "tests/test_config_wizard.py",
+            "docs/16-configuration-wizard.md",
+            "configs/wizard-answers.example.json"
+          ],
+          "gap_refs": [
+            "GAP-018"
           ]
         }
       ]
@@ -1242,6 +1263,28 @@
       ],
       "resolved_in": "0.6.3",
       "resolution": "Tag-driven release workflow validates versions, builds reproducible Python artifacts, verifies wheel installation and publishes SHA-256 checksums with the GitHub Release."
+    },
+    {
+      "id": "GAP-018",
+      "title": "Interactive configuration wizard",
+      "priority": "P1",
+      "category": "developer-experience",
+      "status": "implemented",
+      "rationale": "Hand-editing a large repository inventory is error-prone and prevents new users from safely adopting profiles, local workflows, Compose and offline cache settings.",
+      "recommended_scope": [
+        "Add quick and advanced interactive modes",
+        "Scan Git repositories, submodules and Compose hints",
+        "Support resumable and non-interactive answer files",
+        "Validate, diff, back up and atomically write configuration"
+      ],
+      "acceptance_criteria": [
+        "A new user can generate a strict-valid config without editing JSON",
+        "Existing projects can be scanned without storing absolute personal paths or secrets",
+        "Interrupted sessions can resume and CI generation is repeatable",
+        "An invalid result never replaces the existing configuration"
+      ],
+      "resolved_in": "0.11.0",
+      "resolution": "The configuration wizard provides interactive, scanned and answer-file workflows with strict validation, portable paths, resumable sessions, backups and atomic writes."
     }
   ]
 }

@@ -38,6 +38,7 @@ Repo Fleet Manager یک ابزار واحد و config-driven برای مدیری
 - profileهای قابل ارث‌بری، overlayهای محیطی و repository groupهای مبتنی بر نام یا tag
 - ساخت پروژه مادر، scaffolding repository/service و bootstrap lockfile قابل‌حمل
 - export/import تأییدشده Git bundleها و image archiveها برای bootstrap در محیط air-gapped
+- ویزارد تعاملی و قابل‌اسکریپت برای scan، ساخت و ویرایش امن `repo-fleet.json`
 
 ## شروع سریع
 
@@ -81,20 +82,38 @@ cd /path/to/main-platform
 rfm doctor
 ```
 
+### ساخت کانفیگ با ویزارد
+
+برای ساخت تعاملی فایل تنظیمات:
+
+```bash
+rfm config wizard --quick --output repo-fleet.json
+rfm config wizard --quick --output repo-fleet.json --apply
+```
+
+برای شناسایی خودکار Git repositoryها، submoduleها، Compose file و imageها:
+
+```bash
+rfm config wizard --scan . --advanced --output repo-fleet.json --non-interactive
+rfm config wizard --scan . --advanced --output repo-fleet.json --non-interactive --apply
+```
+
+برای تولید تکرارپذیر در CI از `--answers answers.json --non-interactive` و برای ادامه جلسه قطع‌شده از `--resume` استفاده کنید. جزئیات کامل در [راهنمای Configuration Wizard](docs/16-configuration-wizard.md) آمده است.
+
 
 ## نصب از GitHub Release یا pipx
 
 برای نصب ایزوله آخرین نسخه مستقیم از GitHub:
 
 ```bash
-pipx install git+https://github.com/mhassanzadeh/repo-fleet-manager.git@v0.10.0
+pipx install git+https://github.com/mhassanzadeh/repo-fleet-manager.git@v0.11.0
 rfm --version
 ```
 
 یا Wheel را از GitHub Release دانلود و نصب کنید:
 
 ```bash
-python3 -m pip install ./repo_fleet_manager-0.10.0-py3-none-any.whl
+python3 -m pip install ./repo_fleet_manager-0.11.0-py3-none-any.whl
 rfm --version
 ```
 
@@ -332,6 +351,7 @@ make cache-export-apply CONFIG=repo-fleet.json ROOT=. CACHE_OUTPUT=/path/to/flee
 make cache-verify ARCHIVE=/path/to/fleet.rfm-cache.tar.gz
 make cache-import-apply ROOT=/path/to/import ARCHIVE=/path/to/fleet.rfm-cache.tar.gz
 make cache-bootstrap-apply ROOT=/path/to/workspace ARCHIVE=/path/to/fleet.rfm-cache.tar.gz
+make config-wizard-scan-apply ROOT=. WIZARD_SCAN=. WIZARD_OUTPUT=repo-fleet.json
 make publish-github CONFIG=repo-fleet.json ROOT=/path/to/workspace NAMESPACE=my-user
 make publish-gitlab CONFIG=repo-fleet.json ROOT=/path/to/workspace NAMESPACE=my-group
 make catalog-summary
@@ -348,7 +368,7 @@ CI روی هر دو شاخه `master` و `main` اجرا می‌شود. tagها�
 
 ```bash
 make validate
-python scripts/check_release_version.py 0.10.0
+python scripts/check_release_version.py 0.11.0
 make release-artifacts
 ```
 
@@ -389,6 +409,7 @@ repo-fleet-manager/
 - [Profileها، overlayها و repository groupها](docs/13-profiles-overlays-and-groups.md)
 - [ساخت پروژه، templateها و bootstrap lock](docs/14-project-scaffolding-and-bootstrap-lock.md)
 - [Offline cache و bootstrap در محیط air-gapped](docs/15-offline-cache-and-air-gapped-bootstrap.md)
+- [ویزارد ساخت و ویرایش کانفیگ](docs/16-configuration-wizard.md)
 - [خروجی کامل service catalog](docs/generated/rfm-service-catalog.md)
 - [gap analysis منطقی](reports/gap-analysis.md)
 - [گزارش بررسی اسکریپت‌های ارسالی](reports/script-audit.md)
@@ -415,4 +436,4 @@ rfm config --config repo-fleet.json validate --strict
 
 ## Git commit guide
 
-تغییرات و روش انتشار نسخه جاری در [`PATCH_NOTES_v0.10.0.md`](PATCH_NOTES_v0.10.0.md)، [`GIT_COMMIT_GUIDE_v0.10.0.md`](GIT_COMMIT_GUIDE_v0.10.0.md) و [`CHANGELOG.md`](CHANGELOG.md) قرار دارد.
+تغییرات و روش انتشار نسخه جاری در [`PATCH_NOTES_v0.11.0.md`](PATCH_NOTES_v0.11.0.md)، [`GIT_COMMIT_GUIDE_v0.11.0.md`](GIT_COMMIT_GUIDE_v0.11.0.md) و [`CHANGELOG.md`](CHANGELOG.md) قرار دارد.

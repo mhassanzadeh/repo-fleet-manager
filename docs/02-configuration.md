@@ -273,3 +273,20 @@ See [Profiles, overlays and repository groups](13-profiles-overlays-and-groups.m
 - `compose.engine`: یکی از `auto`، `docker` یا `podman`.
 
 این فیلدها اختیاری‌اند و schema version همچنان `1.0.0` باقی می‌ماند.
+
+## ساخت config با Configuration Wizard
+
+برای ساخت فایل جدید بدون ویرایش دستی JSON:
+
+```bash
+rfm config wizard --quick --output repo-fleet.json
+rfm config wizard --quick --output repo-fleet.json --apply
+```
+
+برای پروژه موجود:
+
+```bash
+rfm config wizard --scan . --advanced --output repo-fleet.json --non-interactive --apply
+```
+
+ویزارد خروجی را پیش از نوشتن با همین schema اعتبارسنجی می‌کند. مسیرهای تولیدشده نسبی‌اند، answerهای secret-like رد می‌شوند و ویرایش config موجود به‌طور پیش‌فرض backup می‌سازد. شرح کامل در [Configuration Wizard](16-configuration-wizard.md) آمده است.
